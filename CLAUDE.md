@@ -1,8 +1,8 @@
 # Heddify
 
 Desktop music player for Windows by Heddrate (called "SC Player" before 1.2): **SoundCloud,
-Yandex Music and Audius in one window**, styled like Spotify / Yandex Music. Current version:
-**1.3.1** (`package.json`). Spotify is planned as the next service — keep new code
+Yandex Music and Audius in one window**, plus internet radio and the user's own music files, styled like Spotify / Yandex Music. Current version:
+**1.4.0** (`package.json`). Spotify is planned as the next service — keep new code
 service-agnostic (one library, one likes list, one search).
 The owner talks in Russian, casually; answer in Russian, short and to the point.
 
@@ -49,6 +49,12 @@ npx electron-vite preview --skipBuild   # run the built app
 npm run dist         # build + electron-builder → dist/ (NSIS installer + portable exe)
 ```
 
+Testing the real (built) app without touching the owner's profile: `npm run build`, then run
+`node_modules/electron/dist/electron.exe . --remote-debugging-port=9333` with env
+`HEDDIFY_PROFILE=<scratch dir>` (dev-only switch in `main/userData.ts`; a `state.json` with
+`{"prefs":{"guest":true,"onboarded":true}}` skips sign-in). Drive it over CDP
+(`/json` → page websocket → `Runtime.evaluate`). Close the test copy afterwards.
+
 The browser preview config is `.claude/launch.json` → `renderer-mock` (port 5173). In the
 preview, Audius really plays; SoundCloud/Yandex are mocked.
 
@@ -66,7 +72,9 @@ folder so nobody gets signed out). Inside: `state.json` (prefs, encrypted token)
    To ship as an auto-update: commit, then push a tag `v<version>` to
    https://github.com/Heddrate/Heddify (public) — `.github/workflows/release.yml` builds on
    GitHub and publishes the installer + `latest.yml` + blockmap to Releases with the built-in
-   GITHUB_TOKEN (no personal token). Fallback from this PC: `npm run release` with `GH_TOKEN`
+   GITHUB_TOKEN (no personal token). Write `release/notes/v<version>.md` first (3–5 short
+   Russian lines, "- " bullets): it becomes the release description and the "Что нового" lines
+   in the app's update banner. Fallback from this PC: `npm run release` with `GH_TOKEN`
    set by the owner. Installed apps download it in the background and install on restart.
 3. Also ship a zip: copy `dist/win-unpacked` to a folder named `Heddify` and zip it
    *with that folder inside* → `dist/Heddify-<ver>-win-x64.zip` (electron-builder's zip
@@ -87,10 +95,10 @@ branch main); commit as "Heddrate <211876846+Heddrate@users.noreply.github.com>"
 **SoundCloud DRM (tried 2026-10-09, not shipped):** castlabs Electron 44.5.1+wvcus gets the
 Widevine CDM and passes EME; the owner made a castlabs EVS account and VMP-signed a test build
 himself (Claude may not run EVS signing). soundcloud.com still gets **403 from
-license.media-streaming.soundcloud.cloud** on the licence request — either the region (owner is
-in Russia behind a VPN) or SoundCloud refusing such clients. Don't dig into the licence protocol
-(blocked as an attack). Next step only if the owner reports DRM tracks play in plain Chrome
-with his VPN: then retry with a VPN country SoundCloud licenses.
+license.media-streaming.soundcloud.cloud** on the licence request, while the same track plays
+in plain Chrome with the same VPN and account — so SoundCloud refuses such clients; it is not the
+region. Don't dig into the licence protocol (blocked as an attack). Dead end for now; offered
+instead: lock icon on DRM tracks + "Открыть в браузере".
 
 ## Stack
 
@@ -128,7 +136,13 @@ Electron 44, electron-vite 5, Vite 7, React 19, zustand 5, hls.js (lazy-loaded),
 - `updater.ts` — electron-updater (GitHub Releases): checks 15 s after start and every 4 h,
   downloads silently, installs on quit or via "Обновить" (avatar dot + menu item, Settings →
   О приложении). Only the NSIS install updates; portable / zip / dev report 'unsupported'.
-- `userData.ts` — imported first: keeps the old `%APPDATA%\SC Player` profile.
+- `userData.ts` — imported first: keeps the old `%APPDATA%\SC Player` profile (and the dev-only
+  `HEDDIFY_PROFILE` override).
+- `local.ts` — the user's music folders (pref `musicFolders`): recursive scan, tags + covers via
+  music-metadata (ESM, loaded with dynamic import), index in `userData/local-index.json`, covers
+  in `userData/local-covers`; served as `heddify-local://track/<key>` / `heddify-local://cover/<key>`
+  with byte ranges — only indexed files. The scheme is registered together with scp-cache in
+  `cache.ts` (one `registerSchemesAsPrivileged` call) and allowed in the CSP (img/media-src).
 
 ### Preload (`src/preload`)
 - `index.ts` — the `window.sc` bridge. `login.ts` — sign-in pages helper.
@@ -171,7 +185,14 @@ Electron 44, electron-vite 5, Vite 7, React 19, zustand 5, hls.js (lazy-loaded),
   hides likes older than its oldest loaded one so pages never jump in above.
 - `lib/played.ts` — the app's own listening history (all services, localStorage `played`),
   merged with SoundCloud's in `useHistory()`.
-- `lib/update.ts` — update state for the avatar dot / Settings.
+- `lib/update.ts` — update state for the avatar dot / Settings / UpdateBanner (with release notes).
+- `lib/radio.ts` + `views/Radio.tsx` — internet radio from Radio Browser (open API, mirrors
+  de1/fi1/de2, https streams only because of the CSP), genre chips, favourite stations (pref
+  `radioFavs`), play click reported to the catalogue. Stations are tracks with `origin: 'radio'`,
+  ids 2e12+, `radio: {uuid, url, hls}`; the player bar shows "Эфир" instead of a timeline.
+- `lib/local.ts` + `views/Files.tsx` — own files in the renderer: tracks with `origin: 'local'`,
+  ids 3e12+, likes kept in the app (pref `localLikes`, merged into "Мне нравится"); search puts
+  matching files first. The engine plays radio / files directly (no `stream:resolve`, no cache).
 - `lib/playlists.ts` — the app's own cross-service playlists (pref `localPlaylists`): create /
   rename / delete / reorder, custom cover (square-cropped JPEG data URL), `offline` flag
   auto-downloads newly added tracks.
@@ -204,7 +225,9 @@ Electron 44, electron-vite 5, Vite 7, React 19, zustand 5, hls.js (lazy-loaded),
 
 - SoundCloud is unavailable in Russia without a VPN; the owner uses one (Hiddify).
   `/users/{id}/playlists_liked_and_owned` and `/me/followings/ids` return 404 → fallbacks exist.
-- DRM-only SoundCloud tracks (monetised, only encrypted HLS) can't play; the app marks and skips them (see "SoundCloud DRM" above).
+- DRM-only SoundCloud tracks (monetised, only encrypted HLS) can't play (see "SoundCloud DRM"
+  above): rows show a lock (only-encrypted transcodings, or `player.drm` after a failed start) and
+  a failed start shows a toast with "Открыть в браузере" (toasts can carry one action).
 - Yandex plays through Web Audio (no DOM `<audio>`); `loadURL` of the webview may never
   resolve — don't await it. The hidden page is lightened: main cancels image/font/ads/Metrika
   requests for the engine webview only (`lightenYandexEngine`, not the sign-in window — it can

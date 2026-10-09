@@ -249,9 +249,17 @@ export function installMock(): void {
     },
     playerState: () => undefined,
     onPlayerCommand: () => () => undefined,
+    local: {
+      folders: async () => [],
+      addFolder: async () => null,
+      removeFolder: async () => undefined,
+      tracks: async () => [],
+      scan: async () => ({ total: 0, added: 0, removed: 0 }),
+      onProgress: () => () => undefined
+    },
     // localStorage 'mock-update' = '1' pretends an update is downloaded
     update: {
-      state: async () => (localStorage.getItem('mock-update') === '1' ? { status: 'ready', version: '1.2.1' } : { status: 'latest' }),
+      state: async () => (localStorage.getItem('mock-update') === '1' ? { status: 'ready', version: '1.4.0', notes: ['Радио: тысячи станций со всего мира, без входа', 'Свои файлы: добавьте папку с музыкой'] } : { status: 'latest' }),
       check: async () => undefined,
       install: async () => void setTimeout(() => location.reload(), 4000),
       onState: () => () => undefined

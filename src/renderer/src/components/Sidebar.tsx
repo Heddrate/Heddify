@@ -15,6 +15,7 @@ import { useAudius } from '@/lib/audius'
 import { addToPlaylist, createPlaylist, draggedTrack, TRACK_MIME } from '@/lib/playlists'
 import { isAlbumItem, libArt, libRoute, libSub, libTitle, useLibraryItems } from '@/lib/library'
 import { Collage } from '@/views/Local'
+import { useLocal } from '@/lib/local'
 
 type Filter = 'all' | 'playlists' | 'albums'
 
@@ -33,6 +34,7 @@ export function Sidebar(): React.JSX.Element {
   const waveActive = useWaveActive()
   const wavePlaying = useWavePlaying()
   const all = useLibraryItems()
+  const fileCount = useLocal((s) => s.tracks.length)
   const [dropKey, setDropKey] = useState<string | null>(null)
 
   const items = all.filter((i) => filter === 'all' || (filter === 'albums') === isAlbumItem(i))
@@ -81,6 +83,19 @@ export function Sidebar(): React.JSX.Element {
             />
             <LibRow {...row({ name: 'likes' })} art={tile('heart', 'accent')} title={tx('Мне нравится')} sub={tx('Плейлист · {0}', tracks(likes))} />
             <LibRow {...row({ name: 'history' })} art={tile('history')} title={tx('История')} sub={tx('Недавно прослушанное')} />
+            <LibRow
+              {...row({ name: 'radio' })}
+              active={route.name === 'radio'}
+              art={tile('radio')}
+              title={tx('Радио')}
+              sub={tx('Станции со всего мира')}
+            />
+            <LibRow
+              {...row({ name: 'files' })}
+              art={tile('folder')}
+              title={tx('Файлы на компьютере')}
+              sub={fileCount ? tracks(fileCount) : tx('Добавьте папку с музыкой')}
+            />
             {scIn && (
               <LibRow
                 {...row({ name: 'following' })}

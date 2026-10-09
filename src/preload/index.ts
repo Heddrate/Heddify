@@ -48,6 +48,18 @@ const bridge: ScBridge = {
     ipcRenderer.on('player:command', listener)
     return () => ipcRenderer.removeListener('player:command', listener)
   },
+  local: {
+    folders: () => ipcRenderer.invoke('local:folders'),
+    addFolder: () => ipcRenderer.invoke('local:addFolder'),
+    removeFolder: (dir) => ipcRenderer.invoke('local:removeFolder', dir),
+    tracks: () => ipcRenderer.invoke('local:tracks'),
+    scan: () => ipcRenderer.invoke('local:scan'),
+    onProgress: (cb) => {
+      const listener = (_e: Electron.IpcRendererEvent, p: { done: number; total: number }): void => cb(p)
+      ipcRenderer.on('local:progress', listener)
+      return () => ipcRenderer.removeListener('local:progress', listener)
+    }
+  },
   update: {
     state: () => ipcRenderer.invoke('update:get'),
     check: () => ipcRenderer.invoke('update:check'),

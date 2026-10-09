@@ -128,7 +128,18 @@ function Progress(): React.JSX.Element {
   const duration = usePlayer((s) => s.duration)
   const buffered = usePlayer((s) => s.buffered)
   const has = usePlayer((s) => !!s.current)
+  const live = usePlayer((s) => s.current?.origin === 'radio')
   const [scrub, setScrub] = useState<number | null>(null)
+
+  if (live) {
+    return (
+      <div className="pb-progress">
+        <span className="time">{fmtTime(position)}</span>
+        <div className="pb-live" aria-hidden />
+        <span className="time live">{tx('Эфир')}</span>
+      </div>
+    )
+  }
 
   return (
     <div className={cx('pb-progress', !has && 'disabled')}>

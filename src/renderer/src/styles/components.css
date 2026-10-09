@@ -206,7 +206,12 @@
   font-size: 13px;
 }
 
-.tl-head .tr-dur {
+.tl-head .tr-lock {
+  flex: none;
+  color: var(--text-2);
+}
+
+.tr-dur {
   display: flex;
   justify-content: flex-end;
 }
@@ -756,9 +761,9 @@
   bottom: calc(var(--playerbar) + 16px);
   z-index: 95;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
-  width: 400px;
+  width: 480px;
   max-width: calc(100vw - 32px);
   padding: 14px 16px;
   border-radius: var(--r);
@@ -786,12 +791,36 @@
   color: var(--text-2);
 }
 
+.update-notes {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
 .update-actions {
   flex: none;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 4px;
+}
+
+.toast.with-action {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  pointer-events: auto;
+}
+
+.toast-action {
+  flex: none;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: inherit;
 }
 
 .toast {

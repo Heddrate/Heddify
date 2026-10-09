@@ -21,7 +21,7 @@ interface OfflineState {
 export const useOffline = create<OfflineState>(() => ({ pinned: new Set(), progress: null }))
 
 export const offlineKey = (t: Track): string => (t.au ? `au-${t.au.id}` : `sc-${t.id}`)
-const downloadable = (t: Track): boolean => t.origin !== 'yandex' && t.policy !== 'BLOCK'
+const downloadable = (t: Track): boolean => t.origin !== 'yandex' && t.origin !== 'radio' && t.origin !== 'local' && t.policy !== 'BLOCK'
 
 export async function refreshOffline(): Promise<void> {
   const list = await window.sc.cache.list()

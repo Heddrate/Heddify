@@ -25,6 +25,7 @@ import { resolveAudius } from './audius'
 import { appIconPath, closeToTray, createTray, showWindow, updateTray } from './tray'
 import { setMediaKeys } from './mediaKeys'
 import { checkForUpdates, installUpdate, startUpdater, updateState } from './updater'
+import { addFolder, folders, localTracks, removeFolder, scanLocal, serveLocal } from './local'
 
 /** Window frame colours per theme, so the first frame already matches (see themes.css). */
 const FRAME: Record<string, { bg: string; symbol: string }> = {
@@ -63,6 +64,7 @@ if (!app.requestSingleInstanceLock()) {
     lightenYandexEngine()
     allowMediaCors()
     serveCache()
+    serveLocal()
     registerIpc()
     createWindow()
     createTray(() => mainWindow)
@@ -406,6 +408,11 @@ function registerIpc(): void {
     mainWindow?.webContents.send('discord:status', s)
   }
   configureDiscord()
+  ipcMain.handle('local:folders', () => folders())
+  ipcMain.handle('local:addFolder', () => addFolder(mainWindow))
+  ipcMain.handle('local:removeFolder', (_e, dir: unknown) => removeFolder(String(dir)))
+  ipcMain.handle('local:tracks', () => localTracks())
+  ipcMain.handle('local:scan', () => scanLocal((done, total) => mainWindow?.webContents.send('local:progress', { done, total })))
   ipcMain.handle('update:get', () => updateState())
   ipcMain.handle('update:check', () => checkForUpdates())
   ipcMain.handle('update:install', () => installUpdate())

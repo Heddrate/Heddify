@@ -62,6 +62,23 @@ export function installUpdate(): void {
   setTimeout(() => quitApp(() => autoUpdater.quitAndInstall(true, true)), 1200)
 }
 
+/** The release description (GitHub sends HTML) as a few plain lines for the banner. */
+function noteLines(raw: unknown): string[] {
+  const text = Array.isArray(raw) ? raw.map((n: { note?: string | null }) => n?.note ?? '').join('\n') : typeof raw === 'string' ? raw : ''
+  return text
+    .replace(/<\/(li|p|h\d)>|<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .split('\n')
+    .map((l) => l.replace(/^[\s*•-]+/, '').trim())
+    .filter((l) => l && !/^#/.test(l))
+    .slice(0, 4)
+}
+
 export function startUpdater(win: () => BrowserWindow | null): void {
   getWindow = win
   if (!installed()) {
@@ -75,7 +92,7 @@ export function startUpdater(win: () => BrowserWindow | null): void {
   autoUpdater.on('download-progress', (p) =>
     set({ status: 'downloading', version: state.version, percent: Math.round(p.percent) })
   )
-  autoUpdater.on('update-downloaded', (i) => set({ status: 'ready', version: i.version }))
+  autoUpdater.on('update-downloaded', (i) => set({ status: 'ready', version: i.version, notes: noteLines(i.releaseNotes) }))
   autoUpdater.on('error', (e) => {
     log(`update error: ${e?.message ?? e}`)
     if (state.status !== 'ready') set({ status: 'error' })

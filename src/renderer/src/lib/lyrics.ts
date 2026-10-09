@@ -92,6 +92,7 @@ function best(list: ApiLyrics[] | null, duration: number): ApiLyrics | null {
 }
 
 export async function fetchLyrics(t: Track): Promise<Lyrics | null> {
+  if (t.origin === 'radio') return null
   if (cache.has(t.id)) return cache.get(t.id) ?? null
   const { artist, title } = split(t)
   const duration = Math.round((t.full_duration || t.duration || 0) / 1000)

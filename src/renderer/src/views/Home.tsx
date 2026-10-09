@@ -15,6 +15,9 @@ import { useLibraryItems } from '@/lib/library'
 import { useHistory } from '@/lib/played'
 import { LibCard } from '@/components/LibCard'
 import { audius, useAudius } from '@/lib/audius'
+import { radio } from '@/lib/radio'
+import { lang } from '@/lib/i18n'
+import { stationCards } from '@/views/Radio'
 
 const uniq = (tracks: Track[]): Track[] => {
   const seen = new Set<number>()
@@ -55,6 +58,8 @@ export function Home(): React.JSX.Element {
           <AudiusShelf title="Lo-Fi" genre="Lo-Fi" />
         </>
       )}
+
+      <RadioShelf />
 
       {recent.length > 0 && (
         <Shelf title={tx("Недавно прослушанное")} onMore={() => navigate({ name: 'history' })}>
@@ -155,6 +160,18 @@ function FavoritesShelf(): React.JSX.Element | null {
           menu={() => trackMenu(t)}
         />
       ))}
+    </Shelf>
+  )
+}
+
+/** Popular radio stations (Russian ones first in the Russian UI). */
+function RadioShelf(): React.JSX.Element | null {
+  const res = useAsync(() => radio.top(lang === 'ru' ? 'RU' : undefined, 20), [], `p:radio-home:${lang}`)
+  const stations = res.data ?? []
+  if (!stations.length) return null
+  return (
+    <Shelf title={tx('Радио')} onMore={() => navigate({ name: 'radio' })}>
+      {stationCards(stations, { label: tx('Радио'), route: { name: 'radio' } })}
     </Shelf>
   )
 }

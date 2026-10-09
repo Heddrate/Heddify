@@ -8,6 +8,7 @@ import { useAsync, usePaged } from './hooks'
 import type { LikeItem, Track } from './types'
 import { fetchTracks, useYa } from './yandexApi'
 import { useAudius } from './audius'
+import { useLocal } from './local'
 import { useApp } from '@/store/app'
 import { tx } from './i18n'
 
@@ -59,6 +60,7 @@ export function useAllLikes(): AllLikes {
   const yaOrder = useYa((s) => s.likeOrder)
   const yaAt = useYa((s) => s.likeAt)
   const au = useAudius((s) => s.likes)
+  const files = useLocal((s) => s.likes)
   const [yaCount, setYaCount] = useState(YA_PAGE)
 
   const sc = usePaged<LikeItem>(me ? `likes-${me.id}` : null, () => api.likes(me!.id))
@@ -78,7 +80,11 @@ export function useAllLikes(): AllLikes {
     return [...local, ...remote]
   }, [sc.items, pending])
   const yaRows = useMemo(() => timed(ya.data ?? [], (t) => (t.ya ? yaAt[t.ya.trackId] : undefined)), [ya.data, yaAt])
-  const auRows = useMemo(() => timed(au, (t) => (t.liked_at ? Date.parse(t.liked_at) : undefined)), [au])
+  // likes kept in the app (Audius, own files) carry their own time
+  const auRows = useMemo(
+    () => [...timed(au, (t) => (t.liked_at ? Date.parse(t.liked_at) : undefined)), ...timed(files, (t) => (t.liked_at ? Date.parse(t.liked_at) : undefined))],
+    [au, files]
+  )
 
   const scMore = !!me && !!sc.next
   const yaMore = yaIn && yaOrder.length > yaIds.length
@@ -116,7 +122,7 @@ export function useAllLikes(): AllLikes {
   return {
     tracks,
     dates,
-    total: scCount + yaOrder.length + au.length,
+    total: scCount + yaOrder.length + au.length + files.length,
     loading: sc.loading || ya.loading,
     hasMore: scMore || yaMore,
     error: !tracks.length ? (sc.error ?? ya.error) : null,

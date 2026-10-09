@@ -11,4 +11,6 @@ import { join } from 'node:path'
 const OLD = join(app.getPath('appData'), 'SC Player')
 const profile = (dir: string): boolean => existsSync(join(dir, 'state.json'))
 
-if (profile(OLD) && !profile(app.getPath('userData'))) app.setPath('userData', OLD)
+// development only: run against a throwaway profile (HEDDIFY_PROFILE=<dir>), next to the real app
+if (!app.isPackaged && process.env.HEDDIFY_PROFILE) app.setPath('userData', process.env.HEDDIFY_PROFILE)
+else if (profile(OLD) && !profile(app.getPath('userData'))) app.setPath('userData', OLD)

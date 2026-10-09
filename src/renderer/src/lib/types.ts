@@ -44,10 +44,14 @@ export interface Track {
   media?: { transcodings: Transcoding[] }
   publisher_metadata?: { artist?: string } | null
   /** Set for Yandex Music tracks; they play through the embedded Yandex player. */
-  origin?: 'yandex' | 'audius'
+  origin?: 'yandex' | 'audius' | 'radio' | 'local'
   ya?: { trackId: number; albumId?: number; artistId?: number }
   /** Set for Audius tracks (string ids of the Audius API). */
   au?: { id: string; userId: string; handle?: string }
+  /** A music file from the user's own folders (key in main/local.ts's index). */
+  local?: { key: string; album?: string }
+  /** Internet radio station (Radio Browser): a live stream, no duration. */
+  radio?: { uuid: string; url: string; hls: boolean }
   /** When the track was liked; kept for likes stored in the app (Audius). */
   liked_at?: string
 }
@@ -142,6 +146,8 @@ export type Route =
   | { name: 'au-artist'; id: string }
   | { name: 'local'; id: string }
   | { name: 'offline' }
+  | { name: 'radio'; tag?: string }
+  | { name: 'files' }
 
 export type SearchTab = 'all' | 'tracks' | 'users' | 'playlists' | 'albums' | 'yandex' | 'audius'
 export type UserTab = 'popular' | 'tracks' | 'albums' | 'playlists' | 'reposts'

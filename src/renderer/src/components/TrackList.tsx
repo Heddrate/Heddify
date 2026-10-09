@@ -13,6 +13,8 @@ import { Icon } from './Icon'
 import { tx } from '@/lib/i18n'
 import { useYa } from '@/lib/yandexApi'
 import { useAudius } from '@/lib/audius'
+import { useRadio } from '@/lib/radio'
+import { useLocal } from '@/lib/local'
 
 interface Props {
   tracks: Track[]
@@ -48,7 +50,10 @@ export function TrackList({
   const likes = useApp((s) => s.likes)
   const yaLikes = useYa((s) => s.likes)
   const auLikes = useAudius((s) => s.likeIds)
+  const radioFavs = useRadio((s) => s.favIds)
+  const fileLikes = useLocal((s) => s.likeIds)
   const unplayable = usePlayer((s) => s.unplayable)
+  const drmSet = usePlayer((s) => s.drm)
   const [selected, setSelected] = useState<number | null>(null)
   const [drop, setDrop] = useState<{ i: number; after: boolean } | null>(null)
   const dragFrom = useRef<number | null>(null)
@@ -136,8 +141,9 @@ export function TrackList({
           index={i}
           current={t.id === currentId}
           playing={t.id === currentId && playing}
-          liked={t.origin === 'yandex' ? yaLikes.has(t.ya?.trackId ?? 0) : t.origin === 'audius' ? auLikes.has(t.id) : likes.has(t.id)}
+          liked={t.origin === 'local' ? fileLikes.has(t.id) : t.origin === 'radio' ? radioFavs.has(t.id) : t.origin === 'yandex' ? yaLikes.has(t.ya?.trackId ?? 0) : t.origin === 'audius' ? auLikes.has(t.id) : likes.has(t.id)}
           unavailable={unplayable.has(t.id)}
+          drm={drmSet.has(t.id) || drmOnly(t)}
           selected={selected === i}
           badge={mixed}
           menuExtra={menuExtra}
@@ -157,6 +163,12 @@ export function TrackList({
   )
 }
 
+/** Only encrypted streams: SoundCloud's own player is the only one with the keys. */
+const drmOnly = (t: Track): boolean => {
+  const list = t.media?.transcodings
+  return !t.origin && !!list?.length && list.every((x) => x.format?.protocol?.includes('encrypted'))
+}
+
 /** Dates render as "3 дня назад"; anything that isn't a date (a status label) as-is. */
 const dateText = (d: string | number | undefined): string => fmtRelative(d) || (typeof d === 'string' ? d : '')
 
@@ -172,6 +184,7 @@ interface RowProps {
   menuExtra?: (track: Track, index: number) => MenuItem[]
   extraText: string
   dropMark: 'before' | 'after' | null
+  drm: boolean
   onPlay: (i: number) => void
   onSelect: (i: number) => void
   onDragStart: (i: number, e: DragEvent) => void
@@ -192,6 +205,7 @@ const TrackRow = memo(function TrackRow({
   menuExtra,
   extraText,
   dropMark,
+  drm,
   onPlay,
   onSelect,
   onDragStart,
@@ -212,7 +226,15 @@ const TrackRow = memo(function TrackRow({
       onDrop={(e) => onDrop(index, e)}
       onDragEnd={onDragEnd}
       aria-selected={selected}
-      title={blocked ? tx("Недоступно в вашем регионе") : unavailable ? tx("Этот трек не воспроизводится в приложении") : undefined}
+      title={
+        drm
+          ? tx('Играет только на сайте SoundCloud')
+          : blocked
+            ? tx("Недоступно в вашем регионе")
+            : unavailable
+              ? tx("Этот трек не воспроизводится в приложении")
+              : undefined
+      }
       onClick={() => onSelect(index)}
       onDoubleClick={() => onPlay(index)}
       onContextMenu={(e) => {
@@ -244,6 +266,7 @@ const TrackRow = memo(function TrackRow({
             {badge && track.origin === 'audius' && (
               <span className="src-badge" title="Audius">A</span>
             )}
+            {drm && <Icon name="lock" size={14} className="tr-lock" />}
             <span className="ellipsis">{track.title}</span>
             {track.policy === 'SNIP' && <span className="badge">{tx("превью")}</span>}
           </div>

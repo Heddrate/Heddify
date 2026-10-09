@@ -3,6 +3,8 @@ import type { AnyPlaylist, PlaySource, Route, Track, User } from './types'
 import { toggleYaLike, useYa } from './yandexApi'
 import { toggleAudiusLike, useAudius } from './audius'
 import { addToPlaylistMenu } from './playlists'
+import { toggleRadioFav, useRadio } from './radio'
+import { toggleLocalLike, useLocal } from './local'
 import { copyLink, navigate, openUrl, toggleLike, useApp } from '@/store/app'
 import { player, usePlayer } from '@/store/player'
 import { toast, type MenuItem } from '@/store/ui'
@@ -78,7 +80,9 @@ export async function playUser(u: User): Promise<void> {
 
 /** Like/unlike in whichever service the track comes from. */
 export function toggleAnyLike(track: Track): void {
-  if (track.origin === 'yandex') void toggleYaLike(track)
+  if (track.origin === 'radio') toggleRadioFav(track)
+  else if (track.origin === 'local') toggleLocalLike(track)
+  else if (track.origin === 'yandex') void toggleYaLike(track)
   else if (track.origin === 'audius') toggleAudiusLike(track)
   else void toggleLike(track)
 }
@@ -88,12 +92,18 @@ export function useLiked(track: Track | null | undefined): boolean {
   const sc = useApp((s) => (track && !track.origin ? s.likes.has(track.id) : false))
   const ya = useYa((s) => (track?.ya ? s.likes.has(track.ya.trackId) : false))
   const au = useAudius((s) => (track?.au ? s.likeIds.has(track.id) : false))
-  return track?.origin === 'yandex' ? ya : track?.origin === 'audius' ? au : sc
+  const fav = useRadio((s) => (track?.radio ? s.favIds.has(track.id) : false))
+  const file = useLocal((s) => (track?.local ? s.likeIds.has(track.id) : false))
+  return track?.origin === 'local' ? file : track?.origin === 'radio' ? fav : track?.origin === 'yandex' ? ya : track?.origin === 'audius' ? au : sc
 }
 
 /** Artist of a track: SoundCloud profile, or the artist page of Yandex / Audius. */
 export function openArtist(track: Track): void {
-  if (track.origin === 'audius') {
+  if (track.origin === 'radio') {
+    navigate({ name: 'radio' })
+  } else if (track.origin === 'local') {
+    navigate({ name: 'files' })
+  } else if (track.origin === 'audius') {
     if (track.au) navigate({ name: 'au-artist', id: track.au.userId })
   } else if (track.origin === 'yandex') {
     const id = track.ya?.artistId
@@ -104,6 +114,36 @@ export function openArtist(track: Track): void {
 }
 
 export function trackMenu(track: Track, extra: MenuItem[] = []): MenuItem[] {
+  if (track.origin === 'local') {
+    const liked = useLocal.getState().likeIds.has(track.id)
+    return [
+      { label: tx("Играть следующим"), icon: 'playNext', onSelect: () => player.playNext(track) },
+      { label: tx("Добавить в очередь"), icon: 'queueAdd', onSelect: () => player.enqueue(track) },
+      { label: tx('Добавить в плейлист'), icon: 'add', onSelect: () => addToPlaylistMenu([track]) },
+      { separator: true },
+      {
+        label: liked ? tx("Убрать из «Мне нравится»") : tx("Добавить в «Мне нравится»"),
+        icon: liked ? 'heart' : 'heartOutline',
+        onSelect: () => toggleLocalLike(track)
+      },
+      ...extra
+    ]
+  }
+  if (track.origin === 'radio') {
+    const fav = useRadio.getState().favIds.has(track.id)
+    return [
+      { label: tx("Добавить в очередь"), icon: 'queueAdd', onSelect: () => player.enqueue(track) },
+      {
+        label: fav ? tx('Убрать из избранного') : tx('В избранные станции'),
+        icon: fav ? 'heart' : 'heartOutline',
+        onSelect: () => toggleRadioFav(track)
+      },
+      ...extra,
+      ...(track.permalink_url
+        ? [{ separator: true } as const, { label: tx("Скопировать ссылку"), icon: 'link' as const, onSelect: () => copyLink(track.permalink_url) }]
+        : [])
+    ]
+  }
   if (track.origin === 'audius') {
     const liked = useAudius.getState().likeIds.has(track.id)
     return [

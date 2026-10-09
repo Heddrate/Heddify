@@ -21,6 +21,8 @@ import { LocalPlaylistView, OfflineView } from '@/views/Local'
 import { Loading } from '@/components/States'
 import '@/lib/yandexApi'
 import '@/lib/played'
+import '@/lib/radio'
+import '@/lib/local'
 
 // Pages other than home load on first visit: a smaller bundle starts faster.
 const Likes = lazy(() => import('@/views/Library').then((m) => ({ default: m.Likes })))
@@ -39,6 +41,8 @@ const YaAlbumView = lazy(() => import('@/views/Yandex').then((m) => ({ default: 
 const YaPlaylistView = lazy(() => import('@/views/Yandex').then((m) => ({ default: m.YaPlaylistView })))
 const AudiusView = lazy(() => import('@/views/Audius').then((m) => ({ default: m.AudiusView })))
 const AuArtistView = lazy(() => import('@/views/Audius').then((m) => ({ default: m.AuArtistView })))
+const RadioView = lazy(() => import('@/views/Radio').then((m) => ({ default: m.RadioView })))
+const FilesView = lazy(() => import('@/views/Files').then((m) => ({ default: m.FilesView })))
 
 export function App(): React.JSX.Element {
   const auth = useApp((s) => s.auth)
@@ -91,6 +95,7 @@ function pageKey(r: Route): string {
   if (r.name === 'ya-playlist') return `ya-${r.uid}-${r.kind}`
   if (r.name === 'au-artist') return `au-artist-${r.id}`
   if (r.name === 'local') return `local-${r.id}`
+  if (r.name === 'radio') return 'radio'
   return r.name
 }
 
@@ -113,6 +118,10 @@ function View({ route }: { route: Route }): React.JSX.Element | null {
       return <LocalPlaylistView id={route.id} />
     case 'offline':
       return <OfflineView />
+    case 'radio':
+      return <RadioView tag={route.tag} />
+    case 'files':
+      return <FilesView />
     case 'audius':
       return <AudiusView genre={route.genre} />
     case 'au-artist':

@@ -9,6 +9,7 @@ let dismissed = ''
 
 export function UpdateBanner(): React.JSX.Element | null {
   const version = useUpdate((s) => (s.status === 'ready' ? (s.version ?? '') : null))
+  const notes = useUpdate((s) => s.notes)
   const installing = useInstalling((s) => s.on)
   const [, rerender] = useState(0)
   if (installing) {
@@ -28,6 +29,13 @@ export function UpdateBanner(): React.JSX.Element | null {
       <div className="update-text">
         <strong>{tx('Доступно обновление')}</strong>
         <span>{version ? tx('Версия {0} готова к установке', version) : tx('Новая версия готова к установке')}</span>
+        {notes && notes.length > 0 && (
+          <ul className="update-notes">
+            {notes.map((n) => (
+              <li key={n}>{n}</li>
+            ))}
+          </ul>
+        )}
       </div>
       <div className="update-actions">
         <button className="btn btn-primary btn-sm" onClick={installUpdate}>

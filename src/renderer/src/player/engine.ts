@@ -120,7 +120,12 @@ class Engine {
     this.wantPlay = opts.autoplay
     this.ev?.state({ loading: true, playing: opts.autoplay })
 
-    const res = await window.sc.resolveStream(streamRequest(track))
+    // a radio station is a direct stream and an own file is served by main: nothing to resolve or cache
+    const res: Awaited<ReturnType<typeof window.sc.resolveStream>> = track.radio
+      ? { ok: true, status: 200, data: { url: track.radio.url, protocol: track.radio.hls ? 'hls' : 'progressive', mime: 'audio/mpeg', snipped: false } }
+      : track.local
+        ? { ok: true, status: 200, data: { url: `heddify-local://track/${track.local.key}`, protocol: 'progressive', mime: 'audio/mpeg', snipped: false } }
+        : await window.sc.resolveStream(streamRequest(track))
     if (id !== this.loadId) return null
     this.resolving = false
     if (!res.ok) {

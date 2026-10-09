@@ -34,6 +34,8 @@ interface PlayerState {
   autoplay: boolean
   /** Tracks that failed to play this session (DRM-only, region-locked…). */
   unplayable: Set<number>
+  /** SoundCloud tracks that only play in SoundCloud's own player (DRM). */
+  drm: Set<number>
 }
 
 export const usePlayer = create<PlayerState>(() => ({
@@ -55,7 +57,8 @@ export const usePlayer = create<PlayerState>(() => ({
   shuffle: false,
   repeat: 'off',
   autoplay: true,
-  unplayable: new Set()
+  unplayable: new Set(),
+  drm: new Set()
 }))
 
 const set = usePlayer.setState
@@ -265,7 +268,14 @@ function onFail(track: Track, message: string): void {
   // lands in logs/api.log via main's console listener
   console.error(`playback failed [${track.origin ?? 'soundcloud'} ${track.id}]: ${message}`)
   set({ unplayable: new Set(get().unplayable).add(track.id) })
-  toast(tx('«{0}» не играет: {1}', track.title ?? tx('Трек'), tx(message)))
+  if (!track.origin && message.includes('DRM')) {
+    // only SoundCloud's own player has the keys: offer the site instead of a dead end
+    set({ drm: new Set(get().drm).add(track.id) })
+    const url = track.permalink_url
+    toast(tx('«{0}» играет только на сайте SoundCloud', track.title ?? tx('Трек')), 7000, url ? { label: tx('Открыть в браузере'), run: () => void window.sc.openExternal(url) } : undefined)
+  } else {
+    toast(tx('«{0}» не играет: {1}', track.title ?? tx('Трек'), tx(message)))
+  }
   failStreak++
   if (failStreak >= 5) {
     failStreak = 0
@@ -415,7 +425,7 @@ const events: Parameters<typeof engine.bind>[0] = {
   },
   started(track) {
     failStreak = 0
-    if (!isExternal(track)) void api.reportPlay(track.id)
+    if (!track.origin) void api.reportPlay(track.id)
   },
   ended() {
     void next(true)

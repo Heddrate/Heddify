@@ -71,7 +71,9 @@ function limitBytes(): number {
 /** Must run before app 'ready': lets <audio> stream and seek in cached files. */
 export function registerCacheScheme(): void {
   protocol.registerSchemesAsPrivileged([
-    { scheme: CACHE_SCHEME, privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } }
+    { scheme: CACHE_SCHEME, privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } },
+    // the user's own music files (main/local.ts); registered here: all schemes go in one call
+    { scheme: 'heddify-local', privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } }
   ])
 }
 

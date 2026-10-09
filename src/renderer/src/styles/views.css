@@ -488,6 +488,43 @@
   margin-top: 8px;
 }
 
+/* ---------- own files ---------- */
+
+.files-scan {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.files-folders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -8px 0 16px;
+}
+
+.files-folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 420px;
+  height: 32px;
+  padding: 0 4px 0 12px;
+  border-radius: 999px;
+  background: var(--raised);
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.files-search {
+  flex: none;
+  height: 40px;
+  max-width: 360px;
+  margin-bottom: 16px;
+}
+
 /* ---------- Audius ---------- */
 
 .genre-chips {

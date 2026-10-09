@@ -80,11 +80,31 @@ export interface Presence {
   endsAt?: number
 }
 
+/** A music file from the user's own folders (main/local.ts). */
+export interface LocalTrack {
+  key: string
+  title: string
+  artist: string
+  album: string
+  /** ms; 0 when the file doesn't say */
+  duration: number
+  hasCover: boolean
+  addedAt: number
+}
+
+export interface LocalScan {
+  total: number
+  added: number
+  removed: number
+}
+
 /** Self-update: 'unsupported' = portable exe / zip / development, they don't update themselves. */
 export interface UpdateState {
   status: 'idle' | 'checking' | 'latest' | 'downloading' | 'ready' | 'error' | 'unsupported'
   version?: string
   percent?: number
+  /** "What's new": short lines from the GitHub release description. */
+  notes?: string[]
 }
 
 export type DiscordStatus = 'off' | 'connecting' | 'ready' | 'no-discord' | 'bad-id'
@@ -135,6 +155,15 @@ export interface ScBridge {
   /** Taskbar thumbnail buttons mirror the player and send commands back. */
   playerState(s: { playing: boolean; hasTrack: boolean; title?: string }): void
   onPlayerCommand(cb: (cmd: 'prev' | 'toggle' | 'next' | 'play' | 'pause') => void): () => void
+  local: {
+    folders(): Promise<string[]>
+    /** Folder picker; the chosen folder is remembered (null = cancelled). */
+    addFolder(): Promise<string | null>
+    removeFolder(dir: string): Promise<void>
+    tracks(): Promise<LocalTrack[]>
+    scan(): Promise<LocalScan>
+    onProgress(cb: (p: { done: number; total: number }) => void): () => void
+  }
   update: {
     state(): Promise<UpdateState>
     check(): Promise<void>

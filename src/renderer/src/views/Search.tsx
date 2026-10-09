@@ -10,6 +10,9 @@ import { playlistRoute, playUser } from '@/lib/actions'
 import { api, tracksOf } from '@/lib/api'
 import { searchYandex } from '@/lib/yandex'
 import { audius } from '@/lib/audius'
+import { radio } from '@/lib/radio'
+import { searchLocal } from '@/lib/local'
+import { stationCards } from '@/views/Radio'
 import { trackArt, userArt } from '@/lib/artwork'
 import { cx, useAsync, usePaged } from '@/lib/hooks'
 import type { Collection, Playlist, PlaySource, SearchTab, Track, User } from '@/lib/types'
@@ -128,7 +131,8 @@ function SearchAll({ q }: { q: string }): React.JSX.Element {
         scIn ? api.searchPlaylists(q, 12).catch(() => empty<Playlist>()) : empty<Playlist>(),
         scIn ? api.searchAlbums(q, 12).catch(() => empty<Playlist>()) : empty<Playlist>(),
         searchYandex(q).catch(() => [] as Track[]),
-        audius.search(q).catch(() => [] as Track[])
+        audius.search(q).catch(() => [] as Track[]),
+        radio.search(q, 12).catch(() => [] as Track[])
       ]),
     [q, scIn]
   )
@@ -136,12 +140,13 @@ function SearchAll({ q }: { q: string }): React.JSX.Element {
 
   if (res.error) return <ErrorState text={res.error} onRetry={res.reload} />
   if (!res.data) return <Loading />
-  const [tracksC, usersC, playlistsC, albumsC, ya, au] = res.data
+  const [tracksC, usersC, playlistsC, albumsC, ya, au, stations] = res.data
   const sc = tracksOf(tracksC.collection)
   // all services side by side in one list
-  const tracks = interleave(interleave(sc, ya), au.slice(0, 6))
+  // the user's own files first: if they have it on disk, that's what they mean
+  const tracks = [...searchLocal(q, 5), ...interleave(interleave(sc, ya), au.slice(0, 6))]
   const users = usersC.collection
-  if (!tracks.length && !ya.length && !users.length && !playlistsC.collection.length && !albumsC.collection.length) {
+  if (!tracks.length && !stations.length && !users.length && !playlistsC.collection.length && !albumsC.collection.length) {
     return <Empty icon="search" title={tx("Ничего не нашлось по запросу «{0}»", q)} />
   }
 
@@ -171,6 +176,11 @@ function SearchAll({ q }: { q: string }): React.JSX.Element {
           </section>
         )}
       </div>
+      {stations.length > 0 && (
+        <Shelf title={tx('Радио')}>
+          {stationCards(stations, { label: tx('Радио'), route: { name: 'radio' } })}
+        </Shelf>
+      )}
       <Shelf title={tx("Исполнители")} onMore={go('users')}>
         {users.map((u) => (
           <UserCard key={u.id} u={u} onActivate={() => addRecent({ type: 'user', item: u })} />
@@ -265,8 +275,8 @@ function SearchTracks({ q }: { q: string }): React.JSX.Element {
     const [ya, au] = other.data ?? [[], []]
     const sc = tracksOf(pg.items)
     // the first SoundCloud page is mixed with the others; later pages just follow
-    return [...interleave(interleave(sc.slice(0, 40), ya), au), ...sc.slice(40)]
-  }, [pg.items, other.data])
+    return [...searchLocal(q), ...interleave(interleave(sc.slice(0, 40), ya), au), ...sc.slice(40)]
+  }, [pg.items, other.data, q])
   const source = useMemo<PlaySource>(() => ({ label: tx("Поиск: {0}", q), route: { name: 'search', q, tab: 'tracks' }, next: pg.next }), [q, pg.next])
   const loading = (scIn && pg.loading) || other.loading
   if (pg.error && !tracks.length && !loading) return <ErrorState text={pg.error} onRetry={pg.reload} />
