@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react'
 import { attachView, detachView, onPageMediaKey, onPageStartedPlaying, YA_HOME, type WebviewEl } from '@/lib/yandex'
 import { loadYandex, useYa } from '@/lib/yandexApi'
 
+const LIGHT_CSS = `*,*::before,*::after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important;transition-delay:0s!important}
+canvas,video{display:none!important}`
+
 /**
  * The official music.yandex.ru page, never shown: it is only the engine behind the
  * Yandex parts of the app (playback, its own wave, API calls in the user's session).
@@ -15,7 +18,11 @@ export function YandexHost(): React.JSX.Element {
     if (!wv) return
     let lastCheck = 0
 
-    const onReady = (): void => attachView(wv)
+    const onReady = (): void => {
+      // nobody looks at this page: animations end at once (their end events still fire), no canvases/videos to paint
+      void wv.insertCSS(LIGHT_CSS).catch(() => undefined)
+      attachView(wv)
+    }
     const onPlay = (): void => void onPageStartedPlaying()
     const onStop = (): void => {
       // signed in meanwhile? pick up the library (at most every 10 s)

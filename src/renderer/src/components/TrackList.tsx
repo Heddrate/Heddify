@@ -1,11 +1,12 @@
-import { memo, useCallback, useMemo, useState, type KeyboardEvent, type MouseEvent } from 'react'
+import { memo, useCallback, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from 'react'
 import { toggleAnyLike, openArtist, trackMenu } from '@/lib/actions'
 import { trackArt } from '@/lib/artwork'
 import { fmtCount, fmtDuration, fmtRelative } from '@/lib/format'
 import { cx } from '@/lib/hooks'
 import type { PlaySource, Track } from '@/lib/types'
 import { navigate, toggleLike, useApp } from '@/store/app'
-import { player, usePlayer } from '@/store/player'
+import { player, slim, usePlayer } from '@/store/player'
+import { addToPlaylistMenuAt, TRACK_MIME } from '@/lib/playlists'
 import { openMenu, openMenuAt, type MenuItem } from '@/store/ui'
 import { Artwork } from './Artwork'
 import { Icon } from './Icon'
@@ -26,6 +27,8 @@ interface Props {
   onPlayIndex?: (i: number) => void
   /** Extra items for a row's menu (e.g. "remove from playlist"). */
   menuExtra?: (track: Track, index: number) => MenuItem[]
+  /** Rows can be dragged to a new place (own playlists). */
+  onReorder?: (from: number, to: number) => void
 }
 
 export function TrackList({
@@ -37,7 +40,8 @@ export function TrackList({
   head = true,
   compact,
   onPlayIndex,
-  menuExtra
+  menuExtra,
+  onReorder
 }: Props): React.JSX.Element {
   const currentId = usePlayer((s) => s.current?.id)
   const playing = usePlayer((s) => s.playing)
@@ -46,6 +50,49 @@ export function TrackList({
   const auLikes = useAudius((s) => s.likeIds)
   const unplayable = usePlayer((s) => s.unplayable)
   const [selected, setSelected] = useState<number | null>(null)
+  const [drop, setDrop] = useState<{ i: number; after: boolean } | null>(null)
+  const dragFrom = useRef<number | null>(null)
+
+  // every row can be dragged (onto a playlist in the sidebar); own playlists also reorder
+  const onDragStart = useCallback(
+    (i: number, e: DragEvent) => {
+      const t = tracks[i]
+      e.dataTransfer.effectAllowed = 'copyMove'
+      e.dataTransfer.setData(TRACK_MIME, JSON.stringify(slim(t)))
+      e.dataTransfer.setData('text/plain', [t.title, t.user?.username].filter(Boolean).join(' — '))
+      dragFrom.current = i
+    },
+    [tracks]
+  )
+  const onDragOver = useCallback(
+    (i: number, e: DragEvent) => {
+      if (!onReorder || dragFrom.current === null) return
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      const r = e.currentTarget.getBoundingClientRect()
+      const after = e.clientY > r.top + r.height / 2
+      setDrop((d) => (d?.i === i && d.after === after ? d : { i, after }))
+    },
+    [onReorder]
+  )
+  const onDrop = useCallback(
+    (i: number, e: DragEvent) => {
+      const from = dragFrom.current
+      if (!onReorder || from === null) return
+      e.preventDefault()
+      const r = e.currentTarget.getBoundingClientRect()
+      let to = e.clientY > r.top + r.height / 2 ? i + 1 : i
+      if (from < to) to -= 1
+      if (to !== from) onReorder(from, to)
+      dragFrom.current = null
+      setDrop(null)
+    },
+    [onReorder]
+  )
+  const onDragEnd = useCallback(() => {
+    dragFrom.current = null
+    setDrop(null)
+  }, [])
   // service badges only where services are mixed; a pure Audius / Yandex list needs none
   const mixed = useMemo(() => new Set(tracks.map((t) => t.origin ?? 'soundcloud')).size > 1, [tracks])
 
@@ -94,6 +141,11 @@ export function TrackList({
           selected={selected === i}
           badge={mixed}
           menuExtra={menuExtra}
+          dropMark={drop?.i === i ? (drop.after ? 'after' : 'before') : null}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          onDragEnd={onDragEnd}
           extraText={
             extra === 'date' ? dateText(dates?.[i]) : extra === 'plays' ? fmtCount(t.playback_count) : ''
           }
@@ -119,8 +171,13 @@ interface RowProps {
   badge: boolean
   menuExtra?: (track: Track, index: number) => MenuItem[]
   extraText: string
+  dropMark: 'before' | 'after' | null
   onPlay: (i: number) => void
   onSelect: (i: number) => void
+  onDragStart: (i: number, e: DragEvent) => void
+  onDragOver: (i: number, e: DragEvent) => void
+  onDrop: (i: number, e: DragEvent) => void
+  onDragEnd: () => void
 }
 
 const TrackRow = memo(function TrackRow({
@@ -134,16 +191,26 @@ const TrackRow = memo(function TrackRow({
   badge,
   menuExtra,
   extraText,
+  dropMark,
   onPlay,
-  onSelect
+  onSelect,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd
 }: RowProps) {
   const blocked = track.policy === 'BLOCK'
   const stop = (e: MouseEvent): void => e.stopPropagation()
 
   return (
     <div
-      className={cx('tr', current && 'current', selected && 'selected', (blocked || unavailable) && 'blocked')}
+      className={cx('tr', current && 'current', selected && 'selected', (blocked || unavailable) && 'blocked', dropMark && `drop-${dropMark}`)}
       role="row"
+      draggable
+      onDragStart={(e) => onDragStart(index, e)}
+      onDragOver={(e) => onDragOver(index, e)}
+      onDrop={(e) => onDrop(index, e)}
+      onDragEnd={onDragEnd}
       aria-selected={selected}
       title={blocked ? tx("Недоступно в вашем регионе") : unavailable ? tx("Этот трек не воспроизводится в приложении") : undefined}
       onClick={() => onSelect(index)}
@@ -168,7 +235,7 @@ const TrackRow = memo(function TrackRow({
         </button>
       </div>
       <div className="tr-main">
-        <Artwork src={trackArt(track, 'large')} size={40} />
+        <Artwork src={trackArt(track, 'large')} size={40} letter={track.user?.username ?? track.title} />
         <div className="tr-text">
           <div className="tr-title">
             {badge && track.origin === 'yandex' && (
@@ -195,6 +262,17 @@ const TrackRow = memo(function TrackRow({
       </div>
       <div className="tr-extra">{extraText}</div>
       <div className="tr-like">
+        <button
+          className="icon-btn tr-add"
+          aria-label={tx('Добавить в плейлист')}
+          title={tx('Добавить в плейлист')}
+          onClick={(e) => {
+            stop(e)
+            addToPlaylistMenuAt(e.currentTarget, [track])
+          }}
+        >
+          <Icon name="add" size={18} />
+        </button>
         {(
           <button
             className={cx('icon-btn like', liked && 'on')}

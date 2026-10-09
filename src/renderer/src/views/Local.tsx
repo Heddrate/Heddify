@@ -15,6 +15,7 @@ import { trackArt } from '@/lib/artwork'
 import { cx } from '@/lib/hooks'
 import { Spinner } from '@/components/States'
 import { navigate, useApp } from '@/store/app'
+import { player, usePlayer } from '@/store/player'
 import { tx } from '@/lib/i18n'
 import { removeDownloads, useOffline } from '@/lib/offline'
 import {
@@ -76,6 +77,14 @@ function AddTracks({ list }: { list: LocalPlaylist }): React.JSX.Element {
   const [busy, setBusy] = useState(false)
   const gen = useRef(0)
   const have = useMemo(() => new Set(list.tracks.map((t) => t.id)), [list.tracks])
+  const currentId = usePlayer((s) => s.current?.id)
+  const playing = usePlayer((s) => s.playing)
+  // results can be listened to before adding
+  const listen = (i: number): void => {
+    if (!res) return
+    if (res[i].id === currentId) player.toggle()
+    else player.playContext(res, i, { label: tx('Поиск: {0}', q.trim()) })
+  }
 
   useEffect(() => {
     const query = q.trim()
@@ -111,11 +120,17 @@ function AddTracks({ list }: { list: LocalPlaylist }): React.JSX.Element {
       {res && !res.length && !busy && <p className="muted add-empty">{tx('Ничего не нашлось')}</p>}
       {res && res.length > 0 && (
         <div className="add-list">
-          {res.map((t) => {
+          {res.map((t, i) => {
             const added = have.has(t.id)
+            const now = t.id === currentId
             return (
-              <div key={t.id} className="add-row">
-                <Artwork src={trackArt(t)} size={40} />
+              <div key={t.id} className={cx('add-row', now && 'current')} onDoubleClick={() => listen(i)}>
+                <button className="add-art" onClick={() => listen(i)} aria-label={now && playing ? tx('Пауза') : tx('Слушать')}>
+                  <Artwork src={trackArt(t)} size={40} letter={t.user?.username ?? t.title} />
+                  <span className="add-play">
+                    <Icon name={now && playing ? 'pause' : 'play'} size={20} />
+                  </span>
+                </button>
                 <div className="add-text">
                   <div className="ellipsis">{t.title}</div>
                   <div className="add-sub ellipsis">{t.user?.username}</div>
@@ -186,7 +201,9 @@ export function LocalPlaylistView({ id }: { id: string }): React.JSX.Element {
             <Icon name="more" size={28} />
           </button>
         </ActionBar>
-        {list.tracks.length > 0 && <TrackList tracks={list.tracks} source={source} extra="none" menuExtra={rowMenu} />}
+        {list.tracks.length > 0 && (
+          <TrackList tracks={list.tracks} source={source} extra="none" menuExtra={rowMenu} onReorder={(from, to) => moveInPlaylist(id, from, to)} />
+        )}
         <AddTracks list={list} />
       </div>
     </div>

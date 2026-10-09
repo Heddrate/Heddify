@@ -2,7 +2,7 @@
 
 Desktop music player for Windows by Heddrate (called "SC Player" before 1.2): **SoundCloud,
 Yandex Music and Audius in one window**, styled like Spotify / Yandex Music. Current version:
-**1.2.1** (`package.json`). Spotify is planned as the next service — keep new code
+**1.3.0** (`package.json`). Spotify is planned as the next service — keep new code
 service-agnostic (one library, one likes list, one search).
 The owner talks in Russian, casually; answer in Russian, short and to the point.
 
@@ -79,9 +79,18 @@ folder so nobody gets signed out). Inside: `state.json` (prefs, encrypted token)
    `npm run dev:web` with mock data.
 5. Installer is unsigned → Windows SmartScreen warns ("Подробнее → Выполнить в любом случае").
 
-Not done yet: **Last.fm scrobbling** (needs an API key the owner
-registers), code signing (paid certificate), first-run onboarding (3 steps: SoundCloud,
-Yandex, done). The project is **not a git repo yet** — suggest `git init` before big changes.
+Not done yet: **Last.fm scrobbling** (needs an API key the owner registers), code signing
+(paid certificate), Spotify (official API allows only 5 allowlisted users + Premium, and its
+DRM doesn't work in Electron — owner was told). Git: repo is on GitHub (Heddrate/Heddify,
+branch main); commit as "Heddrate <211876846+Heddrate@users.noreply.github.com>".
+
+**SoundCloud DRM (tried 2026-10-09, not shipped):** castlabs Electron 44.5.1+wvcus gets the
+Widevine CDM and passes EME; the owner made a castlabs EVS account and VMP-signed a test build
+himself (Claude may not run EVS signing). soundcloud.com still gets **403 from
+license.media-streaming.soundcloud.cloud** on the licence request — either the region (owner is
+in Russia behind a VPN) or SoundCloud refusing such clients. Don't dig into the licence protocol
+(blocked as an attack). Next step only if the owner reports DRM tracks play in plain Chrome
+with his VPN: then retry with a VPN country SoundCloud licenses.
 
 ## Stack
 
@@ -180,9 +189,14 @@ Electron 44, electron-vite 5, Vite 7, React 19, zustand 5, hls.js (lazy-loaded),
   history, following, Медиатека), Playlist, User, Yandex views, Audius view ("В тренде"),
   Local (own playlists: cover button says "Выбрать обложку", "Добавить треки" search over
   all services right on the page; "Скачанное"), Settings, Login ("Начать" = guest).
-- Components worth knowing: Sidebar (one list: wave, Мне нравится, История, Подписки,
-  Скачанное, then all playlists; "Подключить сервисы" row while something isn't connected),
-  TopBar (back/forward as one wide pill), PlayerBar (cover click opens "Сейчас играет"), NowPlayingPanel
+- Components worth knowing: Sidebar (one list: wave, Мне нравится, История, Подписки, then all
+  playlists; drop a dragged track on an own playlist to add it; "Подключить сервисы" row while
+  something isn't connected; "Скачанное" lives in Settings → Кеш), TopBar (back/forward as
+  48px circles like the home button), Onboarding (first run: SoundCloud → Яндекс → готово,
+  pref `onboarded`; installs with `ya-checked` in localStorage skip it), UpdateBanner
+  ("Доступно обновление" with Перезапустить / Позже), TrackList rows: draggable (TRACK_MIME
+  in lib/playlists.ts), "+" (add to playlist) next to the heart, `onReorder` for own
+  playlists; Artwork `letter` fallback (artist initial) when there's no cover/avatar, PlayerBar (cover click opens "Сейчас играет"), NowPlayingPanel
   (lyrics + sleep timer buttons in its header, lyrics card), LyricsPanel, QueuePanel
   ("Недавно звучало"), TrackList (service badges only in mixed lists).
 
@@ -190,9 +204,12 @@ Electron 44, electron-vite 5, Vite 7, React 19, zustand 5, hls.js (lazy-loaded),
 
 - SoundCloud is unavailable in Russia without a VPN; the owner uses one (Hiddify).
   `/users/{id}/playlists_liked_and_owned` and `/me/followings/ids` return 404 → fallbacks exist.
-- DRM-only SoundCloud tracks (monetised, only encrypted HLS) can't play; the app marks and skips them.
+- DRM-only SoundCloud tracks (monetised, only encrypted HLS) can't play; the app marks and skips them (see "SoundCloud DRM" above).
 - Yandex plays through Web Audio (no DOM `<audio>`); `loadURL` of the webview may never
-  resolve — don't await it. Yandex tracks have `origin: 'yandex'` and negative ids.
+  resolve — don't await it. The hidden page is lightened: main cancels image/font/ads/Metrika
+  requests for the engine webview only (`lightenYandexEngine`, not the sign-in window — it can
+  show a captcha), YandexHost injects CSS that ends animations at once and hides canvas/video,
+  and lib/yandex.ts unloads the page after 15 min without Yandex use. Yandex tracks have `origin: 'yandex'` and negative ids.
 - Narrow / vertical monitors (window ≥ 980 px): side panels overlay the page below 1240 px,
   autoplay toggle hides; volume slider has a fixed comfortable width.
 - PowerShell edits: aliases like `R` collide with built-ins (`R` = Invoke-History) — name

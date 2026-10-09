@@ -64,6 +64,7 @@ export function Home(): React.JSX.Element {
               title={t.title ?? ''}
               sub={t.user?.username}
               art={trackArt(t)}
+              letter={t.user?.username ?? t.title}
               onOpen={() => player.playContext(recent, i, recentSource)}
               onPlay={() => player.playContext(recent, i, recentSource)}
               menu={() => trackMenu(t)}
@@ -148,6 +149,7 @@ function FavoritesShelf(): React.JSX.Element | null {
           title={t.title ?? ''}
           sub={t.user?.username}
           art={trackArt(t)}
+          letter={t.user?.username ?? t.title}
           onOpen={() => player.playContext(tracks, i, source)}
           onPlay={() => player.playContext(tracks, i, source)}
           menu={() => trackMenu(t)}
@@ -184,6 +186,7 @@ function AudiusShelf({
           title={t.title ?? ''}
           sub={t.user?.username}
           art={trackArt(t)}
+          letter={t.user?.username ?? t.title}
           onOpen={() => player.playContext(tracks, i, source)}
           onPlay={() => player.playContext(tracks, i, source)}
           menu={() => trackMenu(t)}

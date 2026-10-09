@@ -1,5 +1,14 @@
 // English strings, keyed by the Russian original (see lib/i18n.ts).
 const EN: Record<string, string> = {
+  'Подключено: {0}': 'Connected: {0}',
+  'Лайки, подписки и плейлисты SoundCloud': 'SoundCloud likes, follows and playlists',
+  'Лайки, плейлисты и волна Яндекса': 'Yandex likes, playlists and wave',
+  'Добро пожаловать': 'Welcome',
+  'Пропустить': 'Skip',
+  'Готово': 'Done',
+  'Audius работает без входа. Сервисы можно подключить позже в настройках.':
+    'Audius works without signing in. You can connect services later in Settings.',
+  'Начать слушать': 'Start listening',
   'Доступно обновление': 'Update available',
   'Версия {0} готова к установке': 'Version {0} is ready to install',
   'Новая версия готова к установке': 'A new version is ready to install',

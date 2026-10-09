@@ -100,6 +100,7 @@ function SearchStart(): React.JSX.Element {
               title={t.title ?? ''}
               sub={tx("Трек · {0}", t.user?.username ?? '')}
               art={trackArt(t)}
+              letter={t.user?.username ?? t.title}
               onOpen={play}
               onPlay={play}
               menu={() => trackMenu(t)}

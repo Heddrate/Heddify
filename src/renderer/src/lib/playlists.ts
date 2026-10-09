@@ -9,7 +9,7 @@ import { downloadTracks } from './offline'
 import { whenBridge } from './bridge'
 import { navigate, useApp } from '@/store/app'
 import { slim } from '@/store/player'
-import { askConfirm, askText, openMenu, toast, useMenu, type MenuItem } from '@/store/ui'
+import { askConfirm, askText, openMenu, openMenuAt, toast, useMenu, type MenuItem } from '@/store/ui'
 
 export interface LocalPlaylist {
   id: string
@@ -107,16 +107,36 @@ export async function deletePlaylist(id: string): Promise<void> {
   if (r.name === 'local' && r.id === id) navigate({ name: 'home' }, true)
 }
 
-/** "Добавить в плейлист" — a second menu where the first one was, listing the playlists. */
-export function addToPlaylistMenu(tracks: Track[]): void {
-  const { x, y } = useMenu.getState()
-  const items: MenuItem[] = [
+function playlistItems(tracks: Track[]): MenuItem[] {
+  return [
     { label: tx('Новый плейлист'), icon: 'add', onSelect: () => void createPlaylist(tracks, false) },
     ...(usePlaylists.getState().lists.length ? [{ separator: true } as const] : []),
     ...usePlaylists.getState().lists.map((l) => ({ label: l.title, icon: 'queue' as const, onSelect: () => addToPlaylist(l.id, tracks) }))
   ]
+}
+
+/** "Добавить в плейлист" — a second menu where the first one was, listing the playlists. */
+export function addToPlaylistMenu(tracks: Track[]): void {
+  const { x, y } = useMenu.getState()
   // let the first menu close before the second opens
-  setTimeout(() => openMenu({ x, y }, items), 0)
+  setTimeout(() => openMenu({ x, y }, playlistItems(tracks)), 0)
+}
+
+/** The same list under a button (the "+" on a track row). */
+export function addToPlaylistMenuAt(el: Element, tracks: Track[]): void {
+  openMenuAt(el, playlistItems(tracks))
+}
+
+/** Drag and drop: a dragged track row carries its (slim) track under this type. */
+export const TRACK_MIME = 'application/x-heddify-track'
+
+export function draggedTrack(e: React.DragEvent): Track | null {
+  try {
+    const t = JSON.parse(e.dataTransfer.getData(TRACK_MIME)) as Track
+    return t && typeof t.id === 'number' ? t : null
+  } catch {
+    return null
+  }
 }
 
 /** Up to four covers for a playlist's collage. */

@@ -25,9 +25,11 @@ interface CardProps {
   menu?: () => MenuItem[]
   /** Shows a small ✕ (e.g. remove from recent searches). */
   onRemove?: () => void
+  /** No artwork: first letter of this instead of an icon. */
+  letter?: string
 }
 
-export function Card({ title, sub, art, artNode, round, placeholder, route, onOpen, onPlay, menu, onRemove }: CardProps): React.JSX.Element {
+export function Card({ title, sub, art, artNode, round, placeholder, route, onOpen, onPlay, menu, onRemove, letter }: CardProps): React.JSX.Element {
   const active = usePlayer((s) => s.playing && !!route && sameRoute(s.source?.route, route))
   return (
     <div
@@ -46,7 +48,7 @@ export function Card({ title, sub, art, artNode, round, placeholder, route, onOp
       onKeyDown={(e) => e.key === 'Enter' && onOpen()}
     >
       <div className="card-art">
-        {artNode ?? <Artwork src={art} round={round} placeholder={placeholder} />}
+        {artNode ?? <Artwork src={art} round={round} placeholder={placeholder} letter={letter} />}
         {onRemove && (
           <button
             className="card-remove"

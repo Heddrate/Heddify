@@ -21,6 +21,7 @@ const YA = 'https://music.yandex.ru'
 /** The bits of Electron's <webview> element we use. */
 export interface WebviewEl extends HTMLElement {
   executeJavaScript(code: string): Promise<unknown>
+  insertCSS(css: string): Promise<string>
   loadURL(url: string): Promise<void>
   goBack(): void
   goForward(): void
@@ -77,7 +78,23 @@ export function detachView(): void {
   ready = new Promise<void>((r) => (markReady = r))
 }
 
+/** Last time anything needed the Yandex page; it is unloaded after a while without use. */
+let lastUse = Date.now()
+const IDLE_UNLOAD_MS = 15 * 60_000
+
+setInterval(() => {
+  const s = usePlayer.getState()
+  const yandexNow = s.current?.origin === 'yandex'
+  if (yandexNow) lastUse = Date.now()
+  if (!useApp.getState().yandexMounted || yandexNow) return
+  if (Date.now() - lastUse < IDLE_UNLOAD_MS) return
+  // the library is remembered (localStorage); the page comes back on the next Yandex action
+  trace('page unloaded after idle')
+  useApp.setState({ yandexMounted: false })
+}, 60_000)
+
 async function page(): Promise<WebviewEl> {
+  lastUse = Date.now()
   if (!useApp.getState().yandexMounted) useApp.setState({ yandexMounted: true })
   const timeout = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error(tx("Яндекс Музыка не загрузилась"))), 20_000)

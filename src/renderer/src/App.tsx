@@ -8,6 +8,7 @@ import { LyricsPanel } from '@/components/LyricsPanel'
 import { YandexHost } from '@/components/YandexHost'
 import { QueuePanel } from '@/components/QueuePanel'
 import { UpdateBanner } from '@/components/UpdateBanner'
+import { Onboarding } from '@/components/Onboarding'
 import { Sidebar } from '@/components/Sidebar'
 import { FOCUS_SEARCH, TopBar } from '@/components/TopBar'
 import { cx } from '@/lib/hooks'
@@ -170,6 +171,7 @@ function Shell(): React.JSX.Element {
       <Dialog />
       <Toasts />
       <UpdateBanner />
+      <Onboarding />
     </div>
   )
 }

@@ -19,8 +19,12 @@ export function art(url: string | null | undefined, size: ArtSize = 't300x300'):
   return url.replace(/-(large|t\d+x\d+|crop|original|small|badge|tiny|mini)\.(jpg|jpeg|png)/, `-${size}.$2`)
 }
 
+/** SoundCloud's grey "no avatar" picture: worse than our own placeholder. */
+const realAvatar = (url?: string | null): string | null => (url && !url.includes('default_avatar') ? url : null)
+
+/** Cover, or the artist's avatar when the track has none. */
 export const trackArt = (t: Track | null | undefined, size: ArtSize = 't300x300'): string | null =>
-  t ? art(t.artwork_url || t.user?.avatar_url, size) : null
+  t ? art(t.artwork_url || realAvatar(t.user?.avatar_url), size) : null
 
 export const userArt = (u: User | null | undefined, size: ArtSize = 't300x300'): string | null =>
   u ? art(u.avatar_url, size) : null

@@ -20,6 +20,18 @@
   border-radius: 50%;
 }
 
+.art {
+  container-type: inline-size;
+}
+
+.art-letter {
+  font-size: 44cqi;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-2);
+  user-select: none;
+}
+
 .art-ph {
   width: 42%;
   height: 42%;
@@ -166,7 +178,7 @@
 /* ---------- track list ---------- */
 
 .tracklist {
-  --cols: 32px minmax(0, 6fr) minmax(110px, 2fr) 32px 52px 32px;
+  --cols: 32px minmax(0, 6fr) minmax(110px, 2fr) 68px 52px 32px;
 }
 
 .tracklist:focus-visible {
@@ -174,7 +186,7 @@
 }
 
 .tracklist.no-extra {
-  --cols: 32px minmax(0, 1fr) 0 32px 52px 32px;
+  --cols: 32px minmax(0, 1fr) 0 68px 52px 32px;
 }
 
 .tl-head,
@@ -318,9 +330,40 @@
   font-variant-numeric: tabular-nums;
 }
 
+.tr-like {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
 .tr-like .icon-btn,
 .tr-more .icon-btn {
   opacity: 0;
+}
+
+/* drag to reorder: a line where the row will land */
+.tr {
+  position: relative;
+}
+
+.tr.drop-before::before,
+.tr.drop-after::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--text);
+  pointer-events: none;
+}
+
+.tr.drop-before::before {
+  top: -1px;
+}
+
+.tr.drop-after::after {
+  bottom: -1px;
 }
 
 .tr:hover .tr-like .icon-btn,
@@ -341,7 +384,7 @@
 @container (max-width: 760px) {
   .tracklist,
   .tracklist.no-extra {
-    --cols: 28px minmax(0, 1fr) 0 32px 48px 32px;
+    --cols: 28px minmax(0, 1fr) 0 68px 48px 32px;
   }
 
   .tr-extra {
@@ -353,7 +396,7 @@
 @container (max-width: 640px) {
   .tracklist,
   .tracklist.no-extra {
-    --cols: 24px minmax(0, 1fr) 28px 44px;
+    --cols: 24px minmax(0, 1fr) 64px 44px;
   }
 
   .tl-head,
@@ -929,6 +972,36 @@
   background: var(--hover);
 }
 
+.add-row.current .add-text > :first-child {
+  color: var(--accent);
+}
+
+.add-art {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: var(--r-xs);
+  overflow: hidden;
+}
+
+.add-play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.add-row:hover .add-play,
+.add-row.current .add-play,
+.add-art:focus-visible .add-play {
+  opacity: 1;
+}
+
 .add-text {
   min-width: 0;
   font-size: 15px;
@@ -942,6 +1015,72 @@
 
 .add-dur {
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- first-run steps ---------- */
+
+.onboarding-backdrop {
+  z-index: 150;
+}
+
+.onboarding {
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  padding: 28px 32px 32px;
+  border-radius: var(--r);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow-art);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: toast-in 0.18s ease-out;
+}
+
+.ob-dots {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.ob-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-2);
+  transition: background-color 0.15s ease, width 0.15s ease;
+}
+
+.ob-dot.on {
+  width: 18px;
+  border-radius: 3px;
+  background: var(--text);
+}
+
+.ob-mark .ya-mark.big {
+  margin-bottom: 0;
+}
+
+.ob-title {
+  margin-top: 16px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.ob-text {
+  margin-top: 6px;
+  min-height: 40px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.ob-actions {
+  margin-top: 20px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* ---------- download button ---------- */

@@ -12,7 +12,7 @@ import { Icon } from './Icon'
 import { tx } from '@/lib/i18n'
 import { useYa } from '@/lib/yandexApi'
 import { useAudius } from '@/lib/audius'
-import { createPlaylist } from '@/lib/playlists'
+import { addToPlaylist, createPlaylist, draggedTrack, TRACK_MIME } from '@/lib/playlists'
 import { isAlbumItem, libArt, libRoute, libSub, libTitle, useLibraryItems } from '@/lib/library'
 import { Collage } from '@/views/Local'
 
@@ -33,6 +33,7 @@ export function Sidebar(): React.JSX.Element {
   const waveActive = useWaveActive()
   const wavePlaying = useWavePlaying()
   const all = useLibraryItems()
+  const [dropKey, setDropKey] = useState<string | null>(null)
 
   const items = all.filter((i) => filter === 'all' || (filter === 'albums') === isAlbumItem(i))
   const row = (r: Route) => ({ active: sameRoute(route, r), playing: sameRoute(playingRoute, r), onClick: () => navigate(r) })
@@ -101,6 +102,28 @@ export function Sidebar(): React.JSX.Element {
               art={i.type === 'local' ? <Collage list={i.list} size={48} /> : <Artwork src={art} size={48} placeholder="queue" />}
               title={libTitle(i)}
               sub={libSub(i)}
+              dropping={dropKey === i.key}
+              onDragOver={
+                i.type === 'local'
+                  ? (e) => {
+                      if (!e.dataTransfer.types.includes(TRACK_MIME)) return
+                      e.preventDefault()
+                      e.dataTransfer.dropEffect = 'copy'
+                      setDropKey(i.key)
+                    }
+                  : undefined
+              }
+              onDragLeave={() => setDropKey((k) => (k === i.key ? null : k))}
+              onDrop={
+                i.type === 'local'
+                  ? (e) => {
+                      e.preventDefault()
+                      setDropKey(null)
+                      const t = draggedTrack(e)
+                      if (t) addToPlaylist(i.list.id, [t])
+                    }
+                  : undefined
+              }
               onContextMenu={
                 i.type === 'sc'
                   ? (e) => {
@@ -161,11 +184,22 @@ interface RowProps {
   playing: boolean
   onClick: () => void
   onContextMenu?: (e: React.MouseEvent) => void
+  dropping?: boolean
+  onDragOver?: (e: React.DragEvent) => void
+  onDragLeave?: () => void
+  onDrop?: (e: React.DragEvent) => void
 }
 
-function LibRow({ art, title, sub, active, playing, onClick, onContextMenu }: RowProps): React.JSX.Element {
+function LibRow({ art, title, sub, active, playing, onClick, onContextMenu, dropping, onDragOver, onDragLeave, onDrop }: RowProps): React.JSX.Element {
   return (
-    <button className={cx('lib-row', active && 'active')} onClick={onClick} onContextMenu={onContextMenu}>
+    <button
+      className={cx('lib-row', active && 'active', dropping && 'drop-target')}
+      onClick={onClick}
+      onContextMenu={onContextMenu}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       {art}
       <div className="lib-text">
         <div className={cx('lib-title ellipsis', playing && 'accent')}>{title}</div>

@@ -373,6 +373,12 @@
   margin-bottom: 8px;
 }
 
+/* a track dragged over one of your playlists */
+.lib-row.drop-target {
+  background: var(--hover);
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+
 .sb-empty {
   padding: 24px 8px;
   color: var(--text-2);

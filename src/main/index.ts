@@ -60,6 +60,7 @@ if (!app.requestSingleInstanceLock()) {
     if (app.isPackaged) Menu.setApplicationMenu(null)
     prepareWebSession(join(__dirname, '../preload/login.js'))
     watchYandexApi()
+    lightenYandexEngine()
     allowMediaCors()
     serveCache()
     registerIpc()
@@ -120,6 +121,13 @@ function createWindow(): void {
     prefs.nodeIntegrationInSubFrames = false
     prefs.contextIsolation = true
     prefs.sandbox = true
+  })
+
+  mainWindow.webContents.on('did-attach-webview', (_e, wc) => {
+    yandexEngineId = wc.id
+    wc.once('destroyed', () => {
+      if (yandexEngineId === wc.id) yandexEngineId = null
+    })
   })
 
   if (saved?.maximized) mainWindow.maximize()
@@ -214,6 +222,22 @@ function watchYandexApi(): void {
       mainWindow?.webContents.send('ya:headers', yandexHeaders)
     }
   )
+}
+
+/**
+ * The hidden Yandex page is only an audio engine: nobody sees it, so it doesn't need
+ * pictures, fonts, ads or analytics. Only that page (not the sign-in window, which may
+ * show a captcha) gets these requests cut, which saves a lot of memory and CPU.
+ */
+let yandexEngineId: number | null = null
+const YA_JUNK = /^https?:\/\/([a-z0-9-]+\.)*(mc\.yandex\.[a-z]+|an\.yandex\.ru|adfox\.(ru|yandex\.ru)|ads\.adfox\.ru|yandexadexchange\.net)(\/|$)/i
+const YA_SKIP_TYPES = new Set(['image', 'font', 'ping', 'cspReport'])
+
+function lightenYandexEngine(): void {
+  session.fromPartition(YANDEX_PARTITION).webRequest.onBeforeRequest((details, callback) => {
+    const engine = yandexEngineId !== null && details.webContentsId === yandexEngineId
+    callback({ cancel: engine && (YA_SKIP_TYPES.has(details.resourceType) || YA_JUNK.test(details.url)) })
+  })
 }
 
 /**
