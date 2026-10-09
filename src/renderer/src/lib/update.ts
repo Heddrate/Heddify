@@ -11,4 +11,10 @@ whenBridge(() => {
 })
 
 export const checkUpdate = (): void => void window.sc.update.check()
-export const installUpdate = (): void => void window.sc.update.install()
+/** Set while the app is about to close for the installer (full-screen notice). */
+export const useInstalling = create<{ on: boolean }>(() => ({ on: false }))
+
+export const installUpdate = (): void => {
+  useInstalling.setState({ on: true })
+  void window.sc.update.install()
+}

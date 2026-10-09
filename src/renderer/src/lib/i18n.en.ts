@@ -1,5 +1,7 @@
 // English strings, keyed by the Russian original (see lib/i18n.ts).
 const EN: Record<string, string> = {
+  'Устанавливаю обновление': 'Installing the update',
+  'Heddify закроется и откроется сам через полминуты': 'Heddify will close and open again in about 30 seconds',
   'Подключено: {0}': 'Connected: {0}',
   'Лайки, подписки и плейлисты SoundCloud': 'SoundCloud likes, follows and playlists',
   'Лайки, плейлисты и волна Яндекса': 'Yandex likes, playlists and wave',

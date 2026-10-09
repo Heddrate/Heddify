@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { installUpdate, useUpdate } from '@/lib/update'
+import { installUpdate, useInstalling, useUpdate } from '@/lib/update'
+import { Spinner } from './States'
 import { tx } from '@/lib/i18n'
 import { Logo } from './Icon'
 
@@ -8,7 +9,18 @@ let dismissed = ''
 
 export function UpdateBanner(): React.JSX.Element | null {
   const version = useUpdate((s) => (s.status === 'ready' ? (s.version ?? '') : null))
+  const installing = useInstalling((s) => s.on)
   const [, rerender] = useState(0)
+  if (installing) {
+    return (
+      <div className="update-installing" role="status">
+        <Logo size={64} />
+        <strong>{tx('Устанавливаю обновление')}</strong>
+        <span>{tx('Heddify закроется и откроется сам через полминуты')}</span>
+        <Spinner size={22} />
+      </div>
+    )
+  }
   if (version === null || dismissed === version) return null
   return (
     <div className="update-banner" role="status">

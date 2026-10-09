@@ -3,13 +3,14 @@
  * background and is installed when the app restarts — or right away from the "Обновить"
  * button. Only the installed (NSIS) app updates itself; the portable exe and the zip don't.
  */
-import { app, type BrowserWindow } from 'electron'
+import { app, Notification, type BrowserWindow } from 'electron'
 import { readdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { autoUpdater } from 'electron-updater'
 import type { UpdateState } from '../shared/ipc'
 import { log } from './soundcloud'
-import { quitApp } from './tray'
+import { appIconPath, quitApp } from './tray'
+import { store } from './store'
 
 const CHECK_EVERY_MS = 4 * 60 * 60 * 1000
 
@@ -42,11 +43,23 @@ export function checkForUpdates(): void {
   })
 }
 
-/** Restarts into the downloaded version. */
+/**
+ * Restarts into the downloaded version. The window closes and the silent installer runs for
+ * ~30 s before the app opens again — a system notification says so, or it looks like a crash.
+ */
 export function installUpdate(): void {
   if (state.status !== 'ready') return
-  // close-to-tray must not keep the old version alive
-  quitApp(() => autoUpdater.quitAndInstall(true, true))
+  const ru = store.getPrefs().lang !== 'en'
+  if (Notification.isSupported()) {
+    new Notification({
+      title: ru ? 'Heddify обновляется' : 'Heddify is updating',
+      body: ru ? 'Откроется сам через полминуты' : 'It will open again in about 30 seconds',
+      icon: appIconPath(),
+      silent: true
+    }).show()
+  }
+  // a moment for the renderer's "Устанавливаю обновление" screen; close-to-tray must not keep the old version
+  setTimeout(() => quitApp(() => autoUpdater.quitAndInstall(true, true)), 1200)
 }
 
 export function startUpdater(win: () => BrowserWindow | null): void {

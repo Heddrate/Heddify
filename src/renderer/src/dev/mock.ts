@@ -253,7 +253,7 @@ export function installMock(): void {
     update: {
       state: async () => (localStorage.getItem('mock-update') === '1' ? { status: 'ready', version: '1.2.1' } : { status: 'latest' }),
       check: async () => undefined,
-      install: async () => location.reload(),
+      install: async () => void setTimeout(() => location.reload(), 4000),
       onState: () => () => undefined
     },
     discord: {
