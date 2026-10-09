@@ -1,0 +1,160 @@
+/*
+ * Motion: short and quiet. Things enter (pages, panels, menus, dialogs), react (cards,
+ * covers, the like heart) and follow the music (lyrics). Nothing loops for decoration.
+ * Everything here is off when Windows asks for reduced motion.
+ */
+
+:root {
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* a page fades up a little when you open it */
+.main > .view {
+  animation: view-in 0.26s var(--ease-out) both;
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* right-hand panels slide in from the edge */
+.queue.panel {
+  animation: panel-in 0.24s var(--ease-out) both;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+/* menus grow out of where they were opened */
+.menu {
+  animation: menu-in 0.14s var(--ease-out) both;
+  transform-origin: top left;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+}
+
+.dialog {
+  animation: dialog-in 0.2s var(--ease-spring) both;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+/* covers lift a touch under the pointer */
+.card-art .art,
+.card-art .collage,
+.card-art .card-tile {
+  transition:
+    transform 0.25s var(--ease-out),
+    box-shadow 0.25s var(--ease-out);
+}
+
+.card:hover .card-art .art,
+.card:hover .card-art .collage,
+.card:hover .card-art .card-tile {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
+}
+
+.quick-tile .quick-art {
+  transition: transform 0.25s var(--ease-out);
+}
+
+.quick-tile:hover .quick-art {
+  transform: scale(1.04);
+}
+
+/* page header cover settles in */
+.ph-art {
+  animation: cover-in 0.4s var(--ease-out) both;
+}
+
+@keyframes cover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* the heart pops when a track gets liked */
+.icon-btn.like.on svg,
+.tr-like .icon-btn.on svg {
+  animation: heart-pop 0.34s var(--ease-spring);
+}
+
+@keyframes heart-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* play buttons give under the finger */
+.play-fab:active,
+.play-main:active,
+.btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* sidebar rows and track rows ease their highlight */
+.lib-row,
+.tr {
+  transition: background-color 0.15s ease;
+}
+
+/* the cover in the player bar changes with a soft fade */
+.pb-art img {
+  animation: fade-soft 0.35s ease both;
+}
+
+@keyframes fade-soft {
+  from {
+    opacity: 0;
+  }
+}
+
+/* lyrics: the sung line grows into place */
+.lyric {
+  transform-origin: left center;
+  transition:
+    color 0.25s ease,
+    transform 0.25s var(--ease-out),
+    opacity 0.25s ease;
+}
+
+.lyric.on {
+  transform: scale(1.03);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

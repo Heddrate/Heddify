@@ -1,0 +1,27 @@
+# A pushed version tag (v1.2.1 …) builds the Windows installer on GitHub and publishes it
+# to Releases with latest.yml — installed apps pick it up as an update. No personal token:
+# the job uses the repository's built-in GITHUB_TOKEN.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx electron-vite build
+      - run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

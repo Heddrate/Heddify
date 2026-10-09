@@ -1,0 +1,92 @@
+{
+  "name": "heddify",
+  "productName": "Heddify",
+  "version": "1.2.0",
+  "description": "SoundCloud, Яндекс Музыка и Audius в одном плеере",
+  "main": "./out/main/index.js",
+  "author": "Heddrate",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "dev:web": "vite --config vite.web.config.ts",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "dist": "electron-vite build && electron-builder --win",
+    "release": "electron-vite build && electron-builder --win --publish always"
+  },
+  "build": {
+    "appId": "com.heddrate.scplayer",
+    "productName": "Heddify",
+    "copyright": "© 2026 Heddrate",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/icon.png",
+        "to": "icon.png"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "Heddify-${version}-win-x64.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Heddify",
+      "artifactName": "Heddify-Setup-${version}.exe",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "installerHeader": "build/installerHeader.bmp",
+      "installerLanguages": [
+        "ru_RU",
+        "en_US"
+      ],
+      "displayLanguageSelector": false
+    },
+    "portable": {
+      "artifactName": "Heddify-${version}-portable.exe"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Heddrate",
+        "repo": "Heddify",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "electron-updater": "^6.8.9",
+    "hls.js": "^1.7.3",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.7"
+  }
+}

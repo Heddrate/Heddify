@@ -1,0 +1,1103 @@
+/* ---------- shell ---------- */
+
+.app {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: clamp(248px, 21vw, 320px) minmax(0, 1fr);
+  grid-template-rows: var(--topbar) minmax(0, 1fr) var(--playerbar);
+  column-gap: var(--gap);
+  padding: 0 var(--gap);
+}
+
+.app.with-queue {
+  grid-template-columns: clamp(248px, 21vw, 320px) minmax(0, 1fr) clamp(280px, 24vw, 360px);
+}
+
+.panel {
+  background: var(--panel);
+  border-radius: var(--r);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.main {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  container-type: inline-size;
+  overflow-y: auto;
+}
+
+.splash {
+  height: 100vh;
+  display: grid;
+  place-items: center;
+}
+
+.drag-strip {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: var(--topbar);
+  -webkit-app-region: drag;
+}
+
+/* ---------- top bar (window title area) ---------- */
+
+.topbar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  /* equal side columns keep home + search centred on the window */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 560px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  -webkit-app-region: drag;
+}
+
+.topbar button,
+.topbar input,
+.search {
+  -webkit-app-region: no-drag;
+}
+
+.tb-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* back / forward: the same 48px circles as the home button, easy to hit */
+.tb-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-btn {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--raised);
+  color: var(--text);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.nav-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.nav-btn:disabled {
+  color: var(--text-3);
+}
+
+.tb-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tb-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  /* room for the native minimise / maximise / close buttons */
+  padding-right: 146px;
+}
+
+.search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--raised);
+  border: 1px solid transparent;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.search:hover {
+  background: var(--hover);
+  border-color: var(--line-2);
+}
+
+.search:focus-within {
+  background: var(--hover);
+  border-color: var(--text);
+}
+
+.search-icon {
+  flex: none;
+  margin-left: 13px;
+  color: var(--text-2);
+}
+
+.search:focus-within .search-icon {
+  color: var(--text);
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  padding: 0 12px 0 10px;
+  font-size: 15px;
+}
+
+.search input::placeholder {
+  color: var(--text-3);
+}
+
+/* the pill itself shows focus */
+.search input:focus-visible {
+  outline: none;
+}
+
+.search-clear {
+  margin-right: 8px;
+}
+
+.avatar-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--raised);
+  transition:
+    transform 0.1s ease,
+    background-color 0.15s ease;
+}
+
+.avatar-btn:hover {
+  background: var(--hover);
+  transform: scale(1.04);
+}
+
+.avatar-btn {
+  position: relative;
+}
+
+/* an update is downloaded: the avatar menu has "Обновить" */
+.avatar-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+@media (max-width: 1100px) {
+  .brand span {
+    display: none;
+  }
+}
+
+/* ---------- library sidebar ---------- */
+
+.sidebar {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 4px 20px;
+}
+
+.sb-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 700;
+  transition: color 0.15s ease;
+}
+
+.sb-title:hover {
+  color: var(--text);
+}
+
+.sb-chips {
+  padding: 8px 12px;
+  gap: 4px;
+  /* a narrow sidebar (vertical monitors) wraps the chips instead of cutting one off */
+  flex-wrap: wrap;
+}
+
+.sb-chips .chip {
+  height: 30px;
+  padding: 0 9px;
+  font-size: 12.5px;
+}
+
+.sb-list {
+  flex: 1;
+  padding: 4px 8px 8px;
+}
+
+.lib-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: var(--r-sm);
+  text-align: left;
+  transition: background-color 0.12s ease;
+}
+
+.lib-row:hover {
+  background: var(--raised);
+}
+
+.lib-row.active {
+  background: var(--hover);
+}
+
+.lib-row.active:hover {
+  background: var(--hover-2);
+}
+
+.lib-tile {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-xs);
+  background: var(--hover-2);
+  color: var(--text-2);
+}
+
+.lib-tile.accent {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.lib-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.lib-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.lib-sub {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.lib-playing {
+  flex: none;
+  color: var(--accent-text);
+}
+
+.sb-section {
+  padding: 16px 8px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* Yandex tiles: same flat neutral look as everything else */
+.lib-tile.ya-tile,
+.ph-tile.ya-tile,
+.lib-tile.au-tile,
+.ph-tile.au-tile {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.ya-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 900;
+  font-size: 22px;
+}
+
+.ya-mark.round {
+  border-radius: 50%;
+}
+
+.ya-mark.big {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  font-size: 34px;
+  margin-bottom: 8px;
+}
+
+.sb-empty {
+  padding: 24px 8px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.skeleton {
+  pointer-events: none;
+}
+
+.sk {
+  background: var(--raised);
+  border-radius: var(--r-xs);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.sk-art {
+  width: 48px;
+  height: 48px;
+  flex: none;
+}
+
+.sk-line {
+  height: 12px;
+  width: 70%;
+  margin: 5px 0;
+}
+
+.sk-line.short {
+  width: 40%;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* ---------- player bar ---------- */
+
+.playerbar {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: grid;
+  /* the right side always gets room for its buttons and a usable volume slider; the centre
+     shrinks with the window (narrow / vertical monitors) and stays centred when there's space */
+  grid-template-columns: minmax(0, 1fr) minmax(240px, min(680px, 44vw)) minmax(max-content, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 0 8px;
+}
+
+.pb-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.pb-art {
+  flex: none;
+  border-radius: var(--r-xs);
+  overflow: hidden;
+}
+
+.pb-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pb-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pb-artist-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pb-artist {
+  display: block;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.pb-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pb-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.play-main {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--text);
+  color: var(--play-ink);
+  transition: transform 0.1s ease;
+}
+
+.play-main:hover:not(:disabled) {
+  transform: scale(1.06);
+}
+
+.play-main:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.play-main.loading::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--text-2);
+  animation: spin 0.9s linear infinite;
+}
+
+.pb-progress {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pb-progress.disabled .slider {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.time {
+  min-width: 40px;
+  font-size: 12px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.time:last-child {
+  text-align: left;
+}
+
+.pb-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-right: 8px;
+}
+
+.volume {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: clamp(150px, 13vw, 220px);
+}
+
+/* ---------- slider ---------- */
+
+.slider {
+  position: relative;
+  flex: 1;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.slider:focus-visible {
+  outline-offset: 0;
+}
+
+.slider-track {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.slider-buffer {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--track-buffer);
+}
+
+.slider-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 2px;
+  background: var(--text);
+}
+
+.slider:hover .slider-fill,
+.slider.dragging .slider-fill {
+  background: var(--accent);
+}
+
+.slider-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.slider:hover .slider-thumb,
+.slider.dragging .slider-thumb,
+.slider:focus-visible .slider-thumb {
+  opacity: 1;
+}
+
+/* ---------- queue panel ---------- */
+
+.queue {
+  grid-column: 3;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Narrow windows (vertical monitors): the queue / now-playing panel lies over the right
+   part of the page instead of squeezing it to a sliver. */
+@media (max-width: 1240px) {
+  .app.with-queue {
+    grid-template-columns: clamp(248px, 21vw, 320px) minmax(0, 1fr);
+  }
+
+  .queue {
+    grid-column: 2;
+    justify-self: end;
+    width: min(340px, 100%);
+    z-index: 20;
+    box-shadow: -16px 0 32px rgba(0, 0, 0, 0.45);
+  }
+}
+
+.q-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 12px 4px 16px;
+}
+
+.q-body {
+  flex: 1;
+  padding: 0 8px 16px;
+}
+
+.q-label {
+  padding: 16px 8px 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.q-source {
+  color: var(--text);
+}
+
+.q-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 8px;
+}
+
+.q-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+}
+
+.q-row:hover {
+  background: var(--raised);
+}
+
+.q-art {
+  position: relative;
+  flex: none;
+  border-radius: var(--r-xs);
+  overflow: hidden;
+}
+
+.q-art-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.q-row:hover .q-art-overlay,
+.q-row.current .q-art-overlay {
+  opacity: 1;
+}
+
+.q-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.q-title {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.q-row.current .q-title {
+  color: var(--accent-text);
+}
+
+.q-artist {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.q-remove {
+  opacity: 0;
+}
+
+.q-row:hover .q-remove {
+  opacity: 1;
+}
+
+.q-more {
+  padding: 12px 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.q-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 8px 0;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  background: var(--panel-2);
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.q-hint svg {
+  flex: none;
+}
+
+/* ---------- invisible Yandex Music engine ---------- */
+
+/* kept rendered (off-screen, real size) so the page runs normally, never visible */
+.yandex-engine {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 1280px;
+  height: 800px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.yandex-engine webview {
+  width: 100%;
+  height: 100%;
+}
+.lib-tile.letter {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+/* ---------- now playing panel ---------- */
+
+.np-body {
+  padding: 4px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.np-cover {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: var(--r);
+  box-shadow: var(--shadow-art);
+}
+
+.np-title-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.np-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.np-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  user-select: text;
+}
+
+.np-artist {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.np-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.np-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.np-genre {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--raised);
+}
+
+.np-card {
+  padding: 16px;
+  border-radius: var(--r);
+  background: var(--panel-2);
+}
+
+.np-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.np-card-label {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.np-artist-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  text-align: left;
+}
+
+.np-artist-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.np-artist-head:hover .np-artist-name {
+  text-decoration: underline;
+}
+
+.np-artist-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.btn.small {
+  height: 30px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.np-desc {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-line;
+}
+
+.np-next {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 6px;
+  border-radius: var(--r-sm);
+  text-align: left;
+  color: var(--text-2);
+}
+
+.np-next:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.np-next-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.np-next-text .muted {
+  font-size: 13px;
+}
+
+.lib-tile.sc-letter {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.sb-chips.hidden {
+  display: none;
+}
+
+/* Audius: same monochrome tile language as the other services */
+.au-mark {
+  font-size: 96px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.sb-section.with-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 4px;
+}
+
+.sb-section.with-action .icon-btn {
+  color: var(--text-3);
+}
+
+.sb-section.with-action .icon-btn:hover {
+  color: var(--text);
+}
+
+.lib-tile.dashed {
+  background: none;
+  border: 1px dashed var(--line-2);
+}
+/* ---------- lyrics panel ---------- */
+
+.lyrics-body {
+  padding: 8px 20px 32px;
+}
+
+.lyrics-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px 0 40%;
+}
+
+.lyric {
+  text-align: left;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-3);
+  transition: color 0.2s ease;
+}
+
+.lyric.past {
+  color: var(--text-2);
+}
+
+.lyric.on {
+  color: var(--text);
+}
+
+.lyric:hover {
+  color: var(--text);
+}
+
+.lyrics-plain {
+  padding: 16px 0;
+  white-space: pre-wrap;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.lyrics-state {
+  display: grid;
+  place-items: center;
+  padding: 48px 0;
+}
+
+.lyrics-credit {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* narrow windows: autoplay stays in Settings, the bar keeps room for the track title */
+@media (max-width: 1240px) {
+  .pb-right .autoplay-btn {
+    display: none;
+  }
+}
+
+.q-row.past {
+  opacity: 0.6;
+}
+
+.q-row.past:hover {
+  opacity: 1;
+}
+
+.q-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.np-lyrics {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.np-lyrics:hover {
+  background: var(--hover);
+}
+
+.np-lyric {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-3);
+}
+
+.np-lyric.on {
+  color: var(--text);
+}
+
+/* the cover in the player bar opens "Сейчас играет"; an arrow shows it on hover */
+.pb-art {
+  position: relative;
+}
+
+.pb-art-hint {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  opacity: 0;
+  transform: rotate(180deg) scale(0.8);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.pb-art:hover .pb-art-hint,
+.pb-art:focus-visible .pb-art-hint {
+  opacity: 1;
+  transform: rotate(180deg);
+}

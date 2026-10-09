@@ -1,0 +1,175 @@
+/*
+ * Colour themes. Only neutral palettes: dark, pure black, graphite and light.
+ * The accent is either SoundCloud orange or fully monochrome (data-accent="mono").
+ * Applied as <html data-theme="…" data-accent="…"> by lib/theme.ts.
+ */
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0b0b0b;
+  --panel: #131313;
+  --panel-2: #181818;
+  --raised: #1f1f1f;
+  --hover: #262626;
+  --hover-2: #2f2f2f;
+  --line: #262626;
+  --line-2: #3a3a3a;
+
+  --text: #f2f2f2;
+  --text-2: #a7a7a7;
+  --text-3: #707070;
+  --danger: #ff7a6b;
+
+  --tile: #222222;
+  --tile-hover: #2c2c2c;
+  --menu: #282828;
+  --menu-hover: #3a3a3a;
+  --track: #4a4a4a;
+  --track-buffer: #5c5c5c;
+  --round-btn: #000000;
+  --outline-btn: #727272;
+  --input-hover: #555555;
+  --switch-off: #535353;
+  --switch-off-hover: #6a6a6a;
+  --scroll: rgba(255, 255, 255, 0.2);
+  --scroll-hover: rgba(255, 255, 255, 0.34);
+  --spinner-track: rgba(255, 255, 255, 0.14);
+  --pill-bg: #0d0d0d;
+  --toast-bg: #f2f2f2;
+  --toast-ink: #121212;
+  --play-ink: #000000;
+  --shadow-art: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-cover: 0 4px 60px rgba(0, 0, 0, 0.5);
+
+  /* page headers tinted by the artwork colour */
+  --head-mix: 100%;
+  --head-shade-to: rgba(0, 0, 0, 0.45);
+  --head-fade-from: rgba(0, 0, 0, 0.6);
+  --sticky-shade: rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme='oled'] {
+  --bg: #000000;
+  --panel: #0a0a0a;
+  --panel-2: #0f0f0f;
+  --raised: #161616;
+  --hover: #1c1c1c;
+  --hover-2: #252525;
+  --line: #1c1c1c;
+  --line-2: #2e2e2e;
+  --tile: #141414;
+  --tile-hover: #1f1f1f;
+  --menu: #1a1a1a;
+  --menu-hover: #2a2a2a;
+  --track: #3a3a3a;
+  --track-buffer: #4a4a4a;
+  --round-btn: #161616;
+  --pill-bg: #000000;
+  --head-shade-to: rgba(0, 0, 0, 0.6);
+  --head-fade-from: rgba(0, 0, 0, 0.72);
+  --sticky-shade: rgba(0, 0, 0, 0.62);
+}
+
+:root[data-theme='graphite'] {
+  --bg: #1c1c1c;
+  --panel: #242424;
+  --panel-2: #292929;
+  --raised: #2e2e2e;
+  --hover: #353535;
+  --hover-2: #3d3d3d;
+  --line: #353535;
+  --line-2: #4a4a4a;
+  --text: #f0f0f0;
+  --text-2: #b3b3b3;
+  --text-3: #808080;
+  --tile: #303030;
+  --tile-hover: #3a3a3a;
+  --menu: #333333;
+  --menu-hover: #444444;
+  --track: #555555;
+  --track-buffer: #666666;
+  --round-btn: #141414;
+  --outline-btn: #888888;
+  --input-hover: #666666;
+  --switch-off: #5c5c5c;
+  --switch-off-hover: #707070;
+  --pill-bg: #1c1c1c;
+  --head-shade-to: rgba(0, 0, 0, 0.35);
+  --head-fade-from: rgba(0, 0, 0, 0.45);
+  --sticky-shade: rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #e9e9e9;
+  --panel: #ffffff;
+  --panel-2: #f6f6f6;
+  --raised: #f0f0f0;
+  --hover: #e8e8e8;
+  --hover-2: #dedede;
+  --line: #e6e6e6;
+  --line-2: #cfcfcf;
+  --text: #121212;
+  --text-2: #5e5e5e;
+  --text-3: #959595;
+  --danger: #c62f22;
+  --tile: #f1f1f1;
+  --tile-hover: #e7e7e7;
+  --menu: #ffffff;
+  --menu-hover: #f0f0f0;
+  --track: #d0d0d0;
+  --track-buffer: #bdbdbd;
+  --round-btn: #dcdcdc;
+  --outline-btn: #9a9a9a;
+  --input-hover: #b0b0b0;
+  --switch-off: #c4c4c4;
+  --switch-off-hover: #b0b0b0;
+  --scroll: rgba(0, 0, 0, 0.2);
+  --scroll-hover: rgba(0, 0, 0, 0.35);
+  --spinner-track: rgba(0, 0, 0, 0.12);
+  --pill-bg: #ffffff;
+  --toast-bg: #121212;
+  --toast-ink: #f2f2f2;
+  --play-ink: #ffffff;
+  --shadow-art: 0 6px 18px rgba(0, 0, 0, 0.14);
+  --shadow-cover: 0 6px 32px rgba(0, 0, 0, 0.18);
+  --head-mix: 30%;
+  --head-shade-to: rgba(255, 255, 255, 0);
+  --head-fade-from: rgba(255, 255, 255, 0.35);
+  --sticky-shade: rgba(255, 255, 255, 0.35);
+}
+
+/* ---------- accents ---------- */
+
+:root {
+  --accent: #ff5500;
+  --accent-hover: #ff6b22;
+  --accent-ink: #140600;
+  /* accent used as text (current track title): needs more contrast on light */
+  --accent-text: #ff5500;
+}
+
+:root[data-theme='light'] {
+  --accent-text: #d24600;
+}
+
+:root[data-accent='mono'] {
+  --accent: #f2f2f2;
+  --accent-hover: #ffffff;
+  --accent-ink: #0b0b0b;
+  --accent-text: var(--text);
+}
+
+:root[data-accent='mono'][data-theme='light'] {
+  --accent: #121212;
+  --accent-hover: #000000;
+  --accent-ink: #ffffff;
+}
+
+/* without a colour the current track is marked by weight instead */
+:root[data-accent='mono'] .tr.current .tr-title,
+:root[data-accent='mono'] .q-row.current .q-title,
+:root[data-accent='mono'] .lib-title.accent {
+  font-weight: 700;
+}

@@ -1,0 +1,30 @@
+SC Player 1.1
+
+Плеер для Windows: SoundCloud, Яндекс Музыка и Audius в одном окне.
+
+— «Моя волна» из всех сервисов сразу
+— Свои плейлисты с треками откуда угодно
+— Скачивание для прослушивания без интернета
+— Тексты песен, таймер сна, медиа-клавиши
+— Статус «Слушает» в Discord
+— Тёмные темы, русский и английский
+
+Windows 10/11, 64 бит. Установщик: SC-Player-Setup-1.1.1.exe
+Windows может предупредить о неизвестном издателе: «Подробнее» → «Выполнить в любом случае».
+SoundCloud из России работает через VPN, Яндекс Музыка и Audius — без него.
+
+———
+
+SC Player 1.1
+
+A Windows player for SoundCloud, Yandex Music and Audius in one window.
+
+— “My Wave” across all your services
+— Your own playlists with tracks from anywhere
+— Downloads for offline listening
+— Lyrics, sleep timer, media keys
+— “Listening to” status in Discord
+— Dark themes, English and Russian
+
+Windows 10/11, 64-bit. Installer: SC-Player-Setup-1.1.1.exe
+If Windows warns about an unknown publisher: “More info” → “Run anyway”.
