@@ -346,6 +346,18 @@
   opacity: 0;
 }
 
+/* rows that join a growing list (the wave) fade in instead of popping */
+.tracklist.appear .tr {
+  animation: tr-appear 0.24s ease-out;
+}
+
+@keyframes tr-appear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
 /* drag to reorder: a line where the row will land */
 .tr {
   position: relative;

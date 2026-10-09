@@ -1,7 +1,5 @@
 import { openArtist, toggleAnyLike, useLiked } from '@/lib/actions'
-import { useYa } from '@/lib/yandexApi'
-import { useApp } from '@/store/app'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Artwork } from '@/components/Artwork'
 import { Icon } from '@/components/Icon'
 import { ActionBar, PageHeader } from '@/components/PageHeader'
@@ -13,50 +11,45 @@ import {
   dislikeCurrent,
   ensurePreview,
   refreshWave,
-  setWaveSources,
   startWave,
   toggleWave,
   useWave,
   useWaveActive,
   useWavePlaying,
-  waveSource,
-  waveSources
+  waveSource
 } from '@/lib/wave'
+import type { Track } from '@/lib/types'
 import { player, usePlayer } from '@/store/player'
 import { tx } from '@/lib/i18n'
 
 const UPCOMING = 30
-/** Recently played tracks shown before "показать все". */
-const RECENT = 5
 
-/** "Моя волна" as its own page: what's playing, what's next, what already played. */
+/** "Моя волна" as its own page: what's playing and what comes next (history is in the queue panel). */
 export function WaveView(): React.JSX.Element {
   const active = useWaveActive()
   const playing = useWavePlaying()
   const building = useWave((s) => s.building)
   const preview = useWave((s) => s.preview)
-  const played = useWave((s) => s.played)
   const current = usePlayer((s) => (s.source?.kind === 'wave' ? s.current : null))
   const context = usePlayer((s) => s.context)
   const index = usePlayer((s) => s.index)
   const liked = useLiked(current)
-  const sources = useWave((s) => s.sources)
-  const yaIn = useYa((s) => s.status === 'in')
-  const scIn = useApp((s) => s.auth === 'in')
   const source = useMemo(waveSource, [])
-  const sourceOptions = waveSources().filter(([key]) => (key === 'sc' ? scIn : key === 'ya' ? yaIn : true))
 
   // Show what the wave would start with, without playing anything yet.
   useEffect(() => {
     if (!active) void ensurePreview()
   }, [active])
 
-  const upcoming = useMemo(
+  const next = useMemo(
     () => (active ? context.slice(index + 1, index + 1 + UPCOMING) : (preview ?? [])),
     [active, context, index, preview]
   )
-  const history = useMemo(() => [...played].reverse(), [played])
-  const [showAll, setShowAll] = useState(false)
+  // while a new batch is being picked the list may be empty for a moment: keep showing the
+  // last one, or the page would shrink and the scroll jump to the top
+  const lastNext = useRef<Track[]>([])
+  if (next.length) lastNext.current = next
+  const upcoming = next.length || !building ? next : lastNext.current
 
   const artUrl = current ? trackArt(current, 't500x500') : null
   const color = useArtColor(artUrl)
@@ -132,49 +125,7 @@ export function WaveView(): React.JSX.Element {
           </button>
         </ActionBar>
 
-        {(scIn || yaIn) && (
-        <div className="wave-controls">
-          {(
-            <div className="wave-control">
-              <span className="wave-control-label">{tx('Источники')}</span>
-              <div className="chips" role="radiogroup" aria-label={tx("Откуда брать треки")}>
-                {sourceOptions.map(([key, label]) => (
-                  <button
-                    key={key}
-                    role="radio"
-                    aria-checked={sources === key}
-                    className={cx('chip', sources === key && 'on')}
-                    onClick={() => void setWaveSources(key)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        )}
-
-        {history.length > 0 && (
-          <section className="section first">
-            <div className="shelf-head">
-              <h2 className="h2">{tx('Только что звучало')}</h2>
-              {history.length > RECENT && (
-                <button className="link-more" onClick={() => setShowAll(!showAll)}>
-                  {showAll ? tx('Свернуть') : tx('Показать все')}
-                </button>
-              )}
-            </div>
-            <TrackList
-              tracks={showAll ? history : history.slice(0, RECENT)}
-              source={source}
-              head={false}
-              onPlayIndex={(i) => player.playNow(history[i])}
-            />
-          </section>
-        )}
-
-        <section className={history.length ? 'section' : 'section first'}>
+        <section className="section first wave-next">
           <h2 className="h2">{active ? tx("Далее в волне") : tx("Волна начнётся с этих треков")}</h2>
           {!upcoming.length && building ? (
             <Loading />
@@ -184,6 +135,7 @@ export function WaveView(): React.JSX.Element {
             <TrackList
               tracks={upcoming}
               source={source}
+              appear
               onPlayIndex={(i) => (active ? player.jumpContext(index + 1 + i) : void startWave(i))}
             />
           )}

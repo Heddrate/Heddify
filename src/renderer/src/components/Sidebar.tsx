@@ -84,13 +84,6 @@ export function Sidebar(): React.JSX.Element {
             <LibRow {...row({ name: 'likes' })} art={tile('heart', 'accent')} title={tx('Мне нравится')} sub={tx('Плейлист · {0}', tracks(likes))} />
             <LibRow {...row({ name: 'history' })} art={tile('history')} title={tx('История')} sub={tx('Недавно прослушанное')} />
             <LibRow
-              {...row({ name: 'radio' })}
-              active={route.name === 'radio'}
-              art={tile('radio')}
-              title={tx('Радио')}
-              sub={tx('Станции со всего мира')}
-            />
-            <LibRow
               {...row({ name: 'files' })}
               art={tile('folder')}
               title={tx('Файлы на компьютере')}
@@ -176,6 +169,16 @@ export function Sidebar(): React.JSX.Element {
 
         {filter !== 'all' && !items.length && (
           <p className="sb-empty">{filter === 'albums' ? tx('Сохранённых альбомов нет') : tx('Плейлистов нет')}</p>
+        )}
+
+        {filter === 'all' && (
+          <LibRow
+            {...row({ name: 'radio' })}
+            active={route.name === 'radio'}
+            art={tile('radio')}
+            title={tx('Радио')}
+            sub={tx('Станции со всего мира')}
+          />
         )}
 
         {filter === 'all' && missing && (

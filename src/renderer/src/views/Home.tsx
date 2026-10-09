@@ -59,8 +59,6 @@ export function Home(): React.JSX.Element {
         </>
       )}
 
-      <RadioShelf />
-
       {recent.length > 0 && (
         <Shelf title={tx("Недавно прослушанное")} onMore={() => navigate({ name: 'history' })}>
           {recent.map((t, i) => (
@@ -91,6 +89,9 @@ export function Home(): React.JSX.Element {
       })}
 
       {scIn && <AudiusShelf />}
+
+      {/* rarely used: the last shelf, before the endless feed */}
+      <RadioShelf />
 
       {scIn && (
       <section className="section">

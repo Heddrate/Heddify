@@ -2,7 +2,7 @@
 
 Desktop music player for Windows by Heddrate (called "SC Player" before 1.2): **SoundCloud,
 Yandex Music and Audius in one window**, plus internet radio and the user's own music files, styled like Spotify / Yandex Music. Current version:
-**1.4.0** (`package.json`). Spotify is planned as the next service — keep new code
+**1.4.1** (`package.json`). Spotify is planned as the next service — keep new code
 service-agnostic (one library, one likes list, one search).
 The owner talks in Russian, casually; answer in Russian, short and to the point.
 
@@ -177,7 +177,11 @@ Electron 44, electron-vite 5, Vite 7, React 19, zustand 5, hls.js (lazy-loaded),
   related), local likes (pref `audiusLikes`), wave picks. Track ids `1e12 + track_id`.
 - `lib/wave.ts` — "Моя волна": SoundCloud related-tracks wave mixed with Yandex rotor and
   Audius picks (weights sc:ya:au = 3:2:1, `waveServices()`), artist keys for skip/dislike,
-  "не нравится" remembered 60 days (pref `waveDislikes`), sources chip (pref `waveSources`).
+  "не нравится" remembered 60 days (pref `waveDislikes`). Always mixes every connected service — the
+  per-service "Источники" chips were removed (owner: no per-service UI); the Wave page shows only
+  what plays next (history lives in the queue panel), rows keyed by track so the list shifts
+  without jumping, new rows fade in (TrackList `appear`). Radio sits last: bottom of the sidebar,
+  last home shelf before the endless feed.
 - `lib/library.ts` — `useLibraryItems()`: own + SoundCloud + Yandex playlists as one list
   (sidebar, Медиатека page, home shelf; `components/LibCard.tsx`).
 - `lib/likes.ts` — `useAllLikes()`: SoundCloud (paged) + Yandex + Audius likes merged by like

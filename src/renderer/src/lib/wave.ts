@@ -465,8 +465,8 @@ export async function loadWavePrefs(): Promise<void> {
     disliked = (prefs.waveDislikes as { key: number; at: number }[]).filter((d) => typeof d?.key === 'number')
     for (const d of disliked) if (!session.skips.has(d.key)) session.skips.set(d.key, 2)
   }
-  const src = prefs.waveSources
-  if (src === 'all' || src === 'sc' || src === 'ya' || src === 'au') useWave.setState({ sources: src })
+  // the wave always mixes every connected service (the per-service chips are gone)
+  if (prefs.waveSources && prefs.waveSources !== 'all') void window.sc.prefs.set({ waveSources: 'all' })
 }
 
 /** Forget cached likes (after logout or account switch). */

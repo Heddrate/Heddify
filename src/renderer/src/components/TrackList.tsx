@@ -31,6 +31,8 @@ interface Props {
   menuExtra?: (track: Track, index: number) => MenuItem[]
   /** Rows can be dragged to a new place (own playlists). */
   onReorder?: (from: number, to: number) => void
+  /** New rows fade in (a list that grows while you look at it, like the wave). */
+  appear?: boolean
 }
 
 export function TrackList({
@@ -43,7 +45,8 @@ export function TrackList({
   compact,
   onPlayIndex,
   menuExtra,
-  onReorder
+  onReorder,
+  appear
 }: Props): React.JSX.Element {
   const currentId = usePlayer((s) => s.current?.id)
   const playing = usePlayer((s) => s.playing)
@@ -100,6 +103,15 @@ export function TrackList({
   }, [])
   // service badges only where services are mixed; a pure Audius / Yandex list needs none
   const mixed = useMemo(() => new Set(tracks.map((t) => t.origin ?? 'soundcloud')).size > 1, [tracks])
+  // keyed by track (and its n-th repeat), not by position: a list that shifts keeps its rows
+  const keys = useMemo(() => {
+    const seen = new Map<number, number>()
+    return tracks.map((t) => {
+      const n = (seen.get(t.id) ?? 0) + 1
+      seen.set(t.id, n)
+      return `${t.id}-${n}`
+    })
+  }, [tracks])
 
   const play = useCallback(
     (i: number) => {
@@ -121,7 +133,7 @@ export function TrackList({
   }
 
   return (
-    <div className={cx('tracklist', compact && 'compact', extra === 'none' && 'no-extra')} role="grid" tabIndex={-1} onKeyDown={onKey}>
+    <div className={cx('tracklist', compact && 'compact', extra === 'none' && 'no-extra', appear && 'appear')} role="grid" tabIndex={-1} onKeyDown={onKey}>
       {head && (
         <div className="tl-head" role="row">
           <div className="tr-num">#</div>
@@ -136,7 +148,7 @@ export function TrackList({
       )}
       {tracks.map((t, i) => (
         <TrackRow
-          key={`${t.id}-${i}`}
+          key={keys[i]}
           track={t}
           index={i}
           current={t.id === currentId}
