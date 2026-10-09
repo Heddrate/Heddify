@@ -2,7 +2,7 @@
 
 Desktop music player for Windows by Heddrate (called "SC Player" before 1.2): **SoundCloud,
 Yandex Music and Audius in one window**, styled like Spotify / Yandex Music. Current version:
-**1.2.0** (`package.json`). Spotify is planned as the next service — keep new code
+**1.2.1** (`package.json`). Spotify is planned as the next service — keep new code
 service-agnostic (one library, one likes list, one search).
 The owner talks in Russian, casually; answer in Russian, short and to the point.
 

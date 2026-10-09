@@ -7,6 +7,7 @@ import { NowPlayingPanel } from '@/components/NowPlayingPanel'
 import { LyricsPanel } from '@/components/LyricsPanel'
 import { YandexHost } from '@/components/YandexHost'
 import { QueuePanel } from '@/components/QueuePanel'
+import { UpdateBanner } from '@/components/UpdateBanner'
 import { Sidebar } from '@/components/Sidebar'
 import { FOCUS_SEARCH, TopBar } from '@/components/TopBar'
 import { cx } from '@/lib/hooks'
@@ -168,6 +169,7 @@ function Shell(): React.JSX.Element {
       <ContextMenu />
       <Dialog />
       <Toasts />
+      <UpdateBanner />
     </div>
   )
 }

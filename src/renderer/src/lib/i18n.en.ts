@@ -1,5 +1,10 @@
 // English strings, keyed by the Russian original (see lib/i18n.ts).
 const EN: Record<string, string> = {
+  'Доступно обновление': 'Update available',
+  'Версия {0} готова к установке': 'Version {0} is ready to install',
+  'Новая версия готова к установке': 'A new version is ready to install',
+  'Перезапустить': 'Restart',
+  'Позже': 'Later',
   'Дальше — Моя волна': 'Up next: My Wave',
   'Дальше — похожие треки': 'Up next: similar tracks',
   'Подключить сервисы': 'Connect services',

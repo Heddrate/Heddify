@@ -681,6 +681,51 @@
   pointer-events: none;
 }
 
+/* "Доступно обновление": bottom right, above the player bar */
+.update-banner {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--playerbar) + 16px);
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 400px;
+  max-width: calc(100vw - 32px);
+  padding: 14px 16px;
+  border-radius: var(--r);
+  background: var(--raised);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow-art);
+  animation: toast-in 0.18s ease-out;
+}
+
+.update-banner .logo {
+  flex: none;
+}
+
+.update-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.update-text span {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.update-actions {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
 .toast {
   max-width: 560px;
   padding: 10px 16px;
