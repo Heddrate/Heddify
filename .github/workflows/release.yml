@@ -13,6 +13,8 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,7 +23,21 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+
+      # One draft release up front: electron-builder uploads every file into it. Without it,
+      # its parallel uploads race and create two releases for the same tag.
+      - name: Create draft release
+        shell: bash
+        run: |
+          tag="$GITHUB_REF_NAME"
+          for id in $(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --jq ".[] | select(.tag_name == \"$tag\") | .id"); do
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id"
+          done
+          gh release create "$tag" --draft --title "${tag#v}" --notes "" --verify-tag
+
       - run: npx electron-vite build
       - run: npx electron-builder --win --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish release
+        shell: bash
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest
