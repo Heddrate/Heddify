@@ -1,7 +1,7 @@
 {
   "name": "heddify",
   "productName": "Heddify",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "SoundCloud, Яндекс Музыка и Audius в одном плеере",
   "main": "./out/main/index.js",
   "author": "Heddrate",

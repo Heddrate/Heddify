@@ -74,7 +74,7 @@ export function prepareWebSession(preloadPath: string): void {
       /* ignore malformed url */
     }
     const auth = headers['Authorization'] ?? headers['authorization']
-    const m = auth?.match(/^OAuth\s+(\S+)/i)
+    const m = auth?.match(/^(?:OAuth|Bearer)\s+(\S+)/i)
     if (m) found.token = m[1]
     if (found.clientId || found.token) onSniff(found)
   })

@@ -108,8 +108,9 @@ export function cancelLogin(): void {
 export async function loginWithToken(raw: string): Promise<LoginResult> {
   // accepts the bare token, "OAuth <token>", or a pasted cookie string with oauth_token=…
   const fromCookie = raw.match(/oauth_token=([^;\s"']+)/i)?.[1]
-  const token = (fromCookie ?? raw).trim().replace(/^["']|["']$/g, '').replace(/^OAuth\s+/i, '')
-  if (!/^[\w-]{10,}$/.test(token)) return { ok: false, error: 'Токен выглядит некорректно' }
+  const token = (fromCookie ?? raw).trim().replace(/^["']|["']$/g, '').replace(/^(OAuth|Bearer)\s+/i, '')
+  // old tokens look like 2-123456-…; newer ones are JWTs (eyJ….….…) with dots in them
+  if (!/^[\w.-]{10,}$/.test(token)) return { ok: false, error: 'Токен выглядит некорректно' }
   const previous = store.getToken()
   store.setToken(token)
   const me = await apiRequest('GET', '/me')
