@@ -42,13 +42,25 @@ async function request<T>(method: ApiMethod, path: string, params?: Params, body
 
 const cache = new Map<string, { at: number; promise: Promise<unknown> }>()
 const TTL = 90_000
+/** Entries outlive their TTL only until the next write; the map never grows past this. */
+const MAX_ENTRIES = 200
+
+function prune(): void {
+  const now = Date.now()
+  // entries can be read with a longer ttl than the default: keep them for a few minutes
+  for (const [key, e] of cache) if (now - e.at > TTL * 4) cache.delete(key)
+  // Map keeps insertion order: drop the oldest when still too big
+  while (cache.size > MAX_ENTRIES) cache.delete(cache.keys().next().value as string)
+}
 
 function get<T>(path: string, params?: Params, ttl = TTL): Promise<T> {
   const key = path + '|' + JSON.stringify(params ?? {})
   const hit = cache.get(key)
   if (hit && Date.now() - hit.at < ttl) return hit.promise as Promise<T>
   const promise = request<T>('GET', path, params)
+  cache.delete(key)
   cache.set(key, { at: Date.now(), promise })
+  prune()
   promise.catch(() => cache.delete(key))
   return promise
 }

@@ -108,6 +108,8 @@ export async function fetchLyrics(t: Track): Promise<Lyrics | null> {
   }
   const lyrics = found && (found.syncedLyrics || found.plainLyrics || found.instrumental) ? toLyrics(found, duration) : null
   cache.set(t.id, lyrics)
+  // the last couple hundred tracks are plenty; older ones are fetched again if needed
+  if (cache.size > 200) cache.delete(cache.keys().next().value as number)
   return lyrics
 }
 

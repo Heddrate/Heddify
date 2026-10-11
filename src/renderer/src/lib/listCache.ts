@@ -5,16 +5,28 @@
  */
 const memo = new Map<string, unknown>()
 const PREFIX = 'list-cache:'
+/** Most recently used lists kept in memory; older ones fall back to localStorage (`p:`) or reload. */
+const MAX_MEMO = 120
+
+function remember(key: string, value: unknown): void {
+  memo.delete(key)
+  memo.set(key, value)
+  while (memo.size > MAX_MEMO) memo.delete(memo.keys().next().value as string)
+}
 
 export function readCache<T>(key: string | null | undefined): T | undefined {
   if (!key) return undefined
-  if (memo.has(key)) return memo.get(key) as T
+  if (memo.has(key)) {
+    const value = memo.get(key) as T
+    remember(key, value)
+    return value
+  }
   if (!key.startsWith('p:')) return undefined
   try {
     const raw = localStorage.getItem(PREFIX + key)
     if (!raw) return undefined
     const value = JSON.parse(raw) as T
-    memo.set(key, value)
+    remember(key, value)
     return value
   } catch {
     return undefined
@@ -23,7 +35,7 @@ export function readCache<T>(key: string | null | undefined): T | undefined {
 
 export function writeCache(key: string | null | undefined, value: unknown): void {
   if (!key) return
-  memo.set(key, value)
+  remember(key, value)
   if (!key.startsWith('p:')) return
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value))
