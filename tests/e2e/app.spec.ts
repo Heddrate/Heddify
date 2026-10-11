@@ -48,7 +48,7 @@ test('a track opens in the full player, and the next one replaces its panel', as
   expect(errors).toEqual([])
 })
 
-test('settings: autoplay is off by default, equalizer and shortcuts are there, About is last', async ({ page }) => {
+test("settings: autoplay is off by default, what's new is there, About is last", async ({ page }) => {
   const errors = watchErrors(page)
   await page.goto('/')
   await page.getByRole('button', { name: 'Профиль' }).click()
@@ -56,8 +56,6 @@ test('settings: autoplay is off by default, equalizer and shortcuts are there, A
 
   await expect(page.getByRole('switch', { name: 'Автопродолжение' })).toHaveAttribute('aria-checked', 'false')
   const sections = await page.locator('.settings-section h2').allTextContents()
-  expect(sections).toContain('Эквалайзер')
-  expect(sections).toContain('Горячие клавиши')
   expect(sections).toContain('Что нового')
   expect(sections.at(-1)).toBe('О приложении')
   expect(errors).toEqual([])

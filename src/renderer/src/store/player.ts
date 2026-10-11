@@ -157,7 +157,6 @@ export async function restoreSession(): Promise<void> {
   engine.setVolume(volume, muted)
   engine.setLeveling(prefs.leveling === true)
   engine.setFade(prefs.crossfade === true)
-  engine.setEqualizer(prefs.eqOn === true, Array.isArray(prefs.eqGains) ? (prefs.eqGains as number[]) : [])
 
   const session = prefs.session as SavedSession | undefined
   if (!session?.current || get().current) return

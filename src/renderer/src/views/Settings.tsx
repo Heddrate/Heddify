@@ -13,24 +13,8 @@ import { loginYandex, logoutYandex, useYa } from '@/lib/yandexApi'
 import { countLabel } from '@/lib/format'
 import { player, usePlayer } from '@/store/player'
 import { engine } from '@/player/engine'
-import { clampDb, EQ_BANDS, EQ_RANGE_DB } from '@/player/audioMath'
-import { Slider } from '@/components/Slider'
 import { lang, setLang, tx, type Lang } from '@/lib/i18n'
 import { checkUpdate, installUpdate, useUpdate } from '@/lib/update'
-
-/** Keys the app answers to (see App.tsx useHotkeys and FullPlayer). */
-const shortcuts = (): [string[], string][] => [
-  [['Space'], tx('Играть / пауза')],
-  [['Ctrl', '→'], tx('Следующий трек')],
-  [['Ctrl', '←'], tx('Предыдущий трек')],
-  [['Ctrl', '↑'], tx('Громче')],
-  [['Ctrl', '↓'], tx('Тише')],
-  [['Alt', '←'], tx('Назад')],
-  [['Alt', '→'], tx('Вперёд')],
-  [['Ctrl', 'K'], tx('Поиск')],
-  [['Esc'], tx('Закрыть полноэкранный плеер')],
-  [['Мышь: боковые кнопки'], tx('Назад / вперёд')]
-]
 
 /** The notes of this version, one line each, bullets dropped. */
 const whatsNew = (): string[] =>
@@ -63,8 +47,6 @@ export function Settings(): React.JSX.Element {
   const [toTray, setToTray] = useState(false)
   const [leveling, setLeveling] = useState(false)
   const [fade, setFade] = useState(false)
-  const [eqOn, setEqOn] = useState(false)
-  const [eqGains, setEqGains] = useState<number[]>(EQ_BANDS.map(() => 0))
   const [status, setStatus] = useState<DiscordStatus>('off')
 
   useEffect(() => {
@@ -73,8 +55,6 @@ export function Settings(): React.JSX.Element {
       setToTray(p.closeToTray === true)
       setLeveling(p.leveling === true)
       setFade(p.crossfade === true)
-      setEqOn(p.eqOn === true)
-      if (Array.isArray(p.eqGains)) setEqGains(EQ_BANDS.map((_, i) => clampDb(Number((p.eqGains as unknown[])[i]))))
     })
     void window.sc.discord.status().then(setStatus)
     return window.sc.discord.onStatus(setStatus)
@@ -296,62 +276,6 @@ export function Settings(): React.JSX.Element {
         />
       </Section>
 
-      <Section title={tx('Эквалайзер')}>
-        <Row
-          label={tx('Эквалайзер')}
-          hint={tx('Тонкая настройка звука. Первое включение действует с следующего трека')}
-          control={
-            <Switch
-              on={eqOn}
-              onToggle={() => {
-                const on = !eqOn
-                setEqOn(on)
-                engine.setEqualizer(on, eqGains)
-                void window.sc.prefs.set({ eqOn: on })
-              }}
-              label={tx('Эквалайзер')}
-            />
-          }
-        />
-        <div className={cx('eq-bands', !eqOn && 'off')}>
-          {EQ_BANDS.map((b, i) => (
-            <div className="eq-band" key={b.freq}>
-              <span className="eq-name">{b.label} Hz</span>
-              <Slider
-                value={eqGains[i] + EQ_RANGE_DB}
-                max={EQ_RANGE_DB * 2}
-                step={1}
-                label={`${b.label} Hz`}
-                onChange={(v) => setEqGains(eqGains.map((g, j) => (j === i ? v - EQ_RANGE_DB : g)))}
-                onCommit={(v) => {
-                  const next = eqGains.map((g, j) => (j === i ? clampDb(v - EQ_RANGE_DB) : g))
-                  setEqGains(next)
-                  engine.setEqualizer(eqOn, next)
-                  void window.sc.prefs.set({ eqGains: next })
-                }}
-              />
-              <span className="eq-value">{eqGains[i] > 0 ? `+${eqGains[i]}` : eqGains[i]}</span>
-            </div>
-          ))}
-        </div>
-        <Row
-          label={tx('Вернуть ровный звук')}
-          control={
-            <button
-              className="btn btn-outline"
-              onClick={() => {
-                const zero = EQ_BANDS.map(() => 0)
-                setEqGains(zero)
-                engine.setEqualizer(eqOn, zero)
-                void window.sc.prefs.set({ eqGains: zero })
-              }}
-            >
-              {tx('Сбросить')}
-            </button>
-          }
-        />
-      </Section>
-
       <CacheSection />
 
       <Section title="Discord">
@@ -362,24 +286,6 @@ export function Settings(): React.JSX.Element {
         {discordOn && (
           <p className={cx('settings-status', status === 'ready' && 'ok', status === 'bad-id' && 'bad')}>{discordText()[status]}</p>
         )}
-      </Section>
-
-      <Section title={tx('Горячие клавиши')}>
-        {shortcuts().map(([keys, what]) => (
-          <Row
-            key={what}
-            label={what}
-            control={
-              <span className="kbd-group">
-                {keys.map((k) => (
-                  <kbd key={k} className="kbd">
-                    {k}
-                  </kbd>
-                ))}
-              </span>
-            }
-          />
-        ))}
       </Section>
 
       <Section title={tx('Что нового')}>

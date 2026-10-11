@@ -1512,57 +1512,7 @@
   margin-top: 8px;
 }
 
-/* ---------- settings: equalizer, shortcuts, what's new ---------- */
-
-.eq-bands {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 4px 0 8px;
-}
-
-.eq-bands.off {
-  opacity: 0.45;
-  pointer-events: none;
-}
-
-.eq-band {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) 40px;
-  align-items: center;
-  gap: 12px;
-}
-
-.eq-name,
-.eq-value {
-  font-size: 13px;
-  color: var(--text-2);
-  font-variant-numeric: tabular-nums;
-}
-
-.eq-value {
-  text-align: right;
-}
-
-.kbd-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.kbd {
-  min-width: 28px;
-  padding: 3px 8px;
-  border-radius: var(--r-xs);
-  background: var(--hover-2);
-  color: var(--text);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  text-align: center;
-}
+/* ---------- settings: what's new ---------- */
 
 .whats-new {
   margin: 0;

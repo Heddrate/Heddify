@@ -324,11 +324,22 @@
 }
 
 .settings-section {
-  margin-top: 32px;
+  margin-top: 16px;
+  padding: 20px 24px 8px;
+  border-radius: var(--r);
+  background: var(--raised);
 }
 
+/* a section is a card: its title is a little bigger, its last row has no line under it */
 .settings-section > .h3 {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.settings-section > :last-child {
+  border-bottom: 0;
 }
 
 .theme-grid {
