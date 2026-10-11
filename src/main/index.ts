@@ -35,8 +35,16 @@ const FRAME: Record<string, { bg: string; symbol: string }> = {
   light: { bg: '#e9e9e9', symbol: '#5e5e5e' }
 }
 
+const HEX6 = /^#[0-9a-f]{6}$/i
+
 function frameColors(): { bg: string; symbol: string } {
-  const theme = store.getPrefs().theme
+  const prefs = store.getPrefs()
+  // palette themes (and any colour the renderer picked) save their own frame colours
+  const saved = prefs.frame as { bg?: unknown; symbol?: unknown } | undefined
+  if (typeof saved?.bg === 'string' && typeof saved?.symbol === 'string' && HEX6.test(saved.bg) && HEX6.test(saved.symbol)) {
+    return { bg: saved.bg, symbol: saved.symbol }
+  }
+  const theme = prefs.theme
   return FRAME[typeof theme === 'string' && theme in FRAME ? theme : 'dark']
 }
 

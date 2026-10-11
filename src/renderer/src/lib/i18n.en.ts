@@ -602,7 +602,16 @@ const EN: Record<string, string> = {
   'Не удалось войти, попробуйте ещё раз': 'Couldn’t sign in, try again',
   'Продолжить': 'Continue',
   'Похоже на то, что вы слушаете': 'Similar to what you listen to',
-  'Перетащите, чтобы изменить порядок': 'Drag to change the order'
+  'Перетащите, чтобы изменить порядок': 'Drag to change the order',
+  'Азур': 'Azure',
+  'Асфальт': 'Asphalt',
+  'Бумага': 'Paper',
+  'Апельсин': 'Orange',
+  'Хвоя': 'Pine',
+  'Своя': 'Custom',
+  'Свои цвета': 'Custom colours',
+  'Фон': 'Background',
+  'Текст': 'Text'
 }
 
 export default EN

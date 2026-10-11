@@ -4,7 +4,8 @@ import { Artwork } from '@/components/Artwork'
 import { Logo } from '@/components/Icon'
 import { userArt } from '@/lib/artwork'
 import { cx } from '@/lib/hooks'
-import { ACCENTS, setAccent, setTheme, THEMES, useTheme, type AccentName } from '@/lib/theme'
+import { ACCENTS, PALETTES, setAccent, setCustomColors, setTheme, THEMES, usesPalette, useTheme, type AnyTheme } from '@/lib/theme'
+import { derivePalette } from '@/lib/palette'
 import { useAudius } from '@/lib/audius'
 import { loginWithToken, logout, navigate, openUrl, signInSoundcloud, useApp } from '@/store/app'
 import { askText, toast } from '@/store/ui'
@@ -35,6 +36,7 @@ export function Settings(): React.JSX.Element {
   const auLikes = useAudius((s) => s.likes.length)
   const theme = useTheme((s) => s.theme)
   const accent = useTheme((s) => s.accent)
+  const custom = useTheme((s) => s.custom)
   const [discordOn, setDiscordOn] = useState(true)
   const [toTray, setToTray] = useState(false)
   const [leveling, setLeveling] = useState(false)
@@ -157,30 +159,61 @@ export function Settings(): React.JSX.Element {
         />
         <div className="theme-grid" role="radiogroup" aria-label={tx("Тема")}>
           {THEMES.map((t) => (
-            <button
+            <ThemeCard
               key={t.id}
-              role="radio"
-              aria-checked={theme === t.id}
-              className={cx('theme-card', theme === t.id && 'on')}
-              onClick={() => setTheme(t.id)}
-            >
-              <ThemePreview colors={t.preview} accent={accent} />
-              <span className="theme-name">{tx(t.label)}</span>
-            </button>
+              id={t.id}
+              label={t.label}
+              colors={t.preview}
+              accentColor={accent === 'mono' ? t.preview[3] : '#ff5500'}
+              active={theme === t.id}
+            />
           ))}
+          {PALETTES.map((p) => {
+            const v = derivePalette(p.colors)
+            return (
+              <ThemeCard key={p.id} id={p.id} label={p.label} colors={[v.bg, v.panel, v.raised, v.text]} accentColor={v.accent} active={theme === p.id} />
+            )
+          })}
+          <ThemeCard
+            id="custom"
+            label="Своя"
+            colors={(() => {
+              const v = derivePalette(custom)
+              return [v.bg, v.panel, v.raised, v.text]
+            })()}
+            accentColor={custom.accent}
+            active={theme === 'custom'}
+          />
         </div>
-        <Row
-          label={tx("Акцент")}
-          control={
-            <div className="chips">
-              {ACCENTS.map((a) => (
-                <button key={a.id} className={cx('chip', accent === a.id && 'on')} onClick={() => setAccent(a.id)}>
-                  {tx(a.label)}
-                </button>
-              ))}
-            </div>
-          }
-        />
+        {theme === 'custom' && (
+          <Row
+            label={tx("Свои цвета")}
+            control={
+              <div className="chips">
+                {(['bg', 'text', 'accent'] as const).map((k) => (
+                  <label key={k} className="color-pick">
+                    <span>{tx(CUSTOM_COLOR_LABEL[k])}</span>
+                    <input type="color" value={custom[k]} onChange={(e) => setCustomColors({ [k]: e.target.value })} />
+                  </label>
+                ))}
+              </div>
+            }
+          />
+        )}
+        {!usesPalette(theme) && (
+          <Row
+            label={tx("Акцент")}
+            control={
+              <div className="chips">
+                {ACCENTS.map((a) => (
+                  <button key={a.id} className={cx('chip', accent === a.id && 'on')} onClick={() => setAccent(a.id)}>
+                    {tx(a.label)}
+                  </button>
+                ))}
+              </div>
+            }
+          />
+        )}
       </Section>
 
       <Section title={tx("Воспроизведение")}>
@@ -355,10 +388,35 @@ function CacheSection(): React.JSX.Element {
   )
 }
 
+/** Labels of the three custom colours (translated where shown). */
+const CUSTOM_COLOR_LABEL = { bg: "Фон", text: "Текст", accent: "Акцент" } as const
+
+/** One theme in the grid: a stylesheet theme or a palette. */
+function ThemeCard({
+  id,
+  label,
+  colors,
+  accentColor,
+  active
+}: {
+  id: AnyTheme
+  label: string
+  colors: [string, string, string, string]
+  accentColor: string
+  active: boolean
+}): React.JSX.Element {
+  return (
+    <button role="radio" aria-checked={active} className={cx('theme-card', active && 'on')} onClick={() => setTheme(id)}>
+      <ThemePreview colors={colors} accentColor={accentColor} />
+      <span className="theme-name">{tx(label)}</span>
+    </button>
+  )
+}
+
 /** Miniature of the app (sidebar, list, player bar) drawn in a theme's colours. */
-function ThemePreview({ colors, accent }: { colors: [string, string, string, string]; accent: AccentName }): React.JSX.Element {
+function ThemePreview({ colors, accentColor }: { colors: [string, string, string, string]; accentColor: string }): React.JSX.Element {
   const [bg, panel, raised, text] = colors
-  const acc = accent === 'mono' ? text : '#ff5500'
+  const acc = accentColor
   return (
     <svg viewBox="0 0 160 100" className="theme-preview" aria-hidden>
       <rect width="160" height="100" fill={bg} />

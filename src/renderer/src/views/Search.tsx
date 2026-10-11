@@ -8,7 +8,7 @@ import { Empty, ErrorState, LoadMore, Loading } from '@/components/States'
 import { TrackList } from '@/components/TrackList'
 import { playlistRoute, playUser } from '@/lib/actions'
 import { api, tracksOf } from '@/lib/api'
-import { searchYandex } from '@/lib/yandex'
+import { searchYandex, searchYandexArtists, type YaArtistHit } from '@/lib/yandex'
 import { audius } from '@/lib/audius'
 import { radio } from '@/lib/radio'
 import { searchLocal } from '@/lib/local'
@@ -28,8 +28,8 @@ const tabs = (): [SearchTab, string][] => [
   ['albums', tx("Альбомы")]
 ]
 
-/** Tabs that need a SoundCloud account; hidden in guest mode. */
-const SC_TABS = new Set<SearchTab>(['users', 'playlists', 'albums'])
+/** Tabs that need a SoundCloud account; hidden in guest mode. Artists also come from Yandex, so they stay. */
+const SC_TABS = new Set<SearchTab>(['playlists', 'albums'])
 
 const SC_URL = /^https?:\/\/(www\.|m\.|on\.)?soundcloud\.com\/\S+/i
 const empty = <T,>(): Collection<T> => ({ collection: [] })
@@ -132,7 +132,8 @@ function SearchAll({ q }: { q: string }): React.JSX.Element {
         scIn ? api.searchAlbums(q, 12).catch(() => empty<Playlist>()) : empty<Playlist>(),
         searchYandex(q).catch(() => [] as Track[]),
         audius.search(q).catch(() => [] as Track[]),
-        radio.search(q, 12).catch(() => [] as Track[])
+        radio.search(q, 12).catch(() => [] as Track[]),
+        searchYandexArtists(q).catch(() => [] as YaArtistHit[])
       ]),
     [q, scIn]
   )
@@ -140,13 +141,13 @@ function SearchAll({ q }: { q: string }): React.JSX.Element {
 
   if (res.error) return <ErrorState text={res.error} onRetry={res.reload} />
   if (!res.data) return <Loading />
-  const [tracksC, usersC, playlistsC, albumsC, ya, au, stations] = res.data
+  const [tracksC, usersC, playlistsC, albumsC, ya, au, stations, yaArtists] = res.data
   const sc = tracksOf(tracksC.collection)
   // all services side by side in one list
   // the user's own files first: if they have it on disk, that's what they mean
   const tracks = [...searchLocal(q, 5), ...interleave(interleave(sc, ya), au.slice(0, 6))]
   const users = usersC.collection
-  if (!tracks.length && !stations.length && !users.length && !playlistsC.collection.length && !albumsC.collection.length) {
+  if (!tracks.length && !stations.length && !users.length && !yaArtists.length && !playlistsC.collection.length && !albumsC.collection.length) {
     return <Empty icon="search" title={tx("Ничего не нашлось по запросу «{0}»", q)} />
   }
 
@@ -182,9 +183,10 @@ function SearchAll({ q }: { q: string }): React.JSX.Element {
         </Shelf>
       )}
       <Shelf title={tx("Исполнители")} onMore={go('users')}>
-        {users.map((u) => (
-          <UserCard key={u.id} u={u} onActivate={() => addRecent({ type: 'user', item: u })} />
-        ))}
+        {[
+          ...yaArtists.slice(0, 6).map((a) => <YaArtistCard key={`ya-${a.id}`} a={a} />),
+          ...users.map((u) => <UserCard key={u.id} u={u} onActivate={() => addRecent({ type: 'user', item: u })} />)
+        ]}
       </Shelf>
       <Shelf title={tx("Альбомы")} onMore={go('albums')}>
         {albumsC.collection.map((p) => (
@@ -290,20 +292,41 @@ function SearchTracks({ q }: { q: string }): React.JSX.Element {
   )
 }
 
+/** Artists: Yandex's first (they're in guest mode too), then SoundCloud users when connected. */
 function SearchUsers({ q }: { q: string }): React.JSX.Element {
-  const pg = usePaged<User>(`s-users-${q}`, () => api.searchUsers(q))
-  if (pg.error && !pg.items.length) return <ErrorState text={pg.error} onRetry={pg.reload} />
-  if (pg.loading && !pg.items.length) return <Loading />
-  if (!pg.items.length) return <Empty icon="person" title={tx("Исполнители не найдены")} />
+  const scIn = useApp((s) => s.auth === 'in')
+  const pg = usePaged<User>(scIn ? `s-users-${q}` : null, () => api.searchUsers(q))
+  const ya = useAsync(() => searchYandexArtists(q).catch(() => [] as YaArtistHit[]), [q], `p:ya-artists:${q}`)
+  const yaItems = ya.data ?? []
+  if (pg.error && !pg.items.length && !yaItems.length) return <ErrorState text={pg.error} onRetry={pg.reload} />
+  if ((pg.loading || ya.loading) && !pg.items.length && !yaItems.length) return <Loading />
+  if (!pg.items.length && !yaItems.length) return <Empty icon="person" title={tx("Исполнители не найдены")} />
   return (
     <>
       <Grid>
-        {pg.items.map((u) => (
-          <UserCard key={u.id} u={u} onActivate={() => addRecent({ type: 'user', item: u })} />
-        ))}
+        {[
+          ...yaItems.map((a) => <YaArtistCard key={`ya-${a.id}`} a={a} />),
+          ...pg.items.map((u) => <UserCard key={u.id} u={u} onActivate={() => addRecent({ type: 'user', item: u })} />)
+        ]}
       </Grid>
       <LoadMore active={!!pg.next} loading={pg.loading} onVisible={pg.loadMore} />
     </>
+  )
+}
+
+/** An artist from Yandex: opens the Yandex artist page (sign-in needed there, like the other Yandex pages). */
+function YaArtistCard({ a }: { a: YaArtistHit }): React.JSX.Element {
+  return (
+    <Card
+      title={a.name}
+      sub={tx("Исполнитель")}
+      art={a.cover}
+      round
+      placeholder="person"
+      letter={a.name}
+      route={{ name: 'ya-artist', id: a.id }}
+      onOpen={() => navigate({ name: 'ya-artist', id: a.id })}
+    />
   )
 }
 

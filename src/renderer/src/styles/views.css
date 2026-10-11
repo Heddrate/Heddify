@@ -360,6 +360,24 @@
   border-color: var(--text);
 }
 
+/* the three colours of the custom theme */
+.color-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+}
+
+.color-pick input[type="color"] {
+  width: 36px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: none;
+  cursor: pointer;
+}
+
 .theme-preview {
   width: 100%;
   height: auto;

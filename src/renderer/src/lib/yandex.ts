@@ -287,6 +287,32 @@ const durationOf = (text: string): number => {
   return m[3] ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) : Number(m[1]) * 60 + Number(m[2])
 }
 
+export interface YaArtistHit {
+  id: number
+  name: string
+  cover: string | null
+}
+
+/** Artists from Yandex's public search page: the cards with a name link, and their picture. */
+export async function searchYandexArtists(q: string): Promise<YaArtistHit[]> {
+  const res = await fetch(`${YA}/search?text=${encodeURIComponent(q)}`, { credentials: 'omit' })
+  if (!res.ok) throw new Error(tx("Яндекс Музыка: {0}", res.status))
+  const doc = new DOMParser().parseFromString(await res.text(), 'text/html')
+  const images = Array.from(doc.querySelectorAll<HTMLImageElement>('img'))
+  const seen = new Set<number>()
+  const out: YaArtistHit[] = []
+  for (const link of Array.from(doc.querySelectorAll<HTMLAnchorElement>('a[href^="/artist/"][class*="EntityCard_titleLink"]'))) {
+    const id = Number(link.getAttribute('href')?.match(/\/artist\/(\d+)/)?.[1])
+    const name = link.textContent?.trim()
+    if (!id || !name || seen.has(id)) continue
+    seen.add(id)
+    // the artist's picture is the one whose address names this artist; a bigger size than the page's 100 px
+    const src = images.find((i) => i.getAttribute('src')?.includes(`.p.${id}/`))?.getAttribute('src') ?? null
+    out.push({ id, name, cover: src?.replace(/\/\d+x\d+$/, '/400x400') ?? null })
+  }
+  return out
+}
+
 export async function searchYandex(q: string): Promise<Track[]> {
   const res = await fetch(`${YA}/search?text=${encodeURIComponent(q)}`, { credentials: 'omit' })
   if (!res.ok) throw new Error(tx("Яндекс Музыка: {0}", res.status))
