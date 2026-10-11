@@ -1061,6 +1061,23 @@
   opacity: 1;
 }
 
+/* reordering the manual queue by drag and drop */
+.q-row[draggable='true'] {
+  cursor: grab;
+}
+
+.q-row.dragging {
+  opacity: 0.4;
+}
+
+.q-row.drop-before {
+  box-shadow: inset 0 2px 0 var(--text);
+}
+
+.q-row.drop-after {
+  box-shadow: inset 0 -2px 0 var(--text);
+}
+
 .q-head-actions {
   display: flex;
   align-items: center;

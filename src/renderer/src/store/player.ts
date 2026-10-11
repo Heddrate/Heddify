@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { api, tracksOf } from '@/lib/api'
 import { trackArt } from '@/lib/artwork'
+import { moveItem } from '@/lib/listOps'
 import type { PlaySource, Route, Track, User } from '@/lib/types'
 import { engine } from '@/player/engine'
 import { toast } from './ui'
@@ -640,6 +641,14 @@ export const player = {
 
   removeManual(i: number): void {
     set({ manual: get().manual.filter((_, j) => j !== i) })
+    persistQueue()
+  },
+
+  /** Moves a track inside the manual queue (drag and drop in the queue panel). */
+  moveManual(from: number, to: number): void {
+    const next = moveItem(get().manual, from, to)
+    if (next === get().manual) return
+    set({ manual: next })
     persistQueue()
   },
 

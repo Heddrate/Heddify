@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { openArtist, trackMenu } from '@/lib/actions'
 import { trackArt } from '@/lib/artwork'
 import { cx } from '@/lib/hooks'
@@ -14,6 +15,12 @@ import { tx } from '@/lib/i18n'
 const SHOW = 80
 const PAST = 20
 
+/** A row dragged inside the manual queue: where it came from and where it would land. */
+interface Drag {
+  from: number
+  over: number
+}
+
 export function QueuePanel(): React.JSX.Element {
   const current = usePlayer((s) => s.current)
   const context = usePlayer((s) => s.context)
@@ -23,6 +30,7 @@ export function QueuePanel(): React.JSX.Element {
   const playing = usePlayer((s) => s.playing)
   const autoplay = usePlayer((s) => s.autoplay)
   const repeat = usePlayer((s) => s.repeat)
+  const [drag, setDrag] = useState<Drag | null>(null)
 
   const start = index + 1
   const upcoming = context.slice(start, start + SHOW)
@@ -56,7 +64,35 @@ export function QueuePanel(): React.JSX.Element {
               <button className="link-more" onClick={player.clearManual}>{tx("Очистить")}</button>
             </div>
             {manual.map((t, i) => (
-              <QueueRow key={`m-${t.id}-${i}`} track={t} onPlay={() => player.jumpManual(i)} onRemove={() => player.removeManual(i)} />
+              <QueueRow
+                key={`m-${t.id}-${i}`}
+                track={t}
+                onPlay={() => player.jumpManual(i)}
+                onRemove={() => player.removeManual(i)}
+                reorder={{
+                  dragging: drag?.from === i,
+                  // a line where the row will land: above it when moving up, below it when moving down
+                  drop: drag && drag.over === i && drag.from !== i ? (drag.from < i ? 'after' : 'before') : undefined,
+                  onStart: (e) => {
+                    e.dataTransfer.setData(QUEUE_MIME, String(i))
+                    e.dataTransfer.effectAllowed = 'move'
+                    setDrag({ from: i, over: i })
+                  },
+                  onOver: (e) => {
+                    if (!drag) return
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = 'move'
+                    if (drag.over !== i) setDrag({ ...drag, over: i })
+                  },
+                  onDrop: (e) => {
+                    if (!drag) return
+                    e.preventDefault()
+                    player.moveManual(drag.from, i)
+                    setDrag(null)
+                  },
+                  onEnd: () => setDrag(null)
+                }}
+              />
             ))}
           </>
         )}
@@ -99,6 +135,18 @@ export function QueuePanel(): React.JSX.Element {
   )
 }
 
+/** Drag-and-drop type for reordering the manual queue (not the track type used for playlists). */
+const QUEUE_MIME = 'application/x-heddify-queue'
+
+interface Reorder {
+  dragging: boolean
+  drop?: 'before' | 'after'
+  onStart: (e: React.DragEvent) => void
+  onOver: (e: React.DragEvent) => void
+  onDrop: (e: React.DragEvent) => void
+  onEnd: () => void
+}
+
 interface RowProps {
   track: Track
   current?: boolean
@@ -106,12 +154,19 @@ interface RowProps {
   playing?: boolean
   onPlay?: () => void
   onRemove?: () => void
+  reorder?: Reorder
 }
 
-function QueueRow({ track, current, past, playing, onPlay, onRemove }: RowProps): React.JSX.Element {
+function QueueRow({ track, current, past, playing, onPlay, onRemove, reorder }: RowProps): React.JSX.Element {
   return (
     <div
-      className={cx('q-row', current && 'current', past && 'past')}
+      className={cx('q-row', current && 'current', past && 'past', reorder?.dragging && 'dragging', reorder?.drop && `drop-${reorder.drop}`)}
+      draggable={!!reorder}
+      title={reorder ? tx('Перетащите, чтобы изменить порядок') : undefined}
+      onDragStart={reorder?.onStart}
+      onDragOver={reorder?.onOver}
+      onDrop={reorder?.onDrop}
+      onDragEnd={reorder?.onEnd}
       onDoubleClick={onPlay}
       onContextMenu={(e) => {
         e.preventDefault()

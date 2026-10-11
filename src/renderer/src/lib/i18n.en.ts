@@ -601,7 +601,8 @@ const EN: Record<string, string> = {
   'Подождите пару секунд и попробуйте снова': 'Wait a couple of seconds and try again',
   'Не удалось войти, попробуйте ещё раз': 'Couldn’t sign in, try again',
   'Продолжить': 'Continue',
-  'Похоже на то, что вы слушаете': 'Similar to what you listen to'
+  'Похоже на то, что вы слушаете': 'Similar to what you listen to',
+  'Перетащите, чтобы изменить порядок': 'Drag to change the order'
 }
 
 export default EN
