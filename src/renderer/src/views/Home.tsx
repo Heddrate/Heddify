@@ -2,27 +2,29 @@ import { useMemo } from 'react'
 import { Card, PlaylistCard, Shelf } from '@/components/Card'
 import { ErrorState, LoadMore, Loading } from '@/components/States'
 import { TrackList } from '@/components/TrackList'
-import { playOrToggle, trackMenu } from '@/lib/actions'
+import { LibCard } from '@/components/LibCard'
+import { playOrToggle, sameRoute, trackMenu } from '@/lib/actions'
 import { api, isPlaylist, tracksOf } from '@/lib/api'
 import { trackArt } from '@/lib/artwork'
 import { useAsync, usePaged } from '@/lib/hooks'
+import { uniqBy, roundRobin } from '@/lib/listOps'
+import { type ContinueItem, continueKey } from '@/lib/continueList'
+import { useContinue } from '@/lib/continue'
+import { recentSeeds, seedsKey, similarTracks } from '@/lib/recs'
+import { libRoute, useLibraryItems, type LibItem } from '@/lib/library'
 import type { PlaySource, Route, StreamItem, Track } from '@/lib/types'
 import { navigate, useApp } from '@/store/app'
 import { player } from '@/store/player'
 import { tx } from '@/lib/i18n'
 import { fetchTracks, useYa } from '@/lib/yandexApi'
-import { useLibraryItems } from '@/lib/library'
-import { useHistory } from '@/lib/played'
-import { LibCard } from '@/components/LibCard'
+import { useHistory, usePlayed } from '@/lib/played'
 import { audius, useAudius } from '@/lib/audius'
 import { radio } from '@/lib/radio'
 import { lang } from '@/lib/i18n'
 import { stationCards } from '@/views/Radio'
+import { toggleWave } from '@/lib/wave'
 
-const uniq = (tracks: Track[]): Track[] => {
-  const seen = new Set<number>()
-  return tracks.filter((t) => !seen.has(t.id) && seen.add(t.id))
-}
+const uniq = (tracks: Track[]): Track[] => uniqBy(tracks, (t) => t.id)
 
 export function Home(): React.JSX.Element {
   // guests (no SoundCloud account) get Yandex and Audius only
@@ -47,6 +49,7 @@ export function Home(): React.JSX.Element {
 
   return (
     <div className="view">
+      <ContinueShelf />
       <FavoritesShelf />
       <PlaylistsShelf />
       {!scIn && (
@@ -75,6 +78,8 @@ export function Home(): React.JSX.Element {
           ))}
         </Shelf>
       )}
+
+      <SimilarShelf />
 
       {selections.data?.map((sel, i) => {
         const items = (sel.items?.collection ?? []).filter(isPlaylist)
@@ -115,17 +120,89 @@ export function Home(): React.JSX.Element {
   )
 }
 
-
-
-
-
-/** Round-robin over several lists: one from each service in turn. */
-function roundRobin<T>(...lists: T[][]): T[] {
-  const out: T[] = []
-  for (let i = 0; i < Math.max(0, ...lists.map((l) => l.length)); i++) for (const l of lists) if (i < l.length) out.push(l[i])
-  return out
+/** Where the user left off: the last playlists, the wave and radio, newest first. */
+function ContinueShelf(): React.JSX.Element | null {
+  const items = useContinue((s) => s.items)
+  const lib = useLibraryItems()
+  const cards = items.map((c) => continueCard(c, lib)).filter((c): c is React.JSX.Element => !!c)
+  if (!cards.length) return null
+  return <Shelf title={tx('Продолжить')}>{cards}</Shelf>
 }
 
+function continueCard(c: ContinueItem, lib: LibItem[]): React.JSX.Element | null {
+  const key = continueKey(c.route)
+  const t = c.track
+  if (c.route.name === 'wave') {
+    return (
+      <Card
+        key={key}
+        title={tx('Моя волна')}
+        sub={t?.title}
+        art={t ? trackArt(t) : null}
+        placeholder="wave"
+        route={c.route}
+        onOpen={() => navigate({ name: 'wave' })}
+        onPlay={() => void toggleWave()}
+      />
+    )
+  }
+  if (c.route.name === 'radio') {
+    if (!t) return null
+    const source: PlaySource = { label: tx('Радио'), route: c.route }
+    return (
+      <Card
+        key={key}
+        title={t.title ?? ''}
+        sub={tx('Радио')}
+        art={trackArt(t)}
+        letter={t.title}
+        placeholder="radio"
+        route={c.route}
+        onOpen={() => navigate(c.route)}
+        onPlay={() => player.playContext([t], 0, source)}
+        menu={() => trackMenu(t)}
+      />
+    )
+  }
+  // a playlist: only if it's still in the library (deleted or not loaded yet → skipped)
+  const item = lib.find((i) => sameRoute(libRoute(i), c.route))
+  return item ? <LibCard key={key} item={item} /> : null
+}
+
+/** Tracks like the last few the user played, from the services they came from. */
+function SimilarShelf(): React.JSX.Element | null {
+  const played = usePlayed((s) => s.items)
+  const scIn = useApp((s) => s.auth === 'in')
+  const seeds = useMemo(() => recentSeeds(played), [played])
+  const key = seedsKey(seeds)
+  const res = useAsync(
+    () => (seeds.length ? similarTracks(seeds, scIn) : Promise.resolve([] as Track[])),
+    [key, scIn],
+    seeds.length ? `p:similar:${scIn ? 'sc' : 'guest'}:${key}` : null
+  )
+  // the shelf keeps up with what was just heard, without fetching again
+  const heard = useMemo(() => new Set(played.map((p) => p.track.id)), [played])
+  const tracks = useMemo(() => (res.data ?? []).filter((t) => !heard.has(t.id)), [res.data, heard])
+  const title = tx('Похоже на то, что вы слушаете')
+  const source: PlaySource = { label: title, route: { name: 'home' } }
+  if (!tracks.length) return null
+  return (
+    <Shelf title={title}>
+      {tracks.map((t, i) => (
+        <Card
+          key={t.id}
+          title={t.title ?? ''}
+          sub={t.user?.username}
+          art={trackArt(t)}
+          letter={t.user?.username ?? t.title}
+          onOpen={() => player.playContext(tracks, i, source)}
+          onPlay={() => player.playContext(tracks, i, source)}
+          menu={() => trackMenu(t)}
+        />
+      ))}
+    </Shelf>
+  )
+}
 
 /** Recent likes from every service, mixed in one row. */
 function FavoritesShelf(): React.JSX.Element | null {

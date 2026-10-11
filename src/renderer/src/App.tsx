@@ -22,6 +22,7 @@ import { LocalPlaylistView, OfflineView } from '@/views/Local'
 import { Loading } from '@/components/States'
 import '@/lib/yandexApi'
 import '@/lib/played'
+import '@/lib/continue'
 import '@/lib/radio'
 import '@/lib/local'
 

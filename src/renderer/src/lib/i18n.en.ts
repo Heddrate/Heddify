@@ -599,7 +599,9 @@ const EN: Record<string, string> = {
   'Токен выглядит некорректно': 'The token doesn’t look right',
   'Токен не подошёл': 'The token didn’t work',
   'Подождите пару секунд и попробуйте снова': 'Wait a couple of seconds and try again',
-  'Не удалось войти, попробуйте ещё раз': 'Couldn’t sign in, try again'
+  'Не удалось войти, попробуйте ещё раз': 'Couldn’t sign in, try again',
+  'Продолжить': 'Continue',
+  'Похоже на то, что вы слушаете': 'Similar to what you listen to'
 }
 
 export default EN

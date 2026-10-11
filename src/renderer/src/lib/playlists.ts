@@ -5,6 +5,7 @@
 import { create } from 'zustand'
 import type { Track } from './types'
 import { tx } from './i18n'
+import { freshOnly, moveItem } from './listOps'
 import { downloadTracks } from './offline'
 import { whenBridge } from './bridge'
 import { navigate, useApp } from '@/store/app'
@@ -65,8 +66,7 @@ export async function createPlaylist(tracks: Track[] = [], open = true): Promise
 export function addToPlaylist(id: string, tracks: Track[]): void {
   const list = getPlaylist(id)
   if (!list) return
-  const have = new Set(list.tracks.map((t) => t.id))
-  const fresh = tracks.filter((t) => !have.has(t.id))
+  const fresh = freshOnly(tracks, list.tracks.map((t) => t.id), (t) => t.id)
   if (!fresh.length) {
     toast(tx('Уже в плейлисте «{0}»', list.title))
     return
@@ -81,13 +81,7 @@ export function removeFromPlaylist(id: string, index: number): void {
 }
 
 export function moveInPlaylist(id: string, from: number, to: number): void {
-  update(id, (l) => {
-    if (to < 0 || to >= l.tracks.length) return l
-    const tracks = l.tracks.slice()
-    const [t] = tracks.splice(from, 1)
-    tracks.splice(to, 0, t)
-    return { ...l, tracks }
-  })
+  update(id, (l) => ({ ...l, tracks: moveItem(l.tracks, from, to) }))
 }
 
 export async function renamePlaylist(id: string): Promise<void> {

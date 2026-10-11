@@ -1,30 +1,37 @@
-SC Player 1.1
+Heddify
 
 Плеер для Windows: SoundCloud, Яндекс Музыка и Audius в одном окне.
 
 — «Моя волна» из всех сервисов сразу
+— «Продолжить»: последние плейлисты, волна и станции на главной
+— «Похоже на то, что вы слушаете» — треки под ваши последние прослушивания
+— Интернет-радио и свои музыкальные файлы с компьютера
 — Свои плейлисты с треками откуда угодно
 — Скачивание для прослушивания без интернета
-— Тексты песен, таймер сна, медиа-клавиши
+— Тексты песен, таймер сна, медиа-клавиши, полноэкранный плеер
 — Статус «Слушает» в Discord
 — Тёмные темы, русский и английский
 
-Windows 10/11, 64 бит. Установщик: SC-Player-Setup-1.1.1.exe
+Windows 10/11, 64 бит. Установщик: Heddify-Setup.exe (есть и portable-версия).
 Windows может предупредить о неизвестном издателе: «Подробнее» → «Выполнить в любом случае».
 SoundCloud из России работает через VPN, Яндекс Музыка и Audius — без него.
 
 ———
 
-SC Player 1.1
+Heddify
 
 A Windows player for SoundCloud, Yandex Music and Audius in one window.
 
 — “My Wave” across all your services
+— “Continue”: your last playlists, wave and stations on the home page
+— “Similar to what you listen to” — tracks picked from your recent listening
+— Internet radio and your own music files from the computer
 — Your own playlists with tracks from anywhere
 — Downloads for offline listening
-— Lyrics, sleep timer, media keys
+— Lyrics, sleep timer, media keys, full-screen player
 — “Listening to” status in Discord
 — Dark themes, English and Russian
 
-Windows 10/11, 64-bit. Installer: SC-Player-Setup-1.1.1.exe
+Windows 10/11, 64-bit. Installer: Heddify-Setup.exe (a portable version is available too).
 If Windows warns about an unknown publisher: “More info” → “Run anyway”.
+SoundCloud needs a VPN from Russia; Yandex Music and Audius don't.

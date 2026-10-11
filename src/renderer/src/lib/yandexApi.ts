@@ -399,6 +399,12 @@ export async function yandexWaveTracks(count: number, exclude: Set<number>): Pro
   return fresh(await fetchTracks(seeds)).slice(0, count)
 }
 
+/** Yandex's own "similar tracks" for one track (used by the home page's recommendations). */
+export async function yandexSimilar(trackId: number): Promise<Track[]> {
+  const r = await yaApi<{ similarTracks?: ApiTrack[] }>('GET', `/tracks/${trackId}/similar`)
+  return (r.similarTracks ?? []).map(toTrack).filter((t): t is Track => !!t)
+}
+
 /* ---------- artists & albums ---------- */
 
 export interface YaAlbum {

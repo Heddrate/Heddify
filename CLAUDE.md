@@ -44,6 +44,7 @@ The owner talks in Russian, casually; answer in Russian, short and to the point.
 npm run dev          # Electron with hot reload
 npm run dev:web      # renderer only, in a browser, with mock data (src/renderer/src/dev/mock.ts)
 npm run typecheck    # tsc for main/preload and renderer — run after every change
+npm test             # unit tests (vitest) for the pure logic in tests/ — run after touching lib/listOps, likes, playlists, tokens, Home memory
 npm run build        # electron-vite build → out/
 npx electron-vite preview --skipBuild   # run the built app
 npm run dist         # build + electron-builder → dist/ (NSIS installer + portable exe)
@@ -90,7 +91,10 @@ folder so nobody gets signed out). Inside: `state.json` (prefs, encrypted token)
 Not done yet: **Last.fm scrobbling** (needs an API key the owner registers), code signing
 (paid certificate), Spotify (official API allows only 5 allowlisted users + Premium, and its
 DRM doesn't work in Electron — owner was told). Git: repo is on GitHub (Heddrate/Heddify,
-branch main); commit as "Heddrate <211876846+Heddrate@users.noreply.github.com>".
+branch main); commit as "Heddrate <211876846+Heddrate@users.noreply.github.com>". Commits and
+PRs carry no Claude / AI co-author or "generated with" lines: the project is the owner's alone.
+Old commits (up to 1.5.0) still have `Co-Authored-By: Claude` trailers — don't rewrite
+published history without asking.
 
 **SoundCloud DRM (tried 2026-10-09, not shipped):** castlabs Electron 44.5.1+wvcus gets the
 Widevine CDM and passes EME; the owner made a castlabs EVS account and VMP-signed a test build
@@ -201,6 +205,14 @@ Electron 44, electron-vite 5, Vite 7, React 19, zustand 5, hls.js (lazy-loaded),
   hides likes older than its oldest loaded one so pages never jump in above.
 - `lib/played.ts` — the app's own listening history (all services, localStorage `played`),
   merged with SoundCloud's in `useHistory()`.
+- `lib/listOps.ts` — pure list helpers (uniqBy, roundRobin, moveItem, timed, mergeLikeRows,
+  pickRecs). No app imports, so `tests/` loads it directly. Likes and playlists use it.
+- `lib/continueList.ts` (pure) + `lib/continue.ts` (store, localStorage `continueList`) — the
+  home shelf "Продолжить": the last playlist / wave / radio station per context, newest first,
+  updated on every track change. `shared/token.ts` (`parseToken`) is used by the main process.
+- `lib/recs.ts` — "Похоже на то, что вы слушаете": similar tracks to the last 6 played, each from
+  its own service (SoundCloud `related`, Yandex `/similar`, Audius related artists' tracks);
+  radio and own files give no seeds. The shelf filters out what was just heard at render time.
 - `lib/update.ts` — update state for the avatar dot / Settings / UpdateBanner (with release notes).
 - `lib/radio.ts` + `views/Radio.tsx` — internet radio from Radio Browser (open API, mirrors
   de1/fi1/de2, https streams only because of the CSP), ordered by votes, bitrate ≥ 96; the
@@ -223,7 +235,9 @@ Electron 44, electron-vite 5, Vite 7, React 19, zustand 5, hls.js (lazy-loaded),
   browser preview installs its mock asynchronously).
 - `lib/theme.ts` + `styles/themes.css` — themes (dark, oled, graphite, light) and accent
   (mono / SoundCloud orange) via `data-theme` / `data-accent` on `<html>`.
-- Views: Home (shelves only — no greeting, no tile grid), Wave, Search (tabs Всё / Треки /
+- Views: Home (shelves only — no greeting, no tile grid; order: Продолжить, Ваши лайки, Ваши
+  плейлисты, [guest: Audius shelves], Недавно прослушанное, Похоже на то, что вы слушаете,
+  selections, [signed in: Audius], Радио last, then the feed), Wave, Search (tabs Всё / Треки /
   Исполнители / Плейлисты / Альбомы; tracks of all services mixed), Library (unified likes,
   history, following, Медиатека), Playlist, User, Yandex views, Audius view ("В тренде"),
   Local (own playlists: cover button says "Выбрать обложку", "Добавить треки" search over
