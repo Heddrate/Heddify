@@ -192,9 +192,6 @@ function RightControls(): React.JSX.Element {
 
   return (
     <div className="pb-right">
-      <button className="icon-btn" onClick={toggleFull} disabled={!hasTrack} aria-label={tx('Во весь экран')} title={tx('Во весь экран')}>
-        <Icon name="fullscreen" size={20} />
-      </button>
       <button
         className={cx('icon-btn toggle autoplay-btn', autoplay && 'on')}
         onClick={player.toggleAutoplay}
@@ -224,6 +221,9 @@ function RightControls(): React.JSX.Element {
           onCommit={player.setVolume}
         />
       </div>
+      <button className="icon-btn" onClick={toggleFull} disabled={!hasTrack} aria-label={tx('Во весь экран')} title={tx('Во весь экран')}>
+        <Icon name="fullscreen" size={20} />
+      </button>
     </div>
   )
 }
