@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { releaseNotes } from './buildNotes'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const pkg = JSON.parse(readFileSync(resolve(here, 'package.json'), 'utf8')) as { version: string }
@@ -13,6 +14,6 @@ export default defineConfig({
   root: resolve(here, 'src/renderer'),
   resolve: { alias: { '@': resolve(here, 'src/renderer/src') } },
   plugins: [react()],
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  define: { __APP_VERSION__: JSON.stringify(pkg.version), __RELEASE_NOTES__: JSON.stringify(releaseNotes(pkg.version)) },
   server: { port: 5173, strictPort: true }
 })

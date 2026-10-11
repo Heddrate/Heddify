@@ -23,6 +23,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      # unit tests (pure logic) and browser tests (the main flows in the UI, with mock data)
+      - run: npm test
+      - run: npx playwright install chromium
+      - run: npm run test:e2e
 
       # One draft release up front: electron-builder uploads every file into it. Without it,
       # its parallel uploads race and create two releases for the same tag.
@@ -38,7 +42,11 @@ jobs:
           gh release create "$tag" --draft --title "${tag#v}" --notes-file "$notes" --verify-tag
 
       - run: npx electron-vite build
+      # Signing is on when the certificate secrets are set (see the notes in docs/SIGNING.md); without them the build is unsigned
       - run: npx electron-builder --win --publish always
+        env:
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
       - name: Publish release
         shell: bash

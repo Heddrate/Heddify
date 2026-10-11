@@ -185,21 +185,12 @@ export function Progress(): React.JSX.Element {
 function RightControls(): React.JSX.Element {
   const volume = usePlayer((s) => s.volume)
   const muted = usePlayer((s) => s.muted)
-  const autoplay = usePlayer((s) => s.autoplay)
   const queueOpen = useApp((s) => s.panel === 'queue')
   const hasTrack = usePlayer((s) => !!s.current)
   const level = muted || volume === 0 ? 'volumeOff' : volume < 0.5 ? 'volumeLow' : 'volumeHigh'
 
   return (
     <div className="pb-right">
-      <button
-        className={cx('icon-btn toggle autoplay-btn', autoplay && 'on')}
-        onClick={player.toggleAutoplay}
-        aria-label={tx("Автопродолжение")}
-        title={autoplay ? tx("Автопродолжение: похожие треки после очереди") : tx("Автопродолжение выключено")}
-      >
-        <Icon name="infinity" size={20} />
-      </button>
       <button
         className={cx('icon-btn toggle', queueOpen && 'on')}
         onClick={toggleQueue}

@@ -57,7 +57,7 @@ export const usePlayer = create<PlayerState>(() => ({
   muted: false,
   shuffle: false,
   repeat: 'off',
-  autoplay: true,
+  autoplay: false,
   unplayable: new Set(),
   drm: new Set()
 }))
@@ -151,11 +151,13 @@ export async function restoreSession(): Promise<void> {
     muted,
     shuffle: prefs.shuffle === true,
     repeat: prefs.repeat === 'all' || prefs.repeat === 'one' ? prefs.repeat : 'off',
-    autoplay: prefs.autoplay !== false
+    // off by default; only a choice made in Settings turns it on (older builds stored it as on)
+    autoplay: prefs.autoplayChosen === true && prefs.autoplay === true
   })
   engine.setVolume(volume, muted)
   engine.setLeveling(prefs.leveling === true)
   engine.setFade(prefs.crossfade === true)
+  engine.setEqualizer(prefs.eqOn === true, Array.isArray(prefs.eqGains) ? (prefs.eqGains as number[]) : [])
 
   const session = prefs.session as SavedSession | undefined
   if (!session?.current || get().current) return
@@ -617,6 +619,7 @@ export const player = {
   toggleAutoplay(): void {
     set({ autoplay: !get().autoplay })
     persistPrefs()
+    void window.sc.prefs.set({ autoplayChosen: true })
   },
 
   /** Plays a track right now without leaving the current queue. */

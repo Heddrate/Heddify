@@ -8,6 +8,7 @@ const loadHls = async (): Promise<void> => {
 import type { StreamInfo, StreamRequest } from '../../../shared/ipc'
 import type { Track } from '@/lib/types'
 import { tx } from '@/lib/i18n'
+import { EQ_BANDS, fadeGain } from './audioMath'
 
 export interface EngineEvents {
   time(position: number, duration: number): void
@@ -19,8 +20,6 @@ export interface EngineEvents {
 }
 
 const MAX_RECOVERIES = 3
-/** Length of the fade-in at a track's start and fade-out at its end ("плавный переход"). */
-const FADE_S = 2
 
 /** The bits of a track worth keeping next to its cached file (offline list). */
 export const trackMeta = (t: Track): Track => ({
@@ -66,10 +65,18 @@ class Engine {
   private recoveries = 0
   private ev: EngineEvents | null = null
   private leveling = false
-  private graph: { ctx: AudioContext; src: MediaElementAudioSourceNode; comp: DynamicsCompressorNode; makeup: GainNode } | null = null
+  private graph: {
+    ctx: AudioContext
+    src: MediaElementAudioSourceNode
+    eq: BiquadFilterNode[]
+    comp: DynamicsCompressorNode
+    makeup: GainNode
+  } | null = null
   private level = 0.8
   private muted = false
   private fade = false
+  private eqOn = false
+  private eqGains: number[] = EQ_BANDS.map(() => 0)
   private fadeTimer: ReturnType<typeof setInterval> | null = null
 
   constructor() {
@@ -318,10 +325,32 @@ class Engine {
     if (this.graph) this.connectGraph()
   }
 
+  /**
+   * Equalizer: five bands in dB (see EQ_BANDS). Like the leveling, it needs the audio graph,
+   * so the first switch-on applies from the next track; changing the bands is immediate.
+   */
+  setEqualizer(on: boolean, gains: number[]): void {
+    this.eqOn = on
+    this.eqGains = EQ_BANDS.map((_, i) => gains[i] ?? 0)
+    if (on) this.audio.crossOrigin = 'anonymous'
+    if (this.graph) {
+      this.graph.eq.forEach((f, i) => (f.gain.value = on ? this.eqGains[i] : 0))
+      this.connectGraph()
+    }
+  }
+
   private ensureGraph(): void {
-    if (!this.leveling || this.graph) return
+    if (!(this.leveling || this.eqOn) || this.graph) return
     const ctx = new AudioContext()
     const src = ctx.createMediaElementSource(this.audio)
+    const eq = EQ_BANDS.map((b, i) => {
+      const f = ctx.createBiquadFilter()
+      f.type = b.type
+      f.frequency.value = b.freq
+      f.Q.value = 1
+      f.gain.value = this.eqOn ? this.eqGains[i] : 0
+      return f
+    })
     const comp = ctx.createDynamicsCompressor()
     comp.threshold.value = -24
     comp.knee.value = 24
@@ -330,23 +359,17 @@ class Engine {
     comp.release.value = 0.3
     const makeup = ctx.createGain()
     makeup.gain.value = 1.35
-    this.graph = { ctx, src, comp, makeup }
+    this.graph = { ctx, src, eq, comp, makeup }
     this.connectGraph()
   }
 
+  /** source → equalizer bands → (leveling: compressor → makeup) → speakers. */
   private connectGraph(): void {
     const g = this.graph
     if (!g) return
-    g.src.disconnect()
-    g.comp.disconnect()
-    g.makeup.disconnect()
-    if (this.leveling) {
-      g.src.connect(g.comp)
-      g.comp.connect(g.makeup)
-      g.makeup.connect(g.ctx.destination)
-    } else {
-      g.src.connect(g.ctx.destination)
-    }
+    for (const n of [g.src, ...g.eq, g.comp, g.makeup]) n.disconnect()
+    const chain: AudioNode[] = [g.src, ...g.eq, ...(this.leveling ? [g.comp, g.makeup] : []), g.ctx.destination]
+    for (let i = 0; i < chain.length - 1; i++) chain[i].connect(chain[i + 1])
   }
 
   /**
@@ -371,12 +394,7 @@ class Engine {
 
   private applyVolume(): void {
     // squared curve feels linear to the ear
-    let gain = 1
-    const d = this.duration()
-    if (this.fade && d > FADE_S * 3 && !this.track?.radio) {
-      const t = this.audio.currentTime
-      gain = Math.max(0, Math.min(1, Math.min(t, d - t) / FADE_S))
-    }
+    const gain = fadeGain(this.audio.currentTime, this.duration(), this.fade && !this.track?.radio)
     this.audio.volume = Math.max(0, Math.min(1, this.level * this.level * gain))
     this.audio.muted = this.muted
   }
