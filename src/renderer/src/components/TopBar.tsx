@@ -121,13 +121,20 @@ function SearchBox(): React.JSX.Element {
 /** Avatar (or a person icon without SoundCloud): profile, settings, update, sign-in / sign-out. */
 function UserButton(): React.JSX.Element {
   const me = useApp((s) => s.me)
-  const update = useUpdate((s) => (s.status === 'ready' ? (s.version ?? '') : null))
+  // primitive selectors: the menu re-renders with the download progress without a fresh object each time
+  const updStatus = useUpdate((s) => s.status)
+  const updVersion = useUpdate((s) => s.version ?? '')
+  const updPercent = useUpdate((s) => s.percent ?? 0)
   const open = (e: React.MouseEvent<HTMLButtonElement>): void =>
     openMenuAt(e.currentTarget, [
       ...(me ? [{ label: tx('Мой профиль'), icon: 'person' as const, onSelect: () => navigate({ name: 'user', id: me.id }) }] : []),
       { label: tx('Настройки'), icon: 'settings', onSelect: () => navigate({ name: 'settings' }) },
-      ...(update !== null
-        ? [{ label: update ? tx('Обновить до {0}', update) : tx('Обновить'), icon: 'refresh' as const, onSelect: installUpdate }]
+      // the update downloads on its own; "Обновить" waits here until it's ready
+      ...(updStatus === 'downloading'
+        ? [{ label: tx('Скачиваю версию {0} · {1}%', updVersion, updPercent), icon: 'refresh' as const, onSelect: () => undefined, disabled: true }]
+        : []),
+      ...(updStatus === 'ready'
+        ? [{ label: updVersion ? tx('Обновить до {0}', updVersion) : tx('Обновить'), icon: 'refresh' as const, onSelect: installUpdate }]
         : []),
       { separator: true },
       me
@@ -137,12 +144,12 @@ function UserButton(): React.JSX.Element {
   return (
     <button
       className="avatar-btn"
-      title={update !== null ? tx('Есть обновление') : (me?.username ?? tx('Настройки'))}
+      title={updStatus === 'ready' ? tx('Есть обновление') : (me?.username ?? tx('Настройки'))}
       aria-label={tx('Профиль')}
       onClick={open}
     >
       {me ? <Artwork src={userArt(me, 'large')} size={32} round placeholder="person" /> : <Icon name="person" size={20} />}
-      {update !== null && <span className="avatar-dot" />}
+      {updStatus === 'ready' && <span className="avatar-dot" />}
     </button>
   )
 }

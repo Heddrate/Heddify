@@ -860,6 +860,29 @@
   align-items: center;
 }
 
+/* on a track change the lyrics or next tracks leave, then the new track's come in */
+.full-right:not(.leaving) {
+  animation: panel-enter 0.35s var(--ease-out) backwards;
+}
+
+.full-right.leaving {
+  animation: panel-leave 0.28s ease-in forwards;
+}
+
+@keyframes panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes panel-leave {
+  to {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
 .full-lyrics {
   width: 100%;
   max-height: 100%;

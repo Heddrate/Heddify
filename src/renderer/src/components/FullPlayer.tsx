@@ -1,10 +1,11 @@
-import { useEffect, useRef, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { create } from 'zustand'
 import { openArtist, toggleAnyLike, useLiked } from '@/lib/actions'
 import { trackArt, useArtColor } from '@/lib/artwork'
 import { cx, useAsync } from '@/lib/hooks'
 import { tx } from '@/lib/i18n'
 import { activeLine, fetchLyrics } from '@/lib/lyrics'
+import type { Track } from '@/lib/types'
 import { player, usePlayer } from '@/store/player'
 import { Artwork } from './Artwork'
 import { Icon } from './Icon'
@@ -37,6 +38,18 @@ function FullView(): React.JSX.Element {
   const art = trackArt(track, 't500x500')
   const color = useArtColor(art) ?? 'hsl(0 0% 24%)'
   const liked = useLiked(track)
+  // the right side shows `panel`: it leaves with an animation when the track changes, then the new track's lyrics or next tracks come in
+  const [panel, setPanel] = useState(track)
+  const [leaving, setLeaving] = useState(false)
+  useEffect(() => {
+    if (panel.id === track.id) return
+    setLeaving(true)
+    const t = window.setTimeout(() => {
+      setPanel(track)
+      setLeaving(false)
+    }, 280)
+    return () => window.clearTimeout(t)
+  }, [track, panel.id])
 
   return (
     <div className="full-player" style={{ '--full-color': color } as CSSProperties} role="dialog" aria-label={tx('Сейчас играет')}>
@@ -75,16 +88,15 @@ function FullView(): React.JSX.Element {
         <Progress />
         <Controls />
       </div>
-      <div className="full-right">
-        <FullLyrics />
+      <div className={cx('full-right', leaving && 'leaving')}>
+        <FullLyrics key={panel.id} track={panel} />
       </div>
     </div>
   )
 }
 
 /** Synced lyrics that follow the music; plain text; or, without words, what plays next. */
-function FullLyrics(): React.JSX.Element {
-  const track = usePlayer((s) => s.current)!
+function FullLyrics({ track }: { track: Track }): React.JSX.Element {
   const res = useAsync(() => fetchLyrics(track), [track.id])
   const lines = res.data?.synced ?? null
   const index = usePlayer((s) => (lines ? activeLine(lines, s.position) : -1))
@@ -113,12 +125,15 @@ function FullLyrics(): React.JSX.Element {
     )
   }
   if (res.data?.plain) return <div className="full-lyrics plain scroll-y">{res.data.plain}</div>
-  return <UpNext />
+  return <UpNext track={track} />
 }
 
-function UpNext(): React.JSX.Element | null {
+function UpNext({ track }: { track: Track }): React.JSX.Element | null {
   const context = usePlayer((s) => s.context)
-  const index = usePlayer((s) => s.index)
+  const current = usePlayer((s) => s.index)
+  // the track's own place in the queue (the store's index may already point at the next one)
+  const index = context[current]?.id === track.id ? current : context.findIndex((t) => t.id === track.id)
+  if (index < 0) return null
   const next = context.slice(index + 1, index + 6)
   if (!next.length) return null
   return (
