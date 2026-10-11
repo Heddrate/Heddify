@@ -25,22 +25,21 @@ export function UpdateBanner(): React.JSX.Element | null {
   if (version === null || dismissed === version) return null
   return (
     <div className="update-banner" role="status">
-      <Logo size={36} />
-      <div className="update-text">
-        <strong>{tx('Доступно обновление')}</strong>
-        <span>{version ? tx('Версия {0} готова к установке', version) : tx('Новая версия готова к установке')}</span>
-        {notes && notes.length > 0 && (
-          <ul className="update-notes">
-            {notes.map((n) => (
-              <li key={n}>{n}</li>
-            ))}
-          </ul>
-        )}
+      <div className="update-head">
+        <Logo size={36} />
+        <div className="update-text">
+          <strong>{tx('Доступно обновление')}</strong>
+          <span>{version ? tx('Версия {0} готова к установке', version) : tx('Новая версия готова к установке')}</span>
+        </div>
       </div>
+      {notes && notes.length > 0 && (
+        <ul className="update-notes">
+          {notes.map((n) => (
+            <li key={n}>{n}</li>
+          ))}
+        </ul>
+      )}
       <div className="update-actions">
-        <button className="btn btn-primary btn-sm" onClick={installUpdate}>
-          {tx('Перезапустить')}
-        </button>
         <button
           className="btn btn-text btn-sm"
           onClick={() => {
@@ -49,6 +48,9 @@ export function UpdateBanner(): React.JSX.Element | null {
           }}
         >
           {tx('Позже')}
+        </button>
+        <button className="btn btn-primary btn-sm" onClick={installUpdate}>
+          {tx('Перезапустить')}
         </button>
       </div>
     </div>

@@ -1029,11 +1029,11 @@
   bottom: calc(var(--playerbar) + 16px);
   z-index: 95;
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  width: 480px;
+  flex-direction: column;
+  gap: 12px;
+  width: 360px;
   max-width: calc(100vw - 32px);
-  padding: 14px 16px;
+  padding: 16px;
   border-radius: var(--r);
   background: var(--raised);
   border: 1px solid var(--line-2);
@@ -1041,7 +1041,13 @@
   animation: toast-in 0.18s ease-out;
 }
 
-.update-banner .logo {
+.update-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.update-head .logo {
   flex: none;
 }
 
@@ -1051,7 +1057,11 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.update-text strong {
   font-size: 14px;
+  font-weight: 700;
 }
 
 .update-text span {
@@ -1059,20 +1069,37 @@
   color: var(--text-2);
 }
 
+/* release notes: a short list, long lines cut to two */
 .update-notes {
-  margin: 6px 0 0;
-  padding-left: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   font-size: 13px;
+  line-height: 1.4;
   color: var(--text-2);
-  line-height: 1.45;
+}
+
+.update-notes li {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.update-notes li::before {
+  content: '•';
+  margin-right: 8px;
+  color: var(--text-3);
 }
 
 .update-actions {
-  flex: none;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
 }
 
 .toast.with-action {
