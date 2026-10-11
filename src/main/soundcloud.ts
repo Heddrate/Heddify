@@ -107,10 +107,35 @@ let syncing: Promise<boolean> | null = null
 let lastSync = 0
 
 /**
+ * SoundCloud's tokens are JWTs that live about a day. When ours is close to its end (or
+ * past it), the signed-in web session renews it: soundcloud.com refreshes its own token and
+ * we pick the new one up. Returns ms until expiry (negative = expired), null if unknown.
+ */
+export function tokenLifeLeft(token = store.getToken()): number | null {
+  const part = token?.split('.')[1]
+  if (!part) return null
+  try {
+    const exp = (JSON.parse(Buffer.from(part, 'base64url').toString('utf8')) as { exp?: number }).exp
+    return typeof exp === 'number' ? exp * 1000 - Date.now() : null
+  } catch {
+    return null
+  }
+}
+
+/** Renews the token through the web session when it expires within `marginMs`. */
+export async function renewTokenIfNeeded(marginMs = 15 * 60_000): Promise<void> {
+  const left = tokenLifeLeft()
+  if (left === null || left > marginMs) return
+  const ok = await syncSession(25000, true)
+  log(`token renew: ${ok ? 'ok' : 'no fresh token from the web session'}`)
+}
+
+/**
  * Opens soundcloud.com in a hidden window using the stored web session and picks up
  * the client id (and refreshed token, if the web session is signed in) it uses.
+ * With `waitToken` it waits for a token different from the stored one (renewal).
  */
-export function syncSession(timeoutMs = 25000): Promise<boolean> {
+export function syncSession(timeoutMs = 25000, waitToken = false): Promise<boolean> {
   if (syncing) return syncing
   if (isSniffing()) return Promise.resolve(false)
   lastSync = Date.now()
@@ -122,6 +147,8 @@ export function syncSession(timeoutMs = 25000): Promise<boolean> {
     })
     win.webContents.setAudioMuted(true)
     let gotClient = false
+    let gotToken = false
+    const before = store.getToken()
 
     const finish = (ok: boolean): void => {
       clearTimeout(timer)
@@ -132,15 +159,18 @@ export function syncSession(timeoutMs = 25000): Promise<boolean> {
     }
 
     const stop = sniff((d) => {
-      if (d.token && store.getToken()) store.setToken(d.token)
+      if (d.token && store.getToken()) {
+        store.setToken(d.token)
+        if (d.token !== before) gotToken = true
+      }
       if (d.clientId) {
         store.setClient(d.clientId, d.appVersion)
         gotClient = true
-        // give the page a moment to issue an authorised request too
-        setTimeout(() => finish(true), 1500)
       }
+      // a renewal waits for the new token; otherwise the client id is enough
+      if (waitToken ? gotToken : gotClient) setTimeout(() => finish(true), waitToken ? 300 : 1500)
     })
-    const timer = setTimeout(() => finish(gotClient), timeoutMs)
+    const timer = setTimeout(() => finish(waitToken ? gotToken : gotClient), timeoutMs)
     win.loadURL('https://soundcloud.com/discover').catch(() => {
       /* navigation errors are reported via timeout */
     })
@@ -213,7 +243,9 @@ export async function apiRequest<T = unknown>(
   // A stale client id also yields 401: refresh it from the web session once and retry.
   // Writes don't trigger this — a 401 there is usually about the endpoint, not the session.
   if (res.status === 401 && method === 'GET' && !retried && canResync()) {
-    await syncSession()
+    // an expired token (they live ~a day) is renewed through the web session
+    const left = tokenLifeLeft()
+    await syncSession(25000, left !== null && left < 60_000)
     return apiRequest<T>(method, pathOrUrl, params, body, true, quiet)
   }
 

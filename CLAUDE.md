@@ -2,7 +2,7 @@
 
 Desktop music player for Windows by Heddrate (called "SC Player" before 1.2): **SoundCloud,
 Yandex Music and Audius in one window**, plus internet radio and the user's own music files, styled like Spotify / Yandex Music. Current version:
-**1.4.2** (`package.json`). Spotify is planned as the next service — keep new code
+**1.5.0** (`package.json`). Spotify is planned as the next service — keep new code
 service-agnostic (one library, one likes list, one search).
 The owner talks in Russian, casually; answer in Russian, short and to the point.
 
@@ -120,8 +120,20 @@ Electron 44, electron-vite 5, Vite 7, React 19, zustand 5, hls.js (lazy-loaded),
   follows) go through a hidden soundcloud.com page ("web bridge") because direct calls get
   403 from DataDome. `resolveStream` picks the best transcoding, detects DRM-only tracks.
   Firefox UA spoof only for Google sign-in pages (a session-wide spoof triggered DataDome).
-- `auth.ts` — sign-in window, `loginWithToken` (accepts bare token, `OAuth …`, or a whole
-  cookie string with `oauth_token=`), logout.
+- `auth.ts` — sign-in window, `loginWithToken` (accepts bare token, `OAuth …`/`Bearer …`, or a
+  whole cookie string with `oauth_token=`; tokens may be JWTs with dots), logout.
+- **Token lifetime:** since 2026 SoundCloud tokens are JWTs living ~24 h. `soundcloud.ts`
+  `tokenLifeLeft()` reads `exp`; `renewTokenIfNeeded()` (at start + every 10 min, 15 min margin)
+  and a 401 on a GET run `syncSession(…, waitToken)` — the hidden soundcloud.com page in
+  `persist:soundcloud` renews its own token and we sniff the new one. Token-only sign-ins have
+  no web session, so they can't be renewed. If renewal fails the renderer does NOT go to the
+  start screen: `enter()`/auth-lost switch to guest mode and show a toast "Вход в SoundCloud
+  закончился · Войти снова" (the start screen is only for a first run).
+- **Gotcha (testing):** Claude Desktop is an MSIX app — anything launched from Claude's tools
+  (Start-Process, electron.exe) runs inside its container and its AppData writes are redirected
+  to `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\…`; Claude's own shell sees that
+  merged view too. Don't trust profile files read from here, and don't start the owner's real
+  Heddify from tools — ask him to start it.
 - `store.ts` — `state.json`: prefs, token (encrypted with `safeStorage`), window bounds.
 - `cache.ts` — audio cache: `scp-cache://audio/<key>` protocol with byte ranges + CORS,
   LRU by size limit (`cacheLimitMb`, default 1 GB), background download after a track starts
@@ -191,7 +203,9 @@ Electron 44, electron-vite 5, Vite 7, React 19, zustand 5, hls.js (lazy-loaded),
   merged with SoundCloud's in `useHistory()`.
 - `lib/update.ts` — update state for the avatar dot / Settings / UpdateBanner (with release notes).
 - `lib/radio.ts` + `views/Radio.tsx` — internet radio from Radio Browser (open API, mirrors
-  de1/fi1/de2, https streams only because of the CSP), genre chips, favourite stations (pref
+  de1/fi1/de2, https streams only because of the CSP), ordered by votes, bitrate ≥ 96; the
+  Russian UI starts with a curated list of well-known RU stations (`RU_STATIONS`, matched by
+  name within RU, exact name first) because the catalogue's "popular" list is noise; genre chips, favourite stations (pref
   `radioFavs`), play click reported to the catalogue. Stations are tracks with `origin: 'radio'`,
   ids 2e12+, `radio: {uuid, url, hls}`; the player bar shows "Эфир" instead of a timeline.
 - `lib/local.ts` + `views/Files.tsx` — own files in the renderer: tracks with `origin: 'local'`,
@@ -221,7 +235,8 @@ Electron 44, electron-vite 5, Vite 7, React 19, zustand 5, hls.js (lazy-loaded),
   pref `onboarded`; installs with `ya-checked` in localStorage skip it), UpdateBanner
   ("Доступно обновление" with Перезапустить / Позже), TrackList rows: draggable (TRACK_MIME
   in lib/playlists.ts), "+" (add to playlist) next to the heart, `onReorder` for own
-  playlists; Artwork `letter` fallback (artist initial) when there's no cover/avatar, PlayerBar (cover click opens "Сейчас играет"), NowPlayingPanel
+  playlists; Artwork `letter` fallback (artist initial) when there's no cover/avatar, PlayerBar (cover click opens "Сейчас играет"; a full-screen button opens FullPlayer: big
+  cover on the cover's colour, synced lyrics or "Далее", Esc closes), NowPlayingPanel
   (lyrics + sleep timer buttons in its header, lyrics card), LyricsPanel, QueuePanel
   ("Недавно звучало"), TrackList (service badges only in mixed lists).
 

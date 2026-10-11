@@ -167,7 +167,7 @@ function FavoritesShelf(): React.JSX.Element | null {
 
 /** Popular radio stations (Russian ones first in the Russian UI). */
 function RadioShelf(): React.JSX.Element | null {
-  const res = useAsync(() => radio.top(lang === 'ru' ? 'RU' : undefined, 20), [], `p:radio-home:${lang}`)
+  const res = useAsync(() => radio.top(lang === 'ru' ? 'RU' : undefined, 20), [], `p:radio-home2:${lang}`)
   const stations = res.data ?? []
   if (!stations.length) return null
   return (

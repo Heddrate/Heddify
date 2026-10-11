@@ -3,7 +3,7 @@ import { app, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, sess
 import { THUMB_ICONS } from './thumbIcons'
 import { join } from 'node:path'
 import { store } from './store'
-import { apiRequest, closeWebBridge, log, prepareWebSession, resolveStream, setUiParent } from './soundcloud'
+import { apiRequest, closeWebBridge, log, prepareWebSession, renewTokenIfNeeded, resolveStream, setUiParent } from './soundcloud'
 import { cancelLogin, login, loginWithToken, logout } from './auth'
 import type { ApiMethod, ApiOptions, Presence, StreamRequest } from '../shared/ipc'
 import { DEFAULT_DISCORD_APP_ID, discord } from './discord'
@@ -69,6 +69,10 @@ if (!app.requestSingleInstanceLock()) {
     createWindow()
     createTray(() => mainWindow)
     startUpdater(() => mainWindow)
+    // SoundCloud tokens live about a day: renew before they run out, so a restart (or an
+    // update) never finds an expired one
+    void renewTokenIfNeeded()
+    setInterval(() => void renewTokenIfNeeded(), 10 * 60_000)
   })
   app.on('window-all-closed', () => app.quit())
 }

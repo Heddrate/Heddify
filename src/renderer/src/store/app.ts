@@ -140,8 +140,11 @@ async function enter(): Promise<string | null> {
   } catch (e) {
     const status = e instanceof ApiError ? e.status : 0
     if (status === 401) {
-      set({ auth: 'out' })
-      return tx("Не удалось подтвердить вход, попробуйте ещё раз")
+      // the SoundCloud session ran out (and couldn't be renewed): open the app anyway —
+      // Yandex, Audius, radio and files still work — and offer to sign in again
+      enterGuest()
+      sessionLost()
+      return null
     }
     set({ auth: 'offline', bootError: e instanceof Error ? e.message : tx("Ошибка сети") })
     return null
@@ -172,6 +175,11 @@ export async function logout(): Promise<void> {
   set({ ...initial(), auth: 'out' })
 }
 
+/** One quiet notice with a sign-in button instead of throwing the user to the start screen. */
+function sessionLost(): void {
+  toast(tx('Вход в SoundCloud закончился'), 12_000, { label: tx('Войти снова'), run: () => void signInSoundcloud() })
+}
+
 let verifying = false
 setAuthLostHandler(async () => {
   if (verifying || get().auth !== 'in') return
@@ -180,12 +188,13 @@ setAuthLostHandler(async () => {
     await api.me()
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) {
-      // Keep the web session: signing in again is usually one click.
+      // Keep the web session and the music: signing in again is one click.
       stopSync()
-      player.reset()
       invalidate('')
-      set({ ...initial(), auth: 'out' })
-      toast(tx("Сессия истекла, войдите снова"))
+      // pages that need the account fall back to home
+      const route = get().route
+      set({ ...initial(), auth: 'guest', route: route.name === 'following' ? { name: 'home' } : route })
+      sessionLost()
     }
   } finally {
     verifying = false

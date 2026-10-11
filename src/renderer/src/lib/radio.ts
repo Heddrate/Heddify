@@ -86,10 +86,14 @@ function toTrack(s: Station): Track | null {
 }
 
 /** The catalogue repeats popular stations under several entries: keep one per name. */
+/** Low bitrate streams sound bad; 0 means the catalogue doesn't know (often fine). */
+const goodQuality = (s: Station): boolean => !s.bitrate || s.bitrate >= 96
+
 function stations(list: Station[]): Track[] {
   const seen = new Set<string>()
   const out: Track[] = []
   for (const s of list) {
+    if (!goodQuality(s)) continue
     const t = toTrack(s)
     const key = t?.title?.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
     if (!t || !key || seen.has(key)) continue
@@ -99,7 +103,66 @@ function stations(list: Station[]): Track[] {
   return out
 }
 
-const BASE = { hidebroken: true, order: 'clickcount', reverse: true, is_https: true }
+// by listeners' votes: the most-clicked list is full of odd stations
+const BASE = { hidebroken: true, order: 'votes', reverse: true, is_https: true }
+
+/** Well-known Russian stations, looked up by name (the catalogue spells them many ways). */
+const RU_STATIONS = [
+  'Европа Плюс',
+  'Русское Радио',
+  'Radio Record',
+  'DFM',
+  'Радио Maximum',
+  'Хит FM',
+  'Relax FM',
+  'Love Radio',
+  'Радио Energy',
+  'Monte Carlo',
+  'Наше Радио',
+  'Ретро FM',
+  'Авторадио',
+  'Like FM',
+  'Радио Jazz',
+  'Радио Ultra',
+  'Радио Маяк',
+  'Business FM',
+  'Радио Дача',
+  'Радио 7'
+]
+
+const norm = (s: string): string => s.toLowerCase().replace(/[^p{L}p{N}]+/gu, '')
+
+/**
+ * The main entry for each name, in the list's order: Russian stations only; the exact name
+ * beats "<name> + a sub-channel", then the shorter name, then votes (the catalogue order).
+ */
+async function byNames(names: string[], country: string): Promise<Track[]> {
+  const found = await Promise.all(
+    names.map((name) =>
+      get<Station[]>('/json/stations/search', { ...BASE, name, countrycode: country, limit: 15 })
+        .then((l) => {
+          const want = norm(name)
+          const rank = (t: Track): number => {
+            const n = norm(t.title ?? '')
+            return n === want ? 0 : n.startsWith(want) ? 1 : 2
+          }
+          return stations(l)
+            .map((t, i) => ({ t, i }))
+            .sort((a, b) => rank(a.t) - rank(b.t) || (a.t.title?.length ?? 0) - (b.t.title?.length ?? 0) || a.i - b.i)[0]?.t ?? null
+        })
+        .catch(() => null)
+    )
+  )
+  return found.filter((t): t is Track => !!t)
+}
+
+function mergeUnique(...lists: Track[][]): Track[] {
+  const seen = new Set<string>()
+  return lists.flat().filter((t) => {
+    const key = (t.title ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
+    return !seen.has(key) && seen.add(key)
+  })
+}
 
 /** Genres for the chips: tag as Radio Browser knows it + label (computed in render). */
 export const RADIO_TAGS = (): [string, string][] => [
@@ -118,7 +181,14 @@ export const RADIO_TAGS = (): [string, string][] => [
 
 export const radio = {
   /** Popular stations; in the Russian UI first those from Russia. */
-  top: (country?: string, limit = 60) => get<Station[]>('/json/stations/search', { ...BASE, countrycode: country, limit: limit * 2 }).then(stations).then((l) => l.slice(0, limit)),
+  /** Popular stations; in the Russian UI the well-known Russian ones first. */
+  top: async (country?: string, limit = 60): Promise<Track[]> => {
+    const [known, rest] = await Promise.all([
+      country === 'RU' ? byNames(RU_STATIONS, 'RU') : Promise.resolve([] as Track[]),
+      get<Station[]>('/json/stations/search', { ...BASE, countrycode: country, limit: limit * 2 }).then(stations)
+    ])
+    return mergeUnique(known, rest).slice(0, limit)
+  },
   byTag: (tag: string, limit = 60) => get<Station[]>('/json/stations/search', { ...BASE, tag, limit: limit * 2 }).then(stations).then((l) => l.slice(0, limit)),
   search: (name: string, limit = 24) => get<Station[]>('/json/stations/search', { ...BASE, name, limit: limit * 2 }).then(stations).then((l) => l.slice(0, limit))
 }

@@ -9,6 +9,7 @@ import { openMenu, openMenuAt } from '@/store/ui'
 import { Artwork } from './Artwork'
 import { Icon } from './Icon'
 import { Slider } from './Slider'
+import { toggleFull } from './FullPlayer'
 import { tx } from '@/lib/i18n'
 
 export function PlayerBar(): React.JSX.Element {
@@ -79,7 +80,7 @@ function NowPlaying(): React.JSX.Element {
   )
 }
 
-function Controls(): React.JSX.Element {
+export function Controls(): React.JSX.Element {
   const has = usePlayer((s) => !!s.current)
   const playing = usePlayer((s) => s.playing)
   const loading = usePlayer((s) => s.loading)
@@ -123,7 +124,7 @@ function Controls(): React.JSX.Element {
   )
 }
 
-function Progress(): React.JSX.Element {
+export function Progress(): React.JSX.Element {
   const position = usePlayer((s) => s.position)
   const duration = usePlayer((s) => s.duration)
   const buffered = usePlayer((s) => s.buffered)
@@ -163,10 +164,14 @@ function RightControls(): React.JSX.Element {
   const muted = usePlayer((s) => s.muted)
   const autoplay = usePlayer((s) => s.autoplay)
   const queueOpen = useApp((s) => s.panel === 'queue')
+  const hasTrack = usePlayer((s) => !!s.current)
   const level = muted || volume === 0 ? 'volumeOff' : volume < 0.5 ? 'volumeLow' : 'volumeHigh'
 
   return (
     <div className="pb-right">
+      <button className="icon-btn" onClick={toggleFull} disabled={!hasTrack} aria-label={tx('Во весь экран')} title={tx('Во весь экран')}>
+        <Icon name="fullscreen" size={20} />
+      </button>
       <button
         className={cx('icon-btn toggle autoplay-btn', autoplay && 'on')}
         onClick={player.toggleAutoplay}

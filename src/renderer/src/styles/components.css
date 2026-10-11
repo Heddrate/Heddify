@@ -741,6 +741,199 @@
   pointer-events: none;
 }
 
+/* ---------- full-window player ---------- */
+
+.full-player {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 64px;
+  padding: 72px 72px 56px;
+  color: #fff;
+  background:
+    radial-gradient(120% 90% at 20% 10%, var(--full-color) 0%, transparent 70%),
+    #0b0b0b;
+  animation: full-in 0.22s ease-out;
+}
+
+@keyframes full-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.full-close {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  width: 48px;
+  height: 48px;
+  color: #fff;
+}
+
+.full-left {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
+  width: min(100%, 520px);
+  justify-self: center;
+}
+
+.full-cover .art {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: var(--r);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+.full-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.full-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.full-title {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.full-artist {
+  align-self: flex-start;
+  max-width: 100%;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.full-player .pb-progress,
+.full-player .pb-controls {
+  width: 100%;
+  color: #fff;
+}
+
+.full-player .pb-controls {
+  justify-content: center;
+  gap: 28px;
+  transform: scale(1.25);
+  transform-origin: center top;
+}
+
+.full-right {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+}
+
+.full-lyrics {
+  width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 30vh 0;
+  mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
+}
+
+.full-lyrics.plain {
+  display: block;
+  padding: 0;
+  mask-image: none;
+  white-space: pre-wrap;
+  font-size: 20px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.full-line {
+  text-align: left;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.38);
+  transition: color 0.2s ease;
+}
+
+.full-line.past {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.full-line.on,
+.full-line:hover {
+  color: #fff;
+}
+
+.full-next {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.full-next-label {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.full-next-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px;
+  border-radius: var(--r-sm);
+  text-align: left;
+}
+
+.full-next-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.full-next-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 15px;
+}
+
+.full-next-text .muted {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* narrow window: cover and controls only */
+@media (max-width: 1100px) {
+  .full-player {
+    grid-template-columns: 1fr;
+  }
+
+  .full-right {
+    display: none;
+  }
+
+  .full-left {
+    width: min(100%, 440px);
+  }
+}
+
 /* the app is about to close for the installer */
 .update-installing {
   position: fixed;

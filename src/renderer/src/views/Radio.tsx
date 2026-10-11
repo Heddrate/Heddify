@@ -35,7 +35,7 @@ export function stationCards(stations: Track[], source: PlaySource): React.JSX.E
 export function RadioView({ tag = '' }: { tag?: string }): React.JSX.Element {
   const route: Route = tag ? { name: 'radio', tag } : { name: 'radio' }
   const label = RADIO_TAGS().find(([t]) => t === tag)?.[1] ?? tag
-  const res = useAsync(() => (tag ? radio.byTag(tag) : radio.top(lang === 'ru' ? 'RU' : undefined)), [tag], `p:radio:${tag || lang}`)
+  const res = useAsync(() => (tag ? radio.byTag(tag) : radio.top(lang === 'ru' ? 'RU' : undefined)), [tag], `p:radio2:${tag || lang}`)
   const favs = useRadio((s) => s.favs)
   const stations = useMemo(() => res.data ?? [], [res.data])
   const source = useMemo<PlaySource>(() => ({ label: tx('Радио · {0}', label), route }), [label, tag]) // eslint-disable-line react-hooks/exhaustive-deps
