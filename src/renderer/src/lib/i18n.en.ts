@@ -528,7 +528,6 @@ const EN: Record<string, string> = {
   'Яндекс Музыка не загрузилась': 'Yandex Music didn’t load',
   'Яндекс Музыка не открылась': 'Yandex Music didn’t open',
   'Яндекс Музыка не подключена': 'Yandex Music isn’t connected',
-  'Ничего не играет': 'Nothing is playing',
   'Плавный переход между треками': 'Smooth transition between tracks',
   'Звук плавно нарастает в начале трека и затихает в конце': 'Sound fades in at the start of a track and out at the end',
   'Продолжить: {0}': 'Continue: {0}',
