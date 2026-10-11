@@ -1524,3 +1524,30 @@
   line-height: 1.45;
   color: var(--text-2);
 }
+
+/* ---------- artists of a track: one link per name ---------- */
+
+/* the line is cut with an ellipsis as a whole; each name is a plain-looking link */
+.artist-links {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artist-name {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.artist-name:hover {
+  color: var(--text);
+  text-decoration: underline;
+}

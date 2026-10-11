@@ -1,4 +1,5 @@
-import { toggleAnyLike, useLiked, openArtist, trackMenu } from '@/lib/actions'
+import { toggleAnyLike, useLiked, trackMenu } from '@/lib/actions'
+import { ArtistLinks } from './ArtistLinks'
 import { api } from '@/lib/api'
 import { trackArt, userArt } from '@/lib/artwork'
 import { countLabel, fmtCount } from '@/lib/format'
@@ -58,11 +59,7 @@ export function NowPlayingPanel(): React.JSX.Element {
               <div className="np-title" title={track.title}>
                 {track.title}
               </div>
-              {track.user && (
-                <button className="link np-artist ellipsis" onClick={() => openArtist(track)}>
-                  {track.user.username}
-                </button>
-              )}
+              {track.user && <ArtistLinks track={track} className="np-artist ellipsis" />}
             </div>
             <button
               className={cx('icon-btn like', liked && 'on')}

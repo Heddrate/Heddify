@@ -258,7 +258,12 @@ export function yandexTrack(t: {
     id: -t.trackId,
     kind: 'track',
     origin: 'yandex',
-    ya: { trackId: t.trackId, albumId: t.albumId, artistId: t.artists[0]?.id },
+    ya: {
+      trackId: t.trackId,
+      albumId: t.albumId,
+      artistId: t.artists[0]?.id,
+      artists: t.artists.filter((a) => a.name).map((a) => ({ id: a.id, name: a.name }))
+    },
     title: t.title,
     user: { id: 0, kind: 'user', username: artist || tx("Яндекс Музыка") },
     artwork_url: t.cover ?? null,

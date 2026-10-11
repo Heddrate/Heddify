@@ -10,8 +10,11 @@ test.beforeEach(async ({ context }) => {
   })
 })
 
-/** Network noise is not the app's bug: outside requests can fail (sandbox, offline). */
-const NETWORK = /^(Failed to load resource|Access to fetch at|Access to image at)/
+/**
+ * Network noise is not the app's bug: outside requests can fail (sandbox, offline), and an
+ * outside picture the content policy blocks changes nothing on screen.
+ */
+const NETWORK = /^(Failed to load resource|Access to fetch at|Access to image at|Loading the image .* violates the following Content Security Policy)/
 
 /** Errors of the app itself. */
 function watchErrors(page: Page): string[] {

@@ -9,6 +9,7 @@ import { copyLink, navigate, openUrl, toggleLike, useApp } from '@/store/app'
 import { player, usePlayer } from '@/store/player'
 import { toast, type MenuItem } from '@/store/ui'
 import { tx } from '@/lib/i18n'
+import { normName, type ArtistRef } from './artists'
 
 export const playlistRoute = (p: AnyPlaylist): Route =>
   p.kind === 'playlist' ? { name: 'playlist', id: p.id } : { name: 'system', urn: p.urn }
@@ -110,6 +111,26 @@ export function openArtist(track: Track): void {
     if (id) navigate({ name: 'ya-artist', id })
   } else if (track.user) {
     navigate({ name: 'user', id: track.user.id })
+  }
+}
+
+/** Opens one artist of a track (see lib/artists.ts): each name leads to its own page. */
+export function openArtistRef(track: Track, ref: ArtistRef): void {
+  if (track.origin === 'yandex' && ref.id) navigate({ name: 'ya-artist', id: ref.id })
+  else if (!track.origin && ref.id) navigate({ name: 'user', id: ref.id })
+  else if (!track.origin && !ref.id) void findSoundcloudArtist(ref.name)
+  else openArtist(track)
+}
+
+/** A name from a SoundCloud title has no id: search for the account with exactly this name. */
+async function findSoundcloudArtist(name: string): Promise<void> {
+  try {
+    const res = await api.searchUsers(name, 10)
+    const hit = res.collection.find((u) => normName(u.username) === normName(name))
+    if (hit) navigate({ name: 'user', id: hit.id })
+    else toast(tx('Не нашёл «{0}» на SoundCloud', name))
+  } catch {
+    toast(tx('Не удалось найти «{0}»', name))
   }
 }
 

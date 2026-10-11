@@ -1,5 +1,6 @@
 import { memo, useCallback, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from 'react'
-import { toggleAnyLike, openArtist, trackMenu } from '@/lib/actions'
+import { toggleAnyLike, trackMenu } from '@/lib/actions'
+import { ArtistLinks } from './ArtistLinks'
 import { trackArt } from '@/lib/artwork'
 import { fmtCount, fmtDuration, fmtRelative } from '@/lib/format'
 import { cx } from '@/lib/hooks'
@@ -282,17 +283,7 @@ const TrackRow = memo(function TrackRow({
             <span className="ellipsis">{track.title}</span>
             {track.policy === 'SNIP' && <span className="badge">{tx("превью")}</span>}
           </div>
-          {track.user && (
-            <button
-              className="tr-artist link ellipsis"
-              onClick={(e) => {
-                stop(e)
-                openArtist(track)
-              }}
-            >
-              {track.user.username}
-            </button>
-          )}
+          {track.user && <ArtistLinks track={track} className="tr-artist ellipsis" />}
         </div>
       </div>
       <div className="tr-extra">{extraText}</div>

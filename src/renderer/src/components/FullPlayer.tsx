@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { create } from 'zustand'
-import { openArtist, toggleAnyLike, useLiked } from '@/lib/actions'
+import { toggleAnyLike, useLiked } from '@/lib/actions'
 import { trackArt, useArtColor } from '@/lib/artwork'
 import { cx, useAsync } from '@/lib/hooks'
 import { tx } from '@/lib/i18n'
 import { activeLine, fetchLyrics } from '@/lib/lyrics'
 import type { Track } from '@/lib/types'
 import { player, usePlayer } from '@/store/player'
+import { ArtistLinks } from './ArtistLinks'
 import { Artwork } from './Artwork'
 import { Icon } from './Icon'
 import { Controls, Progress } from './PlayerBar'
@@ -65,17 +66,7 @@ function FullView(): React.JSX.Element {
             <div className="full-title ellipsis" title={track.title}>
               {track.title}
             </div>
-            {track.user && (
-              <button
-                className="full-artist link ellipsis"
-                onClick={() => {
-                  closeFull()
-                  openArtist(track)
-                }}
-              >
-                {track.user.username}
-              </button>
-            )}
+            {track.user && <ArtistLinks track={track} className="full-artist ellipsis" onOpen={closeFull} />}
           </div>
           <button
             className={cx('icon-btn xl like', liked && 'on')}

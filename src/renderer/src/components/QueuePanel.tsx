@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { openArtist, trackMenu } from '@/lib/actions'
+import { trackMenu } from '@/lib/actions'
+import { ArtistLinks } from './ArtistLinks'
 import { trackArt } from '@/lib/artwork'
 import { cx } from '@/lib/hooks'
 import type { Track } from '@/lib/types'
@@ -181,11 +182,7 @@ function QueueRow({ track, current, past, playing, onPlay, onRemove, reorder }: 
       </button>
       <div className="q-text">
         <div className="q-title ellipsis">{track.title}</div>
-        {track.user && (
-          <button className="q-artist link ellipsis" onClick={() => openArtist(track)}>
-            {track.user.username}
-          </button>
-        )}
+        {track.user && <ArtistLinks track={track} className="q-artist ellipsis" />}
       </div>
       {onRemove && (
         <button className="icon-btn q-remove" onClick={onRemove} aria-label={tx("Убрать из очереди")} title={tx("Убрать из очереди")}>

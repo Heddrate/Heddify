@@ -8,6 +8,7 @@ import { player, usePlayer } from '@/store/player'
 import { openMenu, openMenuAt } from '@/store/ui'
 import { Artwork } from './Artwork'
 import { Icon, Logo } from './Icon'
+import { ArtistLinks } from './ArtistLinks'
 import { usePlayed } from '@/lib/played'
 import { Slider } from './Slider'
 import { toggleFull } from './FullPlayer'
@@ -84,11 +85,7 @@ function NowPlaying(): React.JSX.Element {
         </button>
         <div className="pb-artist-row">
           {preview && <span className="badge">{tx("превью")}</span>}
-          {track.user && (
-            <button className="pb-artist link ellipsis" onClick={() => openArtist(track)}>
-              {track.user.username}
-            </button>
-          )}
+          {track.user && <ArtistLinks track={track} className="pb-artist ellipsis" />}
         </div>
       </div>
       <button
