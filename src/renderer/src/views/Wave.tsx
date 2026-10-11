@@ -23,6 +23,8 @@ import { player, usePlayer } from '@/store/player'
 import { tx } from '@/lib/i18n'
 
 const UPCOMING = 30
+/** Tracks already played stay in the list (above the playing one), so starting a track never makes it vanish. */
+const KEEP_BACK = 50
 
 /** "Моя волна" as its own page: what's playing and what comes next (history is in the queue panel). */
 export function WaveView(): React.JSX.Element {
@@ -41,9 +43,11 @@ export function WaveView(): React.JSX.Element {
     if (!active) void ensurePreview()
   }, [active])
 
+  // the list starts at the first kept track, so its position in the queue is `from`
+  const from = active ? Math.max(0, index - KEEP_BACK) : 0
   const next = useMemo(
-    () => (active ? context.slice(index + 1, index + 1 + UPCOMING) : (preview ?? [])),
-    [active, context, index, preview]
+    () => (active ? context.slice(from, index + 1 + UPCOMING) : (preview ?? [])),
+    [active, context, index, from, preview]
   )
   // while a new batch is being picked the list may be empty for a moment: keep showing the
   // last one, or the page would shrink and the scroll jump to the top
@@ -126,7 +130,7 @@ export function WaveView(): React.JSX.Element {
         </ActionBar>
 
         <section className="section first wave-next">
-          <h2 className="h2">{active ? tx("Далее в волне") : tx("Волна начнётся с этих треков")}</h2>
+          <h2 className="h2">{active ? tx("В волне") : tx("Волна начнётся с этих треков")}</h2>
           {!upcoming.length && building ? (
             <Loading />
           ) : !upcoming.length ? (
@@ -136,7 +140,7 @@ export function WaveView(): React.JSX.Element {
               tracks={upcoming}
               source={source}
               appear
-              onPlayIndex={(i) => (active ? player.jumpContext(index + 1 + i) : void startWave(i))}
+              onPlayIndex={(i) => (active ? player.jumpContext(from + i) : void startWave(i))}
             />
           )}
         </section>

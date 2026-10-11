@@ -326,7 +326,7 @@ const EN: Record<string, string> = {
   'Графит': 'Graphite',
   'Громкость': 'Volume',
   'Далее': 'Next up',
-  'Далее в волне': 'Next in the wave',
+  'В волне': 'In the wave',
   'Далее в очереди': 'Next in queue',
   'Далее из: ': 'Next from: ',
   'Добавить в «Мне нравится»': 'Add to Liked Songs',
