@@ -231,6 +231,17 @@
   flex-direction: column;
 }
 
+.sb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px 0;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
 .sb-head {
   display: flex;
   align-items: center;
@@ -456,6 +467,38 @@
   flex: none;
   border-radius: var(--r-xs);
   overflow: hidden;
+}
+
+/* nothing plays: the logo stands in for the cover */
+.pb-idle-art {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+}
+
+.pb-idle-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.pb-idle-sub {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.pb-idle-btn {
+  display: block;
+  max-width: 100%;
+  font-size: 13px;
+  color: var(--text-3);
+  text-align: left;
+}
+
+.pb-idle-btn:hover {
+  color: var(--text);
 }
 
 .pb-text {

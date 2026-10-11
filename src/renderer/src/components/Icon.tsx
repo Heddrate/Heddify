@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { BUNNY } from './logoPaths'
 
 const paths = {
   play: 'M8 5.14v13.72a1 1 0 0 0 1.52.85l10.29-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14z',
@@ -111,17 +112,25 @@ export function Icon({ name, size = 24, className, style, title }: Props): React
   )
 }
 
-/** App mark: an "H" whose crossbar is a waveform, white on a black circle in every theme. */
-export function Logo({ size = 28 }: { size?: number }): React.JSX.Element {
+/**
+ * App mark: the white bunny on a black circle in every theme. Ears and eyes are separate
+ * shapes so they can move: ears twitch under the pointer, `live` adds a blink now and then.
+ */
+export function Logo({ size = 28, live }: { size?: number; live?: boolean }): React.JSX.Element {
   return (
-    <svg viewBox="0 0 32 32" width={size} height={size} aria-hidden className="logo">
-      <circle cx="16" cy="16" r="15.5" fill="#000" stroke="rgba(255,255,255,0.14)" strokeWidth="1" />
+    <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden className={live ? 'logo live' : 'logo'}>
+      <circle cx="50" cy="50" r="48.5" fill="#000" stroke="rgba(255,255,255,0.14)" strokeWidth="3" />
       <g fill="#fff">
-        <rect x="8" y="8" width="3" height="16" rx="1.5" />
-        <rect x="21" y="8" width="3" height="16" rx="1.5" />
-        <rect x="11.7" y="13.5" width="2.4" height="5" rx="1.2" />
-        <rect x="14.8" y="11" width="2.4" height="10" rx="1.2" />
-        <rect x="17.9" y="13.5" width="2.4" height="5" rx="1.2" />
+        <path className="logo-ear-l" d={BUNNY.earL} />
+        <path className="logo-ear-r" d={BUNNY.earR} />
+        <path d={BUNNY.head} />
+      </g>
+      <g fill="#000">
+        <g className="logo-eyes">
+          <path d={BUNNY.eyeL} />
+          <path d={BUNNY.eyeR} />
+        </g>
+        <path d={BUNNY.nose} />
       </g>
     </svg>
   )

@@ -22,7 +22,7 @@ export function Login(): React.JSX.Element {
     <div className="login">
       <div className="drag-strip" />
       <div className="login-col">
-        <Logo size={56} />
+        <Logo size={64} live />
         <h1 className="login-title">Heddify</h1>
         <p className="login-lead">{tx('SoundCloud, Яндекс Музыка и Audius в одном плеере.')}</p>
 

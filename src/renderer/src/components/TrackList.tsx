@@ -269,7 +269,7 @@ const TrackRow = memo(function TrackRow({
         </button>
       </div>
       <div className="tr-main">
-        <Artwork src={trackArt(track, 'large')} size={40} letter={track.user?.username ?? track.title} />
+        <Artwork src={trackArt(track, 'large')} size={40} letter={track.origin === 'radio' ? track.title : (track.user?.username ?? track.title)} />
         <div className="tr-text">
           <div className="tr-title">
             {badge && track.origin === 'yandex' && (

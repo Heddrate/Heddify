@@ -37,16 +37,26 @@ let view: WebviewEl | null = null
 let markReady: (() => void) | null = null
 let ready = new Promise<void>((r) => (markReady = r))
 
-/** YandexHost calls this once its webview has loaded a page. */
-/** Level last set by our volume slider (0..1, already curved), re-applied to the page. */
-let pageVolume = 1
+/** Level for the page (0..1, already curved): the player's volume, silent until it is known. */
+let pageVolume = 0
 
+/** YandexHost calls this once its webview has loaded a page. */
 export function attachView(el: WebviewEl): void {
   view = el
   markReady?.()
+  // the level the user chose: a reloaded page must not play at the old or a full level
+  const s = usePlayer.getState()
+  pageVolume = s.muted ? 0 : s.volume * s.volume
   void el.executeJavaScript(MEDIA_BRIDGE).catch(() => undefined)
-  // a reloaded page starts at full volume
   void el.executeJavaScript(`window.__scVolume && window.__scVolume(${pageVolume})`).catch(() => undefined)
+}
+
+/**
+ * The page may start audio only for a moment after we ask for it (preload/yandex.ts);
+ * otherwise it would start by itself, e.g. after a reload. Calls keep their order.
+ */
+function allowPlay(ms: number): void {
+  if (view) void view.executeJavaScript(`window.__scAllowPlay && window.__scAllowPlay(${ms})`).catch(() => undefined)
 }
 
 /**
@@ -369,6 +379,8 @@ function startMirror(): void {
 
 async function tick(): Promise<void> {
   if (!externalEvents.active()) return stopMirror()
+  // while a Yandex track is the current one, the page may carry on with its own queue
+  allowPlay(5000)
   const st = await run<PageState>(READ_STATE)
   if (!st || !expected) return
 
@@ -422,6 +434,7 @@ const driver: ExternalDriver = {
     trace(`play ${id}: open ${url}`)
     await navigateTo(wv, url)
     if (token !== playToken) return // another track was requested meanwhile
+    allowPlay(30_000)
 
     // Press play, then make sure it is really this track that plays; the page may
     // still be hydrating and swallow the first click.
@@ -457,6 +470,7 @@ const driver: ExternalDriver = {
     externalEvents.state({ playing: false })
   },
   resume() {
+    allowPlay(10_000)
     void run(setPlaying(true))
     externalEvents.state({ playing: true })
   },
@@ -476,10 +490,12 @@ const driver: ExternalDriver = {
   },
   next() {
     endSignalled = false
+    allowPlay(15_000)
     void run(clickButton(NEXT_LABELS))
   },
   prev() {
     endSignalled = false
+    allowPlay(15_000)
     void run(clickButton(PREV_LABELS))
   }
 }
@@ -549,6 +565,7 @@ export async function startYandexWave(): Promise<void> {
   try {
     const wv = await page()
     stopMirror()
+    allowPlay(30_000)
     await warming
     if ((await run<boolean>(VIBE_READY)) !== true) await navigateTo(wv, YA_HOME)
     trace(`wave: page ready ${at()}`)
@@ -593,6 +610,7 @@ export async function startYandexWave(): Promise<void> {
 /** "Не нравится" in the Yandex player: it skips and learns from it. */
 export function dislikeYandex(): void {
   endSignalled = false
+  allowPlay(15_000)
   void run(clickButton(['Не нравится', 'Dislike']))
 }
 

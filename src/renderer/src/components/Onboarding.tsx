@@ -82,7 +82,7 @@ export function Onboarding(): React.JSX.Element | null {
         ) : (
           <>
             <div className="ob-mark">
-              <Logo size={64} />
+              <Logo size={72} live />
             </div>
             <h2 className="ob-title">{tx('Готово')}</h2>
             <p className="ob-text">{tx('Audius работает без входа. Сервисы можно подключить позже в настройках.')}</p>

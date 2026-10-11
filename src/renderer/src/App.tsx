@@ -60,7 +60,7 @@ export function App(): React.JSX.Element {
     return (
       <div className="splash">
         <div className="drag-strip" />
-        <Logo size={56} />
+        <Logo size={64} live />
       </div>
     )
   }

@@ -12,10 +12,11 @@ import { contextBridge } from 'electron'
 function install(): void {
   type Ctx = BaseAudioContext & { __scGain?: GainNode }
   type Media = HTMLMediaElement & { __scRouted?: boolean; __scPageVolume?: number }
-  const w = window as unknown as { __scVolume?: (level: number) => void }
+  const w = window as unknown as { __scVolume?: (level: number) => void; __scAllowPlay?: (ms: number) => void }
   if (w.__scVolume) return
 
-  let level = 1
+  // silent until the app sets the level: a page that loads again must not start at full volume
+  let level = 0
   const gains: GainNode[] = []
   const media = new Set<Media>()
 
@@ -62,9 +63,16 @@ function install(): void {
       applyTo(this)
     }
   })
+  // The page must not start audio on its own (after a reload or its own queue): only while
+  // the app has just asked for playback (`__scAllowPlay`, see lib/yandex.ts).
+  let allowUntil = 0
+  w.__scAllowPlay = (ms: number) => {
+    allowUntil = Math.max(allowUntil, Date.now() + ms)
+  }
   const play = HTMLMediaElement.prototype.play
   HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
     applyTo(this as Media)
+    if (Date.now() > allowUntil) return Promise.reject(new DOMException('Playback was not requested by the app', 'NotAllowedError'))
     return play.call(this)
   }
 

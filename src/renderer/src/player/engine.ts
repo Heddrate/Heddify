@@ -19,6 +19,8 @@ export interface EngineEvents {
 }
 
 const MAX_RECOVERIES = 3
+/** Length of the fade-in at a track's start and fade-out at its end ("плавный переход"). */
+const FADE_S = 2
 
 /** The bits of a track worth keeping next to its cached file (offline list). */
 export const trackMeta = (t: Track): Track => ({
@@ -65,6 +67,10 @@ class Engine {
   private ev: EngineEvents | null = null
   private leveling = false
   private graph: { ctx: AudioContext; src: MediaElementAudioSourceNode; comp: DynamicsCompressorNode; makeup: GainNode } | null = null
+  private level = 0.8
+  private muted = false
+  private fade = false
+  private fadeTimer: ReturnType<typeof setInterval> | null = null
 
   constructor() {
     const a = this.audio
@@ -343,10 +349,36 @@ class Engine {
     }
   }
 
+  /**
+   * "Плавный переход": the sound fades in over the first seconds of a track and out over
+   * its last ones, so tracks don't cut in and out. Off by default (see Settings).
+   */
+  setFade(on: boolean): void {
+    this.fade = on
+    if (on && !this.fadeTimer) this.fadeTimer = setInterval(() => this.applyVolume(), 50)
+    if (!on && this.fadeTimer) {
+      clearInterval(this.fadeTimer)
+      this.fadeTimer = null
+    }
+    this.applyVolume()
+  }
+
   setVolume(volume: number, muted: boolean): void {
+    this.level = volume
+    this.muted = muted
+    this.applyVolume()
+  }
+
+  private applyVolume(): void {
     // squared curve feels linear to the ear
-    this.audio.volume = Math.max(0, Math.min(1, volume * volume))
-    this.audio.muted = muted
+    let gain = 1
+    const d = this.duration()
+    if (this.fade && d > FADE_S * 3 && !this.track?.radio) {
+      const t = this.audio.currentTime
+      gain = Math.max(0, Math.min(1, Math.min(t, d - t) / FADE_S))
+    }
+    this.audio.volume = Math.max(0, Math.min(1, this.level * this.level * gain))
+    this.audio.muted = this.muted
   }
 
   stop(): void {

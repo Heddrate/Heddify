@@ -44,7 +44,7 @@ function FullView(): React.JSX.Element {
         <Icon name="chevronDown" size={30} />
       </button>
       <div className="full-left">
-        <div className="full-cover">
+        <div key={track.id} className="full-cover">
           <Artwork src={art} letter={track.user?.username ?? track.title} />
         </div>
         <div className="full-meta">
@@ -99,7 +99,13 @@ function FullLyrics(): React.JSX.Element {
     return (
       <div ref={box} className="full-lyrics scroll-y">
         {lines.map((l, i) => (
-          <button key={i} data-i={i} className={cx('full-line', i === index && 'on', i < index && 'past')} onClick={() => player.seek(l.t)}>
+          <button
+            key={i}
+            data-i={i}
+            className={cx('full-line', i === index && 'on', i < index && 'past')}
+            style={{ '--i': Math.min(i, 14) } as CSSProperties}
+            onClick={() => player.seek(l.t)}
+          >
             {l.text || '♪'}
           </button>
         ))}
@@ -119,7 +125,12 @@ function UpNext(): React.JSX.Element | null {
     <div className="full-next">
       <div className="full-next-label">{tx('Далее')}</div>
       {next.map((t, i) => (
-        <button key={`${t.id}-${i}`} className="full-next-row" onClick={() => player.jumpContext(index + 1 + i)}>
+        <button
+          key={`${t.id}-${i}`}
+          className="full-next-row"
+          style={{ '--i': i } as CSSProperties}
+          onClick={() => player.jumpContext(index + 1 + i)}
+        >
           <Artwork src={trackArt(t, 'large')} size={48} letter={t.user?.username ?? t.title} />
           <span className="full-next-text">
             <span className="ellipsis">{t.title}</span>

@@ -158,3 +158,67 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------- the bunny ---------- */
+
+/* ears hinge at the base; a little twitch when the pointer is on the logo */
+.logo .logo-ear-l,
+.logo .logo-ear-r {
+  transform-box: view-box;
+  transition: transform 0.35s var(--ease-spring);
+}
+
+.logo .logo-ear-l {
+  transform-origin: 40px 52px;
+}
+
+.logo .logo-ear-r {
+  transform-origin: 62px 56px;
+}
+
+.logo:hover .logo-ear-l {
+  transform: rotate(-7deg);
+}
+
+.logo:hover .logo-ear-r {
+  transform: rotate(6deg);
+}
+
+/* eyes close now and then; `live` marks the logo on splash and welcome screens */
+.logo-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.logo.live .logo-eyes {
+  animation: blink 5s ease-in-out infinite;
+}
+
+.logo.live .logo-ear-r {
+  animation: ear-twitch 5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes ear-twitch {
+  0%,
+  86%,
+  100% {
+    transform: rotate(0deg);
+  }
+  90% {
+    transform: rotate(9deg);
+  }
+  94% {
+    transform: rotate(-3deg);
+  }
+}

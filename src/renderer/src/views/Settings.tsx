@@ -40,6 +40,7 @@ export function Settings(): React.JSX.Element {
   const [discordOn, setDiscordOn] = useState(true)
   const [toTray, setToTray] = useState(false)
   const [leveling, setLeveling] = useState(false)
+  const [fade, setFade] = useState(false)
   const [status, setStatus] = useState<DiscordStatus>('off')
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export function Settings(): React.JSX.Element {
       setDiscordOn(p.discordEnabled !== false)
       setToTray(p.closeToTray === true)
       setLeveling(p.leveling === true)
+      setFade(p.crossfade === true)
     })
     void window.sc.discord.status().then(setStatus)
     return window.sc.discord.onStatus(setStatus)
@@ -229,6 +231,21 @@ export function Settings(): React.JSX.Element {
                 void window.sc.prefs.set({ leveling: !leveling })
               }}
               label={tx('Выравнивать громкость')}
+            />
+          }
+        />
+        <Row
+          label={tx('Плавный переход между треками')}
+          hint={tx('Звук плавно нарастает в начале трека и затихает в конце')}
+          control={
+            <Switch
+              on={fade}
+              onToggle={() => {
+                setFade(!fade)
+                engine.setFade(!fade)
+                void window.sc.prefs.set({ crossfade: !fade })
+              }}
+              label={tx('Плавный переход между треками')}
             />
           }
         />

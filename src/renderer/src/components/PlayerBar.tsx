@@ -7,7 +7,8 @@ import { navigate, toggleLike, toggleNowPlaying, toggleQueue, useApp } from '@/s
 import { player, usePlayer } from '@/store/player'
 import { openMenu, openMenuAt } from '@/store/ui'
 import { Artwork } from './Artwork'
-import { Icon } from './Icon'
+import { Icon, Logo } from './Icon'
+import { usePlayed } from '@/lib/played'
 import { Slider } from './Slider'
 import { toggleFull } from './FullPlayer'
 import { tx } from '@/lib/i18n'
@@ -25,6 +26,28 @@ export function PlayerBar(): React.JSX.Element {
   )
 }
 
+/** Nothing plays yet: offer to pick up the last track from the listening history. */
+function IdlePlayer(): React.JSX.Element {
+  const last = usePlayed((s) => s.items[0]?.track)
+  return (
+    <div className="pb-left pb-idle">
+      <div className="pb-idle-art" aria-hidden>
+        <Logo size={56} />
+      </div>
+      <div className="pb-text">
+        <div className="pb-idle-title">{tx('Ничего не играет')}</div>
+        {last ? (
+          <button className="pb-idle-btn link ellipsis" onClick={() => player.playContext([last], 0, { label: tx('История') })} title={last.title}>
+            {tx('Продолжить: {0}', last.title ?? '')}
+          </button>
+        ) : (
+          <div className="pb-idle-sub">{tx('Выберите трек или станцию')}</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function NowPlaying(): React.JSX.Element {
   const track = usePlayer((s) => s.current)
   // select primitives / stored references only: a fresh object here re-renders forever
@@ -33,7 +56,7 @@ function NowPlaying(): React.JSX.Element {
   const preview = usePlayer((s) => s.preview)
   const liked = useLiked(track)
 
-  if (!track) return <div className="pb-left" />
+  if (!track) return <IdlePlayer />
 
   const openSource = (): void => {
     if (sourceRoute) navigate(sourceRoute)

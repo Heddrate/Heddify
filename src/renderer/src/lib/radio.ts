@@ -60,6 +60,8 @@ function hashId(uuid: string): number {
 }
 
 const https = (u?: string): string | null => (u && u.startsWith('https://') ? u : null)
+/** Pictures and links: most stations' http addresses also answer on https (the page allows only https images). */
+const secure = (u?: string): string | null => (u ? u.replace(/^http:\/\//, 'https://') : null)
 
 const tagsOf = (s: Station): string[] =>
   (s.tags ?? '')
@@ -76,9 +78,9 @@ function toTrack(s: Station): Track | null {
     kind: 'track',
     title: s.name.trim(),
     user: { id: 0, kind: 'user', username: sub || tx('Радио') },
-    artwork_url: https(s.favicon),
+    artwork_url: secure(s.favicon),
     duration: 0,
-    permalink_url: https(s.homepage) ?? undefined,
+    permalink_url: secure(s.homepage) ?? undefined,
     genre: tagsOf(s)[0] ?? null,
     origin: 'radio',
     radio: { uuid: s.stationuuid, url, hls: s.hls === 1 }
