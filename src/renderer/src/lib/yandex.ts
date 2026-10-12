@@ -12,6 +12,9 @@ import type { PlaySource, Track } from './types'
 import { useApp } from '@/store/app'
 import { externalEvents, player, registerExternal, upcomingPositions, usePlayer, type ExternalDriver, mediaCommand } from '@/store/player'
 import { tx } from '@/lib/i18n'
+import { engine } from '@/player/engine'
+import { fadeGain } from '@/player/audioMath'
+import { initialBass, stepBass, type BassState } from './bass'
 // circular with yandexApi (which uses this page), fine: only read at call time
 import { useYa } from './yandexApi'
 
@@ -47,6 +50,7 @@ export function attachView(el: WebviewEl): void {
   // the level the user chose: a reloaded page must not play at the old or a full level
   const s = usePlayer.getState()
   pageVolume = s.muted ? 0 : s.volume * s.volume
+  pageLevel = -1
   void el.executeJavaScript(MEDIA_BRIDGE).catch(() => undefined)
   void el.executeJavaScript(`window.__scVolume && window.__scVolume(${pageVolume})`).catch(() => undefined)
 }
@@ -372,14 +376,52 @@ let endSignalled = false
 /** Bumped on every play request; an older request stops as soon as it notices. */
 let playToken = 0
 
+/* ---------- the page's sound: bass glow and smooth transitions ---------- */
+
+let bass: BassState = initialBass()
+/** The level the page's volume was last set to (its volume times the fade); -1 = unknown. */
+let pageLevel = -1
+let pollTimer: ReturnType<typeof setInterval> | null = null
+
+/** Reads the page's sound about 20 times a second: the bass for the glow, and the fade of its volume. */
+async function pollPage(): Promise<void> {
+  if (!view || !externalEvents.active()) return
+  const r = await run<{ db: number; pos: number; dur: number }>(`window.__scBass ? window.__scBass() : null`)
+  if (!r) return
+  bass = stepBass(bass, r.db)
+  const level = pageVolume * fadeGain(r.pos, r.dur, engine.fadeOn())
+  if (Math.abs(level - pageLevel) > 0.005) {
+    pageLevel = level
+    void run(`window.__scVolume && window.__scVolume(${level})`)
+  }
+}
+
+const startPoll = (): void => {
+  if (!pollTimer) pollTimer = setInterval(() => void pollPage(), 50)
+}
+
+const stopPoll = (): void => {
+  if (pollTimer) clearInterval(pollTimer)
+  pollTimer = null
+  bass = initialBass()
+  pageLevel = -1
+}
+
+/** The glow level for the Yandex track playing now, 0..1 (the glow strength applied). */
+export function yandexGlowLevel(): number {
+  return bass.level * engine.glowStrength()
+}
+
 function stopMirror(): void {
   if (mirror) clearInterval(mirror)
   mirror = null
+  stopPoll()
 }
 
 function startMirror(): void {
   stopMirror()
   mirror = setInterval(() => void tick(), 1000)
+  startPoll()
 }
 
 async function tick(): Promise<void> {
@@ -485,7 +527,9 @@ const driver: ExternalDriver = {
   setVolume(volume, muted) {
     // same curve as our own engine; the page's audio goes through the hook in preload/yandex.ts
     pageVolume = muted ? 0 : volume * volume
-    void run(`window.__scVolume && window.__scVolume(${pageVolume})`)
+    // while the poll runs it applies the new level with the fade; otherwise set it now
+    pageLevel = -1
+    if (!pollTimer) void run(`window.__scVolume && window.__scVolume(${pageVolume})`)
   },
   release() {
     playToken++

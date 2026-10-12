@@ -12,12 +12,18 @@ import { contextBridge } from 'electron'
 function install(): void {
   type Ctx = BaseAudioContext & { __scGain?: GainNode }
   type Media = HTMLMediaElement & { __scRouted?: boolean; __scPageVolume?: number }
-  const w = window as unknown as { __scVolume?: (level: number) => void; __scAllowPlay?: (ms: number) => void }
+  const w = window as unknown as {
+    __scVolume?: (level: number) => void
+    __scAllowPlay?: (ms: number) => void
+    __scBass?: () => { db: number; pos: number; dur: number }
+  }
   if (w.__scVolume) return
 
   // silent until the app sets the level: a page that loads again must not start at full volume
   let level = 0
   const gains: GainNode[] = []
+  // listeners on the page's output: they only measure, nothing is played through them
+  const analysers: { node: AnalyserNode; buf: Float32Array<ArrayBuffer> }[] = []
   const media = new Set<Media>()
 
   const connect = AudioNode.prototype.connect as (this: AudioNode, ...args: unknown[]) => unknown
@@ -26,6 +32,11 @@ function install(): void {
       const g = ctx.createGain()
       g.gain.value = level
       connect.call(g, ctx.destination)
+      const node = ctx.createAnalyser()
+      node.fftSize = 1024
+      node.smoothingTimeConstant = 0
+      connect.call(g, node)
+      analysers.push({ node, buf: new Float32Array(new ArrayBuffer(node.frequencyBinCount * 4)) })
       ctx.__scGain = g
       gains.push(g)
     }
@@ -81,6 +92,24 @@ function install(): void {
     for (const g of gains) g.gain.value = level
     document.querySelectorAll('audio, video').forEach((el) => media.add(el as Media))
     media.forEach(applyTo)
+  }
+
+  // what the app reads about the page's sound, about 20 times a second: the bass in dB (mean of
+  // the bass bins, the loudest context wins; a floor when silent), and where the playing element is
+  w.__scBass = () => {
+    let db = -Infinity
+    for (const a of analysers) {
+      a.node.getFloatFrequencyData(a.buf)
+      let sum = 0
+      for (let i = 1; i <= 4; i++) sum += a.buf[i]
+      db = Math.max(db, sum / 4)
+    }
+    const el = [...media].find((m) => !m.paused) ?? null
+    return {
+      db: Number.isFinite(db) ? db : -120,
+      pos: el ? el.currentTime : 0,
+      dur: el && Number.isFinite(el.duration) ? el.duration : 0
+    }
   }
 }
 

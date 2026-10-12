@@ -9,7 +9,8 @@ import { syncWindowFrame } from '@/lib/theme'
 import { engine } from '@/player/engine'
 import { radio } from '@/lib/radio'
 import type { PlaySource, Track } from '@/lib/types'
-import { player, upcomingPositions, usePlayer } from '@/store/player'
+import { externalEvents, player, upcomingPositions, usePlayer } from '@/store/player'
+import { yandexGlowLevel } from '@/lib/yandex'
 import { ArtistLinks } from './ArtistLinks'
 import { Artwork } from './Artwork'
 import { Icon } from './Icon'
@@ -60,7 +61,7 @@ function FullView(): React.JSX.Element {
     let level = 0
     let shown = ''
     const tick = (): void => {
-      const target = engine.bass()
+      const target = externalEvents.active() ? yandexGlowLevel() : engine.bass()
       level += (target - level) * (target > level ? 0.6 : 0.12)
       // write the style only when the value changes (with the effect off it stays at 0)
       const next = level.toFixed(3)

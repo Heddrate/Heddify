@@ -339,6 +339,16 @@ class Engine {
     if (this.glow > 0 && !was && !this.graph && this.stream && t && !t.radio && !t.local && !isOgg(this.stream)) void this.recover()
   }
 
+  /** The glow strength the user set, 0..1 (0 = off). */
+  glowStrength(): number {
+    return this.glow
+  }
+
+  /** Whether the smooth transition is on. */
+  fadeOn(): boolean {
+    return this.fade
+  }
+
   /** The bass (kick, sub) right now, 0..1; 0 while the effect is off or nothing plays through Web Audio. */
   bass(): number {
     const a = this.graph?.analyser
