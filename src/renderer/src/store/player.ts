@@ -230,7 +230,23 @@ export function registerExternal(d: ExternalDriver): void {
 
 const isExternal = (t: Track | null | undefined): boolean => !!t && t.origin === 'yandex'
 
+/** A user's next / previous press: the track shows at once, but it only loads once the presses settle. */
+const NAV_SETTLE_MS = 180
+let navSeq = 0
+let userNav = false
+
+function asUserNav(step: () => void): void {
+  userNav = true
+  try {
+    step()
+  } finally {
+    userNav = false
+  }
+}
+
 async function playTrack(track: Track, startAt = 0, autoplay = true): Promise<void> {
+  const seq = ++navSeq
+  const settle = userNav
   set({
     current: track,
     position: startAt,
@@ -240,6 +256,11 @@ async function playTrack(track: Track, startAt = 0, autoplay = true): Promise<vo
   })
   updateMediaSession(track)
   persistQueue()
+  if (settle) {
+    // rapid presses each only move the list; the last one loads, so no stream is resolved for the skipped tracks
+    await new Promise((r) => setTimeout(r, NAV_SETTLE_MS))
+    if (seq !== navSeq) return
+  }
 
   if (isExternal(track)) {
     engine.stop()
@@ -486,6 +507,39 @@ export const externalEvents = {
 
 /* ---------------- public API ---------------- */
 
+function prevTrack(): void {
+  const s = get()
+  if (!s.current) return
+  const restart = (): void => (externalActive ? external?.seek(0) : engine.seek(0))
+  if (s.position > 3) {
+    restart()
+    return
+  }
+  if (s.fromManual && s.context[s.index]) {
+    set({ fromManual: false })
+    void playTrack(s.context[s.index])
+    return
+  }
+  if (shuffleOn(s)) {
+    const back = s.history[s.history.length - 1]
+    if (back !== undefined && s.context[back]) {
+      // the track we left plays next again, so the round stays whole
+      set({ index: back, history: s.history.slice(0, -1), plan: [s.index, ...s.plan], fromManual: false })
+      void playTrack(s.context[back])
+      return
+    }
+    restart()
+    return
+  }
+  if (s.index > 0) {
+    set({ index: s.index - 1 })
+    void playTrack(s.context[s.index - 1])
+    return
+  }
+  if (externalActive && external) external.prev()
+  else restart()
+}
+
 export const player = {
   /** Start playing `tracks` from `start`. With `shuffle: true` a random track starts. */
   playContext(tracks: Track[], start: number, source: PlaySource, opts: { shuffle?: boolean } = {}): void {
@@ -558,40 +612,9 @@ export const player = {
     engine.toggle()
   },
 
-  next: () => void next(false),
+  next: (): void => asUserNav(() => void next(false)),
 
-  prev(): void {
-    const s = get()
-    if (!s.current) return
-    const restart = (): void => (externalActive ? external?.seek(0) : engine.seek(0))
-    if (s.position > 3) {
-      restart()
-      return
-    }
-    if (s.fromManual && s.context[s.index]) {
-      set({ fromManual: false })
-      void playTrack(s.context[s.index])
-      return
-    }
-    if (shuffleOn(s)) {
-      const back = s.history[s.history.length - 1]
-      if (back !== undefined && s.context[back]) {
-        // the track we left plays next again, so the round stays whole
-        set({ index: back, history: s.history.slice(0, -1), plan: [s.index, ...s.plan], fromManual: false })
-        void playTrack(s.context[back])
-        return
-      }
-      restart()
-      return
-    }
-    if (s.index > 0) {
-      set({ index: s.index - 1 })
-      void playTrack(s.context[s.index - 1])
-      return
-    }
-    if (externalActive && external) external.prev()
-    else restart()
-  },
+  prev: (): void => asUserNav(prevTrack),
 
   seek(t: number): void {
     if (externalActive) external?.seek(t)
