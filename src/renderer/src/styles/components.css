@@ -1137,6 +1137,17 @@
   }
 }
 
+.toast.leaving {
+  animation: toast-out 0.16s ease-in both;
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
 /* ---------- states ---------- */
 
 .state {

@@ -287,7 +287,7 @@ function onFail(track: Track, message: string): void {
     return
   }
   setTimeout(() => {
-    if (get().current?.id === track.id) void next(true)
+    if (get().current?.id === track.id) void next(true, true)
   }, 800)
 }
 
@@ -359,9 +359,10 @@ function prefetch(): void {
   if (canGrow(s.source) && ahead <= 3) void loadMoreContext()
 }
 
-async function next(auto = false): Promise<void> {
+/** `failed`: the track just failed, so "repeat one" must not play it again. */
+async function next(auto = false, failed = false): Promise<void> {
   const s = get()
-  if (auto && s.repeat === 'one' && s.current) {
+  if (auto && !failed && s.repeat === 'one' && s.current) {
     if (externalActive) {
       external?.seek(0)
       external?.resume()
@@ -384,7 +385,7 @@ async function next(auto = false): Promise<void> {
     void playTrack(get().context[step.index])
     return
   }
-  if (canGrow(s.source) && (await loadMoreContext())) return next(auto)
+  if (canGrow(s.source) && (await loadMoreContext())) return next(auto, failed)
   if (s.repeat === 'all' && s.context.length) {
     // a new round: with shuffle it starts at a random track, otherwise the list starts again
     const start = shuffleOn(s) ? Math.floor(Math.random() * s.context.length) : 0
@@ -418,7 +419,7 @@ async function next(auto = false): Promise<void> {
   if (auto) {
     engine.pause()
     engine.seek(0)
-    set({ playing: false, position: 0 })
+    set({ playing: false, loading: false, position: 0 })
   }
 }
 
@@ -493,7 +494,7 @@ export const player = {
     const generated = !!source.kind
     const shuffle = generated ? false : (opts.shuffle ?? get().shuffle)
     let index = Math.max(0, Math.min(start, list.length - 1))
-    if (opts.shuffle) index = Math.floor(Math.random() * list.length)
+    if (opts.shuffle && !generated) index = Math.floor(Math.random() * list.length)
     failStreak = 0
     set({
       context: list,
@@ -687,7 +688,8 @@ export const player = {
     const s = get()
     const t = s.manual[i]
     if (!t) return
-    set({ manual: s.manual.slice(i + 1), fromManual: true })
+    // only the track played leaves the queue: the ones above it stay where they are
+    set({ manual: s.manual.filter((_, j) => j !== i), fromManual: true })
     void playTrack(t)
   },
 

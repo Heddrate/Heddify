@@ -157,6 +157,13 @@
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* loaders keep turning slowly: a frozen spinner looks like a stuck app */
+  .spinner,
+  .play-main.loading::after {
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
+  }
 }
 
 /* ---------- the bunny ---------- */

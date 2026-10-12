@@ -70,7 +70,7 @@ export function Toasts(): React.JSX.Element {
   return (
     <div className="toasts" aria-live="polite">
       {items.map((t) => (
-        <div key={t.id} className={t.action ? 'toast with-action' : 'toast'}>
+        <div key={t.id} className={cx('toast', t.action && 'with-action', t.leaving && 'leaving')}>
           {t.text}
           {t.action && (
             <button className="toast-action" onClick={t.action.run}>

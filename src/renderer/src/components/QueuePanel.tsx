@@ -56,7 +56,7 @@ export function QueuePanel(): React.JSX.Element {
         </button>
       </div>
       <div className="q-body scroll-y">
-        {!current && <Empty icon="queue" title={tx("Очередь пуста")} text={tx('Очередь пуста')} />}
+        {!current && <Empty icon="queue" title={tx("Очередь пуста")} text={tx('Включите что-нибудь — здесь появится, что будет дальше.')} />}
 
         {current && (
           <>

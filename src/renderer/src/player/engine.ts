@@ -313,7 +313,9 @@ class Engine {
    */
   setLeveling(on: boolean): void {
     this.leveling = on
-    if (on) this.audio.crossOrigin = 'anonymous'
+    // the CORS mode applies to the next load: it must be dropped again when leveling goes off,
+    // or streams without CORS headers (radio, some CDNs) would fail to load from then on
+    this.audio.crossOrigin = on ? 'anonymous' : null
     if (this.graph) this.connectGraph()
   }
 

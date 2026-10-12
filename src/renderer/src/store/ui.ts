@@ -5,6 +5,8 @@ interface Toast {
   id: number
   text: string
   action?: { label: string; run: () => void }
+  /** Fading out: stays on screen for a moment so the exit can play. */
+  leaving?: boolean
 }
 
 export const useToasts = create<{ items: Toast[] }>(() => ({ items: [] }))
@@ -13,7 +15,10 @@ let toastSeq = 0
 export function toast(text: string, ms = Math.max(2800, text.length * 55), action?: Toast['action']): void {
   const id = ++toastSeq
   useToasts.setState((s) => ({ items: [...s.items.slice(-2), { id, text, action }] }))
-  setTimeout(() => useToasts.setState((s) => ({ items: s.items.filter((t) => t.id !== id) })), ms)
+  setTimeout(() => {
+    useToasts.setState((s) => ({ items: s.items.map((t) => (t.id === id ? { ...t, leaving: true } : t)) }))
+    setTimeout(() => useToasts.setState((s) => ({ items: s.items.filter((t) => t.id !== id) })), 180)
+  }, ms)
 }
 
 export type MenuItem =
