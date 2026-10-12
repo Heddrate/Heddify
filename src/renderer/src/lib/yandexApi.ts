@@ -445,6 +445,12 @@ export async function fetchArtist(id: number): Promise<{
     popularTracks?: ApiTrack[]
     albums?: ApiAlbum[]
   }>('GET', `/artists/${id}/brief-info`)
+  // temporary: which counters Yandex sends for an artist (a monthly listeners row is not shown yet)
+  console.info(
+    'yandex artist keys',
+    JSON.stringify(Object.keys(res.artist)),
+    JSON.stringify(Object.fromEntries(Object.entries(res.artist).filter(([k]) => /count|listen|month|stat/i.test(k))))
+  )
   return {
     name: res.artist.name,
     cover: cover(res.artist.cover?.uri ?? res.artist.ogImage),

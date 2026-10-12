@@ -32,6 +32,7 @@ const bridge: ScBridge = {
     }
   },
   setWindowTheme: (colors) => ipcRenderer.send('window:theme', colors),
+  setFullScreen: (on) => ipcRenderer.send('window:fullscreen', on),
   yandex: {
     headers: () => ipcRenderer.invoke('ya:headers'),
     onHeaders: (cb) => {

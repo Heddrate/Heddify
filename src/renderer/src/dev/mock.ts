@@ -241,6 +241,7 @@ export function installMock(): void {
     copyText: async (text) => navigator.clipboard?.writeText(text),
     openLogs: async () => undefined,
     setWindowTheme: () => undefined,
+    setFullScreen: () => undefined,
     yandex: {
       headers: async () => ({}),
       onHeaders: () => () => undefined,

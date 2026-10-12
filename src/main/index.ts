@@ -398,6 +398,11 @@ function registerIpc(): void {
     mainWindow.setTitleBarOverlay({ color: c.bg, symbolColor: c.symbol, height: 56 })
   })
 
+  // the full-window player goes full screen, so the taskbar is hidden too
+  ipcMain.on('window:fullscreen', (_e, on: unknown) => {
+    if (mainWindow && typeof on === 'boolean') mainWindow.setFullScreen(on)
+  })
+
   ipcMain.handle('ya:headers', () => yandexHeaders)
   ipcMain.handle('ya:login', () => yandexLogin())
   ipcMain.handle('ya:logout', async () => {

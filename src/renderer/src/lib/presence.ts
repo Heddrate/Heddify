@@ -31,6 +31,7 @@ usePlayer.subscribe((s, prev) => {
     title: t.title ?? tx("Без названия"),
     artist: t.user?.username ?? '',
     artwork: trackArt(t, 't500x500'),
+    radio: !!t.radio,
     url: t.permalink_url,
     buttonLabel: yandex ? tx("Открыть в Яндекс Музыке") : t.origin === 'audius' ? tx('Слушать на Audius') : tx("Слушать на SoundCloud"),
     startedAt,

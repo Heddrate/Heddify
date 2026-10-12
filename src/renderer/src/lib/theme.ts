@@ -100,8 +100,12 @@ function apply(): void {
     root.style.colorScheme = ''
   }
   root.dataset.accent = accent
-  // native window frame (title bar buttons) follows the theme
-  const css = getComputedStyle(root)
+  syncWindowFrame()
+}
+
+/** The native title bar buttons take the theme's colours (a view can paint its own and call this to restore). */
+export function syncWindowFrame(): void {
+  const css = getComputedStyle(document.documentElement)
   window.sc?.setWindowTheme({ bg: css.getPropertyValue('--bg').trim(), symbol: css.getPropertyValue('--text-2').trim() })
 }
 

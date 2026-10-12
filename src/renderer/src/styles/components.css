@@ -757,6 +757,14 @@
 
 .full-player {
   --full-color: hsl(0 0% 24%);
+  /* always dark, whatever the theme: its text, track and hover colours are set here */
+  --text: #fff;
+  --text-2: rgba(255, 255, 255, 0.72);
+  --text-3: rgba(255, 255, 255, 0.5);
+  --track: rgba(255, 255, 255, 0.22);
+  --track-buffer: rgba(255, 255, 255, 0.36);
+  --hover: rgba(255, 255, 255, 0.12);
+  --play-ink: #0b0b0b;
   transition: --full-color 0.9s ease;
   position: fixed;
   inset: 0;
@@ -800,8 +808,9 @@
   justify-self: center;
 }
 
-/* a new track's cover eases in */
+/* a new track's cover eases in; the glow behind it is positioned against it */
 .full-cover {
+  position: relative;
   animation: cover-swap 0.5s var(--ease-out) backwards;
 }
 
@@ -818,6 +827,30 @@
   aspect-ratio: 1;
   border-radius: var(--r);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  /* the cover breathes a little with the bass (--bass, 0..1, set by FullPlayer) */
+  transform: scale(calc(1 + var(--bass, 0) * 0.015));
+}
+
+/* a soft light in the cover's colour behind it, blooming with each kick; invisible while --bass is 0 */
+.full-beat {
+  position: absolute;
+  inset: -8%;
+  border-radius: var(--r);
+  pointer-events: none;
+  background: var(--full-color);
+  mix-blend-mode: screen;
+  filter: blur(calc(18px + var(--bass, 0) * 48px));
+  opacity: calc(var(--bass, 0) * 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .full-beat {
+    display: none;
+  }
+
+  .full-cover .art {
+    transform: none;
+  }
 }
 
 .full-meta {
@@ -850,6 +883,20 @@
 .full-player .pb-progress,
 .full-player .pb-controls {
   width: 100%;
+  color: #fff;
+}
+
+/* accent colours turn white here: a dark accent (light themes) would vanish on the dark view */
+.full-player .slider-fill,
+.full-player .slider:hover .slider-fill,
+.full-player .slider.dragging .slider-fill {
+  background: #fff;
+}
+
+.full-player .icon-btn.like.on,
+.full-player .icon-btn.like.on:hover,
+.full-player .icon-btn.toggle.on,
+.full-player .icon-btn.toggle.on:hover {
   color: #fff;
 }
 
@@ -990,10 +1037,11 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* narrow window: cover and controls only */
+/* narrow or tall window: cover and controls only, the cover fills the width */
 @media (max-width: 1100px) {
   .full-player {
     grid-template-columns: 1fr;
+    padding: 56px 28px 28px;
   }
 
   .full-right {
@@ -1001,7 +1049,7 @@
   }
 
   .full-left {
-    width: min(100%, 440px);
+    width: min(100%, 880px, calc(100vh - 340px));
   }
 }
 

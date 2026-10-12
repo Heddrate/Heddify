@@ -47,6 +47,7 @@ export function Settings(): React.JSX.Element {
   const [toTray, setToTray] = useState(false)
   const [leveling, setLeveling] = useState(false)
   const [fade, setFade] = useState(false)
+  const [bassGlow, setBassGlow] = useState(false)
   const [status, setStatus] = useState<DiscordStatus>('off')
 
   useEffect(() => {
@@ -55,6 +56,7 @@ export function Settings(): React.JSX.Element {
       setToTray(p.closeToTray === true)
       setLeveling(p.leveling === true)
       setFade(p.crossfade === true)
+      setBassGlow(p.bassGlow === true)
     })
     void window.sc.discord.status().then(setStatus)
     return window.sc.discord.onStatus(setStatus)
@@ -70,254 +72,275 @@ export function Settings(): React.JSX.Element {
     <div className="view settings">
       <h1 className="view-title">{tx("Настройки")}</h1>
 
-      <Section title={tx("Аккаунт")}>
-        {!me && (
-          <Row
-            label={
-              <AccountLabel avatar={<div className="ya-mark round sc">SC</div>} service="SoundCloud" stats={tx('Не подключено')} />
-            }
-            control={
-              <div className="settings-inline">
-                <button className="btn btn-outline" onClick={() => void signInSoundcloud()}>{tx("Войти")}</button>
-                <button className="btn btn-outline" onClick={() => void signInWithToken()}>{tx('По токену')}</button>
-              </div>
-            }
-          />
-        )}
-        {me && (
+      <div className="settings-cols">
+        <div className="settings-col">
+        <Section title={tx("Аккаунт")}>
+          {!me && (
+            <Row
+              label={
+                <AccountLabel avatar={<div className="ya-mark round sc">SC</div>} service="SoundCloud" stats={tx('Не подключено')} />
+              }
+              control={
+                <div className="settings-inline">
+                  <button className="btn btn-outline" onClick={() => void signInSoundcloud()}>{tx("Войти")}</button>
+                  <button className="btn btn-outline" onClick={() => void signInWithToken()}>{tx('По токену')}</button>
+                </div>
+              }
+            />
+          )}
+          {me && (
+            <Row
+              label={
+                <AccountLabel
+                  avatar={<Artwork src={userArt(me, 'large')} size={40} round placeholder="person" />}
+                  service="SoundCloud"
+                  stats={`${me.username} · ${libraryStats(scLikes, scPlaylists)}`}
+                />
+              }
+              control={
+                <div className="settings-inline">
+                  <button className="btn btn-outline" onClick={() => openUrl(me.permalink_url)}>{tx("Профиль")}</button>
+                  <button className="btn btn-outline" onClick={() => void signInWithToken()} title={tx('Если сессия слетела — вставьте свежий токен')}>
+                    {tx('Токен')}
+                  </button>
+                  <button className="btn btn-outline" onClick={() => void logout()}>{tx("Выйти")}</button>
+                </div>
+              }
+            />
+          )}
           <Row
             label={
               <AccountLabel
-                avatar={<Artwork src={userArt(me, 'large')} size={40} round placeholder="person" />}
-                service="SoundCloud"
-                stats={`${me.username} · ${libraryStats(scLikes, scPlaylists)}`}
+                avatar={<div className="ya-mark round">Я</div>}
+                service={tx('Яндекс Музыка')}
+                stats={
+                  yaStatus === 'in'
+                    ? `${yaName ? yaName + ' · ' : ''}${libraryStats(yaLikes, yaPlaylists)}`
+                    : yaStatus === 'unknown'
+                      ? tx('Подключаюсь…')
+                      : tx('Не подключено')
+                }
               />
             }
             control={
-              <div className="settings-inline">
-                <button className="btn btn-outline" onClick={() => openUrl(me.permalink_url)}>{tx("Профиль")}</button>
-                <button className="btn btn-outline" onClick={() => void signInWithToken()} title={tx('Если сессия слетела — вставьте свежий токен')}>
-                  {tx('Токен')}
-                </button>
-                <button className="btn btn-outline" onClick={() => void logout()}>{tx("Выйти")}</button>
-              </div>
+              yaStatus === 'in' ? (
+                <div className="settings-inline">
+                  <button className="btn btn-outline" onClick={() => openUrl('https://music.yandex.ru/')}>{tx("Профиль")}</button>
+                  <button className="btn btn-outline" onClick={() => void logoutYandex()}>{tx("Выйти")}</button>
+                </div>
+              ) : (
+                <div className="settings-inline">
+                  <button className="btn btn-outline" onClick={() => void loginYandex()}>{tx("Войти")}</button>
+                </div>
+              )
             }
           />
-        )}
-        <Row
-          label={
-            <AccountLabel
-              avatar={<div className="ya-mark round">Я</div>}
-              service={tx('Яндекс Музыка')}
-              stats={
-                yaStatus === 'in'
-                  ? `${yaName ? yaName + ' · ' : ''}${libraryStats(yaLikes, yaPlaylists)}`
-                  : yaStatus === 'unknown'
-                    ? tx('Подключаюсь…')
-                    : tx('Не подключено')
-              }
-            />
-          }
-          control={
-            yaStatus === 'in' ? (
-              <div className="settings-inline">
-                <button className="btn btn-outline" onClick={() => openUrl('https://music.yandex.ru/')}>{tx("Профиль")}</button>
-                <button className="btn btn-outline" onClick={() => void logoutYandex()}>{tx("Выйти")}</button>
-              </div>
-            ) : (
-              <div className="settings-inline">
-                <button className="btn btn-outline" onClick={() => void loginYandex()}>{tx("Войти")}</button>
-              </div>
-            )
-          }
-        />
-        <Row
-          label={
-            <AccountLabel
-              avatar={<div className="ya-mark round">A</div>}
-              service="Audius"
-              stats={
-                auLikes
-                  ? tx('Вход не нужен · {0} в «Мне нравится»', countLabel(auLikes, tx('трек'), tx('трека'), tx('треков')))
-                  : tx('Вход не нужен')
-              }
-            />
-          }
-          control={null}
-        />
-      </Section>
+          <Row
+            label={
+              <AccountLabel
+                avatar={<div className="ya-mark round">A</div>}
+                service="Audius"
+                stats={
+                  auLikes
+                    ? tx('Вход не нужен · {0} в «Мне нравится»', countLabel(auLikes, tx('трек'), tx('трека'), tx('треков')))
+                    : tx('Вход не нужен')
+                }
+              />
+            }
+            control={null}
+          />
+        </Section>
 
-      <Section title={tx("Оформление")}>
-        <Row
-          label="Язык · Language"
-          control={
-            <div className="chips">
-              {(
-                [
-                  ['ru', 'Русский'],
-                  ['en', 'English']
-                ] as [Lang, string][]
-              ).map(([id, label]) => (
-                <button key={id} className={cx('chip', lang === id && 'on')} onClick={() => setLang(id)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          }
-        />
-        <div className="theme-grid" role="radiogroup" aria-label={tx("Тема")}>
-          {THEMES.map((t) => (
-            <ThemeCard
-              key={t.id}
-              id={t.id}
-              label={t.label}
-              colors={t.preview}
-              accentColor={accent === 'mono' ? t.preview[3] : '#ff5500'}
-              active={theme === t.id}
-            />
-          ))}
-          {PALETTES.map((p) => {
-            const v = derivePalette(p.colors)
-            return (
-              <ThemeCard key={p.id} id={p.id} label={p.label} colors={[v.bg, v.panel, v.raised, v.text]} accentColor={v.accent} active={theme === p.id} />
-            )
-          })}
-          <ThemeCard
-            id="custom"
-            label="Своя"
-            colors={(() => {
-              const v = derivePalette(custom)
-              return [v.bg, v.panel, v.raised, v.text]
-            })()}
-            accentColor={custom.accent}
-            active={theme === 'custom'}
-          />
-        </div>
-        {theme === 'custom' && (
+        <Section title={tx("Оформление")}>
           <Row
-            label={tx("Свои цвета")}
+            label="Язык · Language"
             control={
               <div className="chips">
-                {(['bg', 'text', 'accent'] as const).map((k) => (
-                  <label key={k} className="color-pick">
-                    <span>{tx(CUSTOM_COLOR_LABEL[k])}</span>
-                    <input type="color" value={custom[k]} onChange={(e) => setCustomColors({ [k]: e.target.value })} />
-                  </label>
-                ))}
-              </div>
-            }
-          />
-        )}
-        {!usesPalette(theme) && (
-          <Row
-            label={tx("Акцент")}
-            control={
-              <div className="chips">
-                {ACCENTS.map((a) => (
-                  <button key={a.id} className={cx('chip', accent === a.id && 'on')} onClick={() => setAccent(a.id)}>
-                    {tx(a.label)}
+                {(
+                  [
+                    ['ru', 'Русский'],
+                    ['en', 'English']
+                  ] as [Lang, string][]
+                ).map(([id, label]) => (
+                  <button key={id} className={cx('chip', lang === id && 'on')} onClick={() => setLang(id)}>
+                    {label}
                   </button>
                 ))}
               </div>
             }
           />
-        )}
-      </Section>
-
-      <Section title={tx("Воспроизведение")}>
-        <Row
-          label={tx('Выравнивать громкость')}
-          hint={tx('Тихие и громкие треки звучат ровнее')}
-          control={
-            <Switch
-              on={leveling}
-              onToggle={() => {
-                setLeveling(!leveling)
-                engine.setLeveling(!leveling)
-                void window.sc.prefs.set({ leveling: !leveling })
-              }}
-              label={tx('Выравнивать громкость')}
+          <div className="theme-grid" role="radiogroup" aria-label={tx("Тема")}>
+            {THEMES.map((t) => (
+              <ThemeCard
+                key={t.id}
+                id={t.id}
+                label={t.label}
+                colors={t.preview}
+                accentColor={accent === 'mono' ? t.preview[3] : '#ff5500'}
+                active={theme === t.id}
+              />
+            ))}
+            {PALETTES.map((p) => {
+              const v = derivePalette(p.colors)
+              return (
+                <ThemeCard key={p.id} id={p.id} label={p.label} colors={[v.bg, v.panel, v.raised, v.text]} accentColor={v.accent} active={theme === p.id} />
+              )
+            })}
+            <ThemeCard
+              id="custom"
+              label="Своя"
+              colors={(() => {
+                const v = derivePalette(custom)
+                return [v.bg, v.panel, v.raised, v.text]
+              })()}
+              accentColor={custom.accent}
+              active={theme === 'custom'}
             />
-          }
-        />
-        <Row
-          label={tx('Плавный переход между треками')}
-          hint={tx('Звук плавно нарастает в начале трека и затихает в конце')}
-          control={
-            <Switch
-              on={fade}
-              onToggle={() => {
-                setFade(!fade)
-                engine.setFade(!fade)
-                void window.sc.prefs.set({ crossfade: !fade })
-              }}
-              label={tx('Плавный переход между треками')}
+          </div>
+          {theme === 'custom' && (
+            <Row
+              label={tx("Свои цвета")}
+              control={
+                <div className="chips">
+                  {(['bg', 'text', 'accent'] as const).map((k) => (
+                    <label key={k} className="color-pick">
+                      <span>{tx(CUSTOM_COLOR_LABEL[k])}</span>
+                      <input type="color" value={custom[k]} onChange={(e) => setCustomColors({ [k]: e.target.value })} />
+                    </label>
+                  ))}
+                </div>
+              }
             />
-          }
-        />
-        <Row
-          label={tx('Сворачивать в трей при закрытии')}
-          hint={tx('Музыка продолжит играть')}
-          control={
-            <Switch
-              on={toTray}
-              onToggle={() => {
-                setToTray(!toTray)
-                void window.sc.prefs.set({ closeToTray: !toTray })
-              }}
-              label={tx('Сворачивать в трей при закрытии')}
+          )}
+          {!usesPalette(theme) && (
+            <Row
+              label={tx("Акцент")}
+              control={
+                <div className="chips">
+                  {ACCENTS.map((a) => (
+                    <button key={a.id} className={cx('chip', accent === a.id && 'on')} onClick={() => setAccent(a.id)}>
+                      {tx(a.label)}
+                    </button>
+                  ))}
+                </div>
+              }
             />
-          }
-        />
-        <Row
-          label={tx("Автопродолжение")}
-          hint={tx("Когда очередь закончится, играть похожие треки. Выключено по умолчанию")}
-          control={<Switch on={autoplay} onToggle={player.toggleAutoplay} label={tx("Автопродолжение")} />}
-        />
-      </Section>
+          )}
+        </Section>
 
-      <CacheSection />
+        </div>
+        <div className="settings-col">
+        <Section title={tx("Воспроизведение")}>
+          <Row
+            label={tx('Выравнивать громкость')}
+            hint={tx('Тихие и громкие треки звучат ровнее')}
+            control={
+              <Switch
+                on={leveling}
+                onToggle={() => {
+                  setLeveling(!leveling)
+                  engine.setLeveling(!leveling)
+                  void window.sc.prefs.set({ leveling: !leveling })
+                }}
+                label={tx('Выравнивать громкость')}
+              />
+            }
+          />
+          <Row
+            label={tx('Подсветка баса в полном экране')}
+            hint={tx('Обложка светится в такт басу. Действует с следующего трека')}
+            control={
+              <Switch
+                on={bassGlow}
+                onToggle={() => {
+                  setBassGlow(!bassGlow)
+                  engine.setReactive(!bassGlow)
+                  void window.sc.prefs.set({ bassGlow: !bassGlow })
+                }}
+                label={tx('Подсветка баса в полном экране')}
+              />
+            }
+          />
+          <Row
+            label={tx('Плавный переход между треками')}
+            hint={tx('Звук плавно нарастает в начале трека и затихает в конце')}
+            control={
+              <Switch
+                on={fade}
+                onToggle={() => {
+                  setFade(!fade)
+                  engine.setFade(!fade)
+                  void window.sc.prefs.set({ crossfade: !fade })
+                }}
+                label={tx('Плавный переход между треками')}
+              />
+            }
+          />
+          <Row
+            label={tx('Сворачивать в трей при закрытии')}
+            hint={tx('Музыка продолжит играть')}
+            control={
+              <Switch
+                on={toTray}
+                onToggle={() => {
+                  setToTray(!toTray)
+                  void window.sc.prefs.set({ closeToTray: !toTray })
+                }}
+                label={tx('Сворачивать в трей при закрытии')}
+              />
+            }
+          />
+          <Row
+            label={tx("Автопродолжение")}
+            hint={tx("Когда очередь закончится, играть похожие треки. Выключено по умолчанию")}
+            control={<Switch on={autoplay} onToggle={player.toggleAutoplay} label={tx("Автопродолжение")} />}
+          />
+        </Section>
 
-      <Section title="Discord">
-        <Row
-          label={tx("Показывать в Discord, что я слушаю")}
-          control={<Switch on={discordOn} onToggle={toggleDiscord} label="Discord Rich Presence" />}
-        />
-        {discordOn && (
-          <p className={cx('settings-status', status === 'ready' && 'ok', status === 'bad-id' && 'bad')}>{discordText()[status]}</p>
-        )}
-      </Section>
+        <CacheSection />
 
-      <Section title={tx('Что нового')}>
-        <p className="settings-hint">{tx('Версия {0}', __APP_VERSION__)}</p>
-        <ul className="whats-new">
-          {whatsNew().map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-      </Section>
+        <Section title="Discord">
+          <Row
+            label={tx("Показывать в Discord, что я слушаю")}
+            control={<Switch on={discordOn} onToggle={toggleDiscord} label="Discord Rich Presence" />}
+          />
+          {discordOn && (
+            <p className={cx('settings-status', status === 'ready' && 'ok', status === 'bad-id' && 'bad')}>{discordText()[status]}</p>
+          )}
+        </Section>
 
-      <Section title={tx("О приложении")}>
-        <Row
-          label={
-            <span className="settings-account">
-              <Logo size={40} />
-              <span>
-                <strong>Heddify</strong>
-                <span className="settings-hint block">{tx('Версия {0} · автор — Heddrate', __APP_VERSION__)}</span>
+        <Section title={tx('Что нового')}>
+          <p className="settings-hint">{tx('Версия {0}', __APP_VERSION__)}</p>
+          <ul className="whats-new">
+            {whatsNew().map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </Section>
+
+        <Section title={tx("О приложении")}>
+          <Row
+            label={
+              <span className="settings-account">
+                <Logo size={40} />
+                <span>
+                  <strong>Heddify</strong>
+                  <span className="settings-hint block">{tx('Версия {0} · автор — Heddrate', __APP_VERSION__)}</span>
+                </span>
               </span>
-            </span>
-          }
-          control={null}
-        />
-        <UpdateRow />
-        <Row
-          label={tx("Журнал ошибок")}
-          control={
-            <button className="btn btn-outline" onClick={() => void window.sc.openLogs()}>{tx("Открыть папку")}</button>
-          }
-        />
-      </Section>
+            }
+            control={null}
+          />
+          <UpdateRow />
+          <Row
+            label={tx("Журнал ошибок")}
+            control={
+              <button className="btn btn-outline" onClick={() => void window.sc.openLogs()}>{tx("Открыть папку")}</button>
+            }
+          />
+        </Section>
+        </div>
+      </div>
     </div>
   )
 }

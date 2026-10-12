@@ -212,6 +212,12 @@ class DiscordPresence {
   }
 }
 
+/** Placeholders live in the repo (build/presence) and are served from the main branch. */
+const PLACEHOLDER = {
+  radio: 'https://raw.githubusercontent.com/Heddrate/Heddify/main/build/presence/radio.png',
+  track: 'https://raw.githubusercontent.com/Heddrate/Heddify/main/build/presence/track.png'
+}
+
 function activity(p: Presence): Record<string, unknown> {
   const a: Record<string, unknown> = {
     type: 2, // "Listening to"
@@ -223,7 +229,9 @@ function activity(p: Presence): Record<string, unknown> {
     a.timestamps = { start: Math.round(p.startedAt), end: Math.round(p.endsAt) }
   }
   const assets: Record<string, string> = {}
-  if (p.artwork?.startsWith('https://') && p.artwork.length <= 256) assets.large_image = p.artwork
+  // no cover: our own placeholder (same look as in the app), not Discord's "?"
+  const art = p.artwork?.startsWith('https://') && p.artwork.length <= 256 ? p.artwork : p.radio ? PLACEHOLDER.radio : PLACEHOLDER.track
+  assets.large_image = art
   if (p.album) assets.large_text = clip(p.album)
   if (Object.keys(assets).length) a.assets = assets
   if (p.url?.startsWith('https://')) a.buttons = [{ label: clip(p.buttonLabel ?? 'SoundCloud', 32), url: p.url }]

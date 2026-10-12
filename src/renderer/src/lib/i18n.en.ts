@@ -243,6 +243,9 @@ const EN: Record<string, string> = {
   'Повторное прослушивание — мгновенно, без трафика и даже без интернета. Треки Яндекс Музыки кеширует сам Яндекс.':
     'Replays start instantly, use no data and work even offline. Yandex Music tracks are cached by Yandex itself.',
   'Похожие исполнители': 'Similar artists',
+  'Похожие станции': 'Similar stations',
+  'Подсветка баса в полном экране': 'Bass glow in full screen',
+  'Обложка светится в такт басу. Действует с следующего трека': 'The cover glows with the bass. Applies from the next track',
   'Продолжить без SoundCloud': 'Continue without SoundCloud',
   'Размер кеша': 'Cache size',
   'С Audius': 'From Audius',

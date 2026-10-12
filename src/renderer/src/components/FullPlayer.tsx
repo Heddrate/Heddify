@@ -5,7 +5,10 @@ import { trackArt, useArtColor } from '@/lib/artwork'
 import { cx, useAsync } from '@/lib/hooks'
 import { tx } from '@/lib/i18n'
 import { activeLine, fetchLyrics } from '@/lib/lyrics'
-import type { Track } from '@/lib/types'
+import { syncWindowFrame } from '@/lib/theme'
+import { engine } from '@/player/engine'
+import { radio } from '@/lib/radio'
+import type { PlaySource, Track } from '@/lib/types'
 import { player, upcomingPositions, usePlayer } from '@/store/player'
 import { ArtistLinks } from './ArtistLinks'
 import { Artwork } from './Artwork'
@@ -27,7 +30,15 @@ export function FullPlayer(): React.JSX.Element | null {
       if (e.key === 'Escape') closeFull()
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    // the title bar buttons sit on the dark full-window player, not on the theme's colour
+    window.sc?.setWindowTheme({ bg: '#0b0b0b', symbol: '#f2f2f2' })
+    // and the player covers the taskbar too: the window goes full screen while it's open
+    window.sc?.setFullScreen(true)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.sc?.setFullScreen(false)
+      syncWindowFrame()
+    }
   }, [on])
 
   if (!on || !track) return null
@@ -42,6 +53,27 @@ function FullView(): React.JSX.Element {
   // the right side shows `panel`: it leaves with an animation when the track changes, then the new track's lyrics or next tracks come in
   const [panel, setPanel] = useState(track)
   const [leaving, setLeaving] = useState(false)
+  // the bass drives the glow around the cover: a quick rise on a kick, a slow fall after it
+  const glow = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    let raf = 0
+    let level = 0
+    let shown = ''
+    const tick = (): void => {
+      const target = engine.bass()
+      level += (target - level) * (target > level ? 0.6 : 0.12)
+      // write the style only when the value changes (with the effect off it stays at 0)
+      const next = level.toFixed(3)
+      if (next !== shown) {
+        shown = next
+        glow.current?.style.setProperty('--bass', next)
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
   useEffect(() => {
     if (panel.id === track.id) return
     setLeaving(true)
@@ -58,7 +90,8 @@ function FullView(): React.JSX.Element {
         <Icon name="chevronDown" size={30} />
       </button>
       <div className="full-left">
-        <div key={track.id} className="full-cover">
+        <div key={track.id} ref={glow} className="full-cover">
+          <div className="full-beat" aria-hidden />
           <Artwork src={art} letter={track.user?.username ?? track.title} />
         </div>
         <div className="full-meta">
@@ -80,7 +113,7 @@ function FullView(): React.JSX.Element {
         <Controls />
       </div>
       <div className={cx('full-right', leaving && 'leaving')}>
-        <FullLyrics key={panel.id} track={panel} />
+        {panel.radio ? <StationsMore key={panel.id} track={panel} /> : <FullLyrics key={panel.id} track={panel} />}
       </div>
     </div>
   )
@@ -117,6 +150,29 @@ function FullLyrics({ track }: { track: Track }): React.JSX.Element {
   }
   if (res.data?.plain) return <div className="full-lyrics plain scroll-y">{res.data.plain}</div>
   return <UpNext track={track} />
+}
+
+/** A radio station has no "next": the panel offers other stations of the same genre instead. */
+function StationsMore({ track }: { track: Track }): React.JSX.Element | null {
+  const genre = track.genre ?? ''
+  const res = useAsync(() => (genre ? radio.byTag(genre) : radio.top()), [track.id], `p:radio-more:${genre}`)
+  const list = (res.data ?? []).filter((t) => t.id !== track.id)
+  if (!list.length) return null
+  const source: PlaySource = { label: tx('Радио · {0}', genre || tx('Похожие станции')), route: { name: 'radio' } }
+  return (
+    <div className="full-next">
+      <div className="full-next-label">{tx('Похожие станции')}</div>
+      {list.slice(0, 8).map((t, i) => (
+        <button key={t.id} className="full-next-row" style={{ '--i': i } as CSSProperties} onClick={() => player.playContext(list, i, source)}>
+          <Artwork src={trackArt(t, 'large')} size={48} tone={t.title} placeholder="radio" />
+          <span className="full-next-text">
+            <span className="ellipsis">{t.title}</span>
+            <span className="ellipsis muted">{t.user?.username}</span>
+          </span>
+        </button>
+      ))}
+    </div>
+  )
 }
 
 function UpNext({ track }: { track: Track }): React.JSX.Element | null {

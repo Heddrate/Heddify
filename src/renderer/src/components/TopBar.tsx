@@ -148,7 +148,7 @@ function UserButton(): React.JSX.Element {
       aria-label={tx('Профиль')}
       onClick={open}
     >
-      {me ? <Artwork src={userArt(me, 'large')} size={32} round placeholder="person" /> : <Icon name="person" size={20} />}
+      {me ? <Artwork src={userArt(me, 'large')} size={28} round placeholder="person" /> : <Icon name="person" size={20} />}
       {(updStatus === 'downloading' || updStatus === 'ready') && (
         <span className={cx('avatar-dot', updStatus === 'downloading' && 'downloading')} />
       )}

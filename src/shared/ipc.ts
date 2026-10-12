@@ -73,6 +73,8 @@ export interface Presence {
   artist: string
   album?: string
   artwork?: string | null
+  /** A radio station: without artwork it gets the radio placeholder instead of Discord's "?". */
+  radio?: boolean
   url?: string
   /** Text of the link button under the status. */
   buttonLabel?: string
@@ -144,6 +146,8 @@ export interface ScBridge {
   }
   /** Colours of the native window frame (title bar buttons). */
   setWindowTheme(colors: { bg: string; symbol: string }): void
+  /** Covers the whole screen (the taskbar too) while the full-window player is open. */
+  setFullScreen(on: boolean): void
   /** Headers the Yandex Music site uses for its own API (see main/index.ts). */
   yandex: {
     headers(): Promise<Record<string, string>>

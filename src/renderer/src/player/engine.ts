@@ -65,7 +65,16 @@ class Engine {
   private recoveries = 0
   private ev: EngineEvents | null = null
   private leveling = false
-  private graph: { ctx: AudioContext; src: MediaElementAudioSourceNode; comp: DynamicsCompressorNode; makeup: GainNode } | null = null
+  /** "Подсветка баса": the cover glows with the bass, from the next track on. */
+  private reactive = false
+  private freq = new Uint8Array(0)
+  private graph: {
+    ctx: AudioContext
+    src: MediaElementAudioSourceNode
+    comp: DynamicsCompressorNode
+    makeup: GainNode
+    analyser: AnalyserNode
+  } | null = null
   private level = 0.8
   private muted = false
   private fade = false
@@ -313,14 +322,40 @@ class Engine {
    */
   setLeveling(on: boolean): void {
     this.leveling = on
-    // the CORS mode applies to the next load: it must be dropped again when leveling goes off,
-    // or streams without CORS headers (radio, some CDNs) would fail to load from then on
-    this.audio.crossOrigin = on ? 'anonymous' : null
+    this.syncCors()
     if (this.graph) this.connectGraph()
   }
 
+  /** "Подсветка баса" on or off; like leveling it applies from the next track (Web Audio needs CORS). */
+  setReactive(on: boolean): void {
+    this.reactive = on
+    this.syncCors()
+  }
+
+  /** How loud the bass (kick, sub) is right now, 0..1; 0 while the effect is off or nothing plays through Web Audio. */
+  bass(): number {
+    const a = this.graph?.analyser
+    if (!a || !this.reactive) return 0
+    if (this.freq.length !== a.frequencyBinCount) this.freq = new Uint8Array(a.frequencyBinCount)
+    a.getByteFrequencyData(this.freq)
+    // bins 1–4 of a 1024-point FFT are about 47–190 Hz
+    let sum = 0
+    for (let i = 1; i <= 4; i++) sum += this.freq[i]
+    return Math.min(1, (sum / (4 * 255)) * 1.4)
+  }
+
+  /**
+   * The element must load with CORS while Web Audio is in its path. Once the graph exists it
+   * stays in the path for good, so the CORS mode stays too: a stream without CORS then fails
+   * loudly instead of playing silence.
+   */
+  private syncCors(): void {
+    this.audio.crossOrigin = this.leveling || this.reactive || this.graph ? 'anonymous' : null
+  }
+
   private ensureGraph(): void {
-    if (!this.leveling || this.graph) return
+    if (!this.leveling && !this.reactive) return
+    if (this.graph) return
     const ctx = new AudioContext()
     const src = ctx.createMediaElementSource(this.audio)
     const comp = ctx.createDynamicsCompressor()
@@ -331,23 +366,30 @@ class Engine {
     comp.release.value = 0.3
     const makeup = ctx.createGain()
     makeup.gain.value = 1.35
-    this.graph = { ctx, src, comp, makeup }
+    const analyser = ctx.createAnalyser()
+    analyser.fftSize = 1024
+    analyser.smoothingTimeConstant = 0.55
+    this.graph = { ctx, src, comp, makeup, analyser }
+    this.syncCors()
     this.connectGraph()
   }
 
+  /** The analyser only watches: it passes the sound on unchanged, so it is always in the path. */
   private connectGraph(): void {
     const g = this.graph
     if (!g) return
     g.src.disconnect()
     g.comp.disconnect()
     g.makeup.disconnect()
+    g.analyser.disconnect()
     if (this.leveling) {
       g.src.connect(g.comp)
       g.comp.connect(g.makeup)
-      g.makeup.connect(g.ctx.destination)
+      g.makeup.connect(g.analyser)
     } else {
-      g.src.connect(g.ctx.destination)
+      g.src.connect(g.analyser)
     }
+    g.analyser.connect(g.ctx.destination)
   }
 
   /**
