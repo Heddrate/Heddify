@@ -647,14 +647,12 @@ export const player = {
     if (!get().current) return player.playContext([track], 0, { label: tx("Очередь") })
     set({ manual: [track, ...get().manual] })
     persistQueue()
-    toast(tx("Будет следующим"))
   },
 
   enqueue(track: Track): void {
     if (!get().current) return player.playContext([track], 0, { label: tx("Очередь") })
     set({ manual: [...get().manual, track] })
     persistQueue()
-    toast(tx("Добавлено в очередь"))
   },
 
   removeManual(i: number): void {

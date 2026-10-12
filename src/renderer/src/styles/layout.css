@@ -583,6 +583,10 @@
   gap: 8px;
 }
 
+.pb-progress .time {
+  font-size: 13px;
+}
+
 .pb-progress.disabled .slider {
   pointer-events: none;
   opacity: 0.5;
@@ -639,6 +643,13 @@
   border-radius: 2px;
   background: var(--track);
   overflow: hidden;
+  transition: height 0.15s var(--ease-out);
+}
+
+/* the bar thickens under the pointer, so it's easy to grab */
+.slider:hover .slider-track,
+.slider.dragging .slider-track {
+  height: 6px;
 }
 
 .slider-buffer {
@@ -800,22 +811,6 @@
   padding: 12px 8px;
   font-size: 13px;
   color: var(--text-2);
-}
-
-.q-hint {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 16px 8px 0;
-  padding: 12px;
-  border-radius: var(--r-sm);
-  background: var(--panel-2);
-  color: var(--text-2);
-  font-size: 13px;
-}
-
-.q-hint svg {
-  flex: none;
 }
 
 /* ---------- invisible Yandex Music engine ---------- */

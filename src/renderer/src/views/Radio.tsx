@@ -23,7 +23,7 @@ export function stationCards(stations: Track[], source: PlaySource): React.JSX.E
       title={t.title ?? ''}
       sub={t.user?.username}
       art={trackArt(t)}
-      letter={t.title}
+      tone={t.title}
       placeholder="radio"
       onOpen={() => player.playContext(stations, i, source)}
       onPlay={() => player.playContext(stations, i, source)}

@@ -40,6 +40,11 @@
   color: var(--text-3);
 }
 
+/* a station without its own picture: the gradient is dark enough for a light icon in every theme */
+.art-tone .art-ph {
+  color: rgba(255, 255, 255, 0.85);
+}
+
 /* ---------- page scaffolding ---------- */
 
 .view {
@@ -760,10 +765,11 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   gap: 64px;
-  padding: 72px 72px 56px;
+  padding: 64px 72px 24px;
   color: #fff;
   background:
     radial-gradient(120% 90% at 20% 10%, var(--full-color) 0%, transparent 70%),
+    radial-gradient(90% 70% at 90% 100%, var(--full-color) 0%, transparent 65%),
     #0b0b0b;
   animation: full-in 0.22s ease-out;
 }
@@ -789,7 +795,8 @@
   flex-direction: column;
   align-items: stretch;
   gap: 20px;
-  width: min(100%, 520px);
+  /* the cover grows with the window's height, but the controls always fit below it */
+  width: min(100%, 560px, calc(100vh - 272px));
   justify-self: center;
 }
 
@@ -853,11 +860,12 @@
   transform-origin: center top;
 }
 
+/* the queue / lyrics start at the top, level with the cover */
 .full-right {
   height: 100%;
   min-height: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 }
 
 /* on a track change the lyrics or next tracks leave, then the new track's come in */

@@ -32,8 +32,6 @@ export function QueuePanel(): React.JSX.Element {
   const manual = usePlayer((s) => s.manual)
   const source = usePlayer((s) => s.source)
   const playing = usePlayer((s) => s.playing)
-  const autoplay = usePlayer((s) => s.autoplay)
-  const repeat = usePlayer((s) => s.repeat)
   const [drag, setDrag] = useState<Drag | null>(null)
 
   // the list shows what plays next in its real order: random while shuffle is on
@@ -125,19 +123,6 @@ export function QueuePanel(): React.JSX.Element {
           </>
         )}
 
-        {current && source?.kind === 'wave' && (
-          <div className="q-hint">
-            <Icon name="wave" size={18} />
-            <span>{tx('Дальше — Моя волна')}</span>
-          </div>
-        )}
-
-        {current && autoplay && repeat === 'off' && !source?.next && !source?.kind && (
-          <div className="q-hint">
-            <Icon name="infinity" size={18} />
-            <span>{tx('Дальше — похожие треки')}</span>
-          </div>
-        )}
       </div>
     </aside>
   )
