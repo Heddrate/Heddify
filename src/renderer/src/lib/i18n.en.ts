@@ -401,6 +401,8 @@ const EN: Record<string, string> = {
   'Нет связи с SoundCloud': 'Can’t reach SoundCloud',
   'Никаких цветов: только чёрный, белый и серые': 'No colour: only black, white and greys',
   'Ничего не играет': 'Nothing playing',
+  'Не нашёл «{0}» на SoundCloud': 'Couldn’t find “{0}” on SoundCloud',
+  'Не удалось найти «{0}»': 'Couldn’t find “{0}”',
   'Следующий трек': 'Next track',
   'Предыдущий трек': 'Previous track',
   'Когда очередь закончится, играть похожие треки. Выключено по умолчанию': 'When the queue ends, play similar tracks. Off by default',

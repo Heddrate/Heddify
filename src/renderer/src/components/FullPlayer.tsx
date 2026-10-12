@@ -6,7 +6,7 @@ import { cx, useAsync } from '@/lib/hooks'
 import { tx } from '@/lib/i18n'
 import { activeLine, fetchLyrics } from '@/lib/lyrics'
 import type { Track } from '@/lib/types'
-import { player, usePlayer } from '@/store/player'
+import { player, upcomingPositions, usePlayer } from '@/store/player'
 import { ArtistLinks } from './ArtistLinks'
 import { Artwork } from './Artwork'
 import { Icon } from './Icon'
@@ -122,10 +122,17 @@ function FullLyrics({ track }: { track: Track }): React.JSX.Element {
 function UpNext({ track }: { track: Track }): React.JSX.Element | null {
   const context = usePlayer((s) => s.context)
   const current = usePlayer((s) => s.index)
-  // the track's own place in the queue (the store's index may already point at the next one)
+  const plan = usePlayer((s) => s.plan)
+  const shuffle = usePlayer((s) => s.shuffle)
+  const source = usePlayer((s) => s.source)
+  const isCurrent = usePlayer((s) => s.current?.id === track.id)
+  // the track's own place in the list (the store's index may already point at the next one)
   const index = context[current]?.id === track.id ? current : context.findIndex((t) => t.id === track.id)
   if (index < 0) return null
-  const next = context.slice(index + 1, index + 6)
+  const positions = isCurrent
+    ? upcomingPositions({ context, index: current, plan, shuffle, source }, 5)
+    : Array.from({ length: Math.min(5, context.length - index - 1) }, (_, k) => index + 1 + k)
+  const next = positions.map((i) => context[i]).filter(Boolean)
   if (!next.length) return null
   return (
     <div className="full-next">
@@ -135,7 +142,7 @@ function UpNext({ track }: { track: Track }): React.JSX.Element | null {
           key={`${t.id}-${i}`}
           className="full-next-row"
           style={{ '--i': i } as CSSProperties}
-          onClick={() => player.jumpContext(index + 1 + i)}
+          onClick={() => player.jumpContext(positions[i])}
         >
           <Artwork src={trackArt(t, 'large')} size={48} letter={t.user?.username ?? t.title} />
           <span className="full-next-text">

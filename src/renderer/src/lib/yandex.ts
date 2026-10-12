@@ -10,7 +10,7 @@
 import { create } from 'zustand'
 import type { PlaySource, Track } from './types'
 import { useApp } from '@/store/app'
-import { externalEvents, player, registerExternal, usePlayer, type ExternalDriver, mediaCommand } from '@/store/player'
+import { externalEvents, player, registerExternal, upcomingPositions, usePlayer, type ExternalDriver, mediaCommand } from '@/store/player'
 import { tx } from '@/lib/i18n'
 // circular with yandexApi (which uses this page), fine: only read at call time
 import { useYa } from './yandexApi'
@@ -403,7 +403,7 @@ async function tick(): Promise<void> {
     // The page moved on by itself. If our queue has more, it decides what's next;
     // otherwise follow Yandex's own queue.
     const s = usePlayer.getState()
-    if (s.manual.length || s.index + 1 < s.context.length) {
+    if (s.manual.length || upcomingPositions(s, 1).length > 0) {
       if (!endSignalled) {
         endSignalled = true
         externalEvents.ended()

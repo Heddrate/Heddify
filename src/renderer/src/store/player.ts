@@ -6,17 +6,21 @@ import type { PlaySource, Route, Track, User } from '@/lib/types'
 import { engine } from '@/player/engine'
 import { toast } from './ui'
 import { tx } from '@/lib/i18n'
+import { nextIndex, pushHistory, roundOrder, shuffled, shuffleOn } from '@/lib/queueOrder'
+export { remainingCount, upcomingPositions } from '@/lib/queueOrder'
 
 export type RepeatMode = 'off' | 'all' | 'one'
 
 interface PlayerState {
   current: Track | null
-  /** The list being played through (shuffled order when shuffle is on). */
+  /** The list being played through, always in its own order (shuffling never reorders it). */
   context: Track[]
-  /** Unshuffled copy of `context` while shuffle is on. */
-  original: Track[] | null
-  /** Position in `context` of the last context track played. */
+  /** Position in `context` of the track playing (or last played) from it. */
   index: number
+  /** While shuffle is on: the positions still to play, in play order. */
+  plan: number[]
+  /** Positions played before `index`, newest last: "previous" walks back through them. */
+  history: number[]
   /** True when `current` was taken from the manual queue. */
   fromManual: boolean
   /** "Play next" / "Add to queue" tracks; they play before the context continues. */
@@ -42,8 +46,9 @@ interface PlayerState {
 export const usePlayer = create<PlayerState>(() => ({
   current: null,
   context: [],
-  original: null,
   index: -1,
+  plan: [],
+  history: [],
   fromManual: false,
   manual: [],
   source: null,
@@ -66,15 +71,6 @@ const set = usePlayer.setState
 const get = usePlayer.getState
 
 engine.setVolume(get().volume, false)
-
-function shuffled<T>(arr: T[]): T[] {
-  const a = arr.slice()
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 /* ---------------- persistence ---------------- */
 
@@ -161,11 +157,15 @@ export async function restoreSession(): Promise<void> {
   const session = prefs.session as SavedSession | undefined
   if (!session?.current || get().current) return
   const position = typeof prefs.sessionPosition === 'number' ? prefs.sessionPosition : 0
+  const context = session.context ?? []
+  const index = session.index ?? 0
+  const source = session.source ?? null
   set({
     current: session.current,
-    context: session.context ?? [],
-    original: null,
-    index: session.index ?? 0,
+    context,
+    index,
+    plan: shuffleOn({ shuffle: prefs.shuffle === true, source }) ? roundOrder(context.length, index) : [],
+    history: [],
     manual: session.manual ?? [],
     source: session.source ?? null,
     fromManual: false,
@@ -319,10 +319,10 @@ function loadMoreContext(): Promise<boolean> {
       }
       const s = get()
       if (s.source !== src) return false
-      const added = s.shuffle && !src.kind ? shuffled(tracks) : tracks
+      const from = s.context.length
       set({
-        context: [...s.context, ...added],
-        original: s.original ? [...s.original, ...tracks] : null,
+        context: [...s.context, ...tracks],
+        plan: shuffleOn(s) ? [...s.plan, ...roundOrder(from + tracks.length, s.index).filter((i) => i >= from)] : s.plan,
         source: { ...src, next }
       })
       persistQueue()
@@ -345,7 +345,6 @@ async function appendRelated(seed: Track): Promise<boolean> {
     if (!fresh.length) return false
     set({
       context: [...s.context, ...fresh],
-      original: s.original ? [...s.original, ...fresh] : null,
       source: { label: tx("Похожие на «{0}»", seed.title ?? ''), next: null }
     })
     return true
@@ -356,7 +355,8 @@ async function appendRelated(seed: Track): Promise<boolean> {
 
 function prefetch(): void {
   const s = get()
-  if (canGrow(s.source) && s.context.length - s.index <= 3) void loadMoreContext()
+  const ahead = shuffleOn(s) ? s.plan.length : s.context.length - s.index - 1
+  if (canGrow(s.source) && ahead <= 3) void loadMoreContext()
 }
 
 async function next(auto = false): Promise<void> {
@@ -377,19 +377,24 @@ async function next(auto = false): Promise<void> {
     void playTrack(t)
     return
   }
-  // known-unplayable tracks are stepped over instead of failing again
-  let i = s.index + 1
-  while (i < s.context.length && s.unplayable.has(s.context[i].id)) i++
-  if (i < s.context.length) {
-    set({ index: i, fromManual: false })
+  const step = nextIndex(s)
+  if (step) {
+    set({ index: step.index, plan: step.plan, history: pushHistory(s.history, s.index), fromManual: false })
     prefetch()
-    void playTrack(s.context[i])
+    void playTrack(get().context[step.index])
     return
   }
   if (canGrow(s.source) && (await loadMoreContext())) return next(auto)
   if (s.repeat === 'all' && s.context.length) {
-    set({ index: 0, fromManual: false })
-    void playTrack(s.context[0])
+    // a new round: with shuffle it starts at a random track, otherwise the list starts again
+    const start = shuffleOn(s) ? Math.floor(Math.random() * s.context.length) : 0
+    set({
+      index: start,
+      plan: shuffleOn(s) ? roundOrder(s.context.length, start) : [],
+      history: pushHistory(s.history, s.index),
+      fromManual: false
+    })
+    void playTrack(get().context[start])
     return
   }
   // our queue is done but Yandex is playing: let its own player continue
@@ -398,10 +403,16 @@ async function next(auto = false): Promise<void> {
     return
   }
   const seed = get().current
+  const from = get().context.length
   if (get().autoplay && seed && !isExternal(seed) && (await appendRelated(seed))) {
-    const j = get().index + 1
-    set({ index: j, fromManual: false })
-    void playTrack(get().context[j])
+    const after = get()
+    set({
+      index: from,
+      plan: shuffleOn(after) ? roundOrder(after.context.length, from).filter((i) => i >= from) : [],
+      history: pushHistory(after.history, after.index),
+      fromManual: false
+    })
+    void playTrack(get().context[from])
     return
   }
   if (auto) {
@@ -455,8 +466,9 @@ export const externalEvents = {
     set({
       current: track,
       context: [track],
-      original: null,
       index: 0,
+      plan: [],
+      history: [],
       fromManual: false,
       source,
       duration: (track.duration ?? 0) / 1000
@@ -482,27 +494,29 @@ export const player = {
     const shuffle = generated ? false : (opts.shuffle ?? get().shuffle)
     let index = Math.max(0, Math.min(start, list.length - 1))
     if (opts.shuffle) index = Math.floor(Math.random() * list.length)
-    let context = list
-    let original: Track[] | null = null
-    if (shuffle) {
-      original = list
-      context = [list[index], ...shuffled(list.filter((_, i) => i !== index))]
-      index = 0
-    }
     failStreak = 0
-    set({ context, original, index, fromManual: false, source, ...(generated ? {} : { shuffle }) })
+    set({
+      context: list,
+      index,
+      plan: shuffle ? roundOrder(list.length, index) : [],
+      history: [],
+      fromManual: false,
+      source,
+      ...(generated ? {} : { shuffle })
+    })
     if (opts.shuffle !== undefined) persistPrefs()
     prefetch()
-    void playTrack(context[index])
+    void playTrack(list[index])
   },
 
   /** Appends tracks to the queue if it is still playing from `route`. */
   extendContext(route: Route, tracks: Track[]): void {
     const s = get()
     if (!tracks.length || JSON.stringify(s.source?.route) !== JSON.stringify(route)) return
+    const from = s.context.length
     set({
-      context: [...s.context, ...(s.shuffle ? shuffled(tracks) : tracks)],
-      original: s.original ? [...s.original, ...tracks] : null
+      context: [...s.context, ...tracks],
+      plan: shuffleOn(s) ? [...s.plan, ...shuffled(tracks.map((_, k) => from + k))] : s.plan
     })
     persistQueue()
   },
@@ -511,7 +525,8 @@ export const player = {
   replaceUpcoming(tracks: Track[]): void {
     const s = get()
     const head = s.context.slice(0, s.index + 1)
-    set({ context: [...head, ...tracks], original: s.original ? [...head, ...tracks] : null })
+    const context = [...head, ...tracks]
+    set({ context, plan: shuffleOn(s) ? shuffled(context.map((_, k) => k).slice(s.index + 1)) : [] })
     persistQueue()
   },
 
@@ -556,6 +571,17 @@ export const player = {
       void playTrack(s.context[s.index])
       return
     }
+    if (shuffleOn(s)) {
+      const back = s.history[s.history.length - 1]
+      if (back !== undefined && s.context[back]) {
+        // the track we left plays next again, so the round stays whole
+        set({ index: back, history: s.history.slice(0, -1), plan: [s.index, ...s.plan], fromManual: false })
+        void playTrack(s.context[back])
+        return
+      }
+      restart()
+      return
+    }
     if (s.index > 0) {
       set({ index: s.index - 1 })
       void playTrack(s.context[s.index - 1])
@@ -591,22 +617,10 @@ export const player = {
 
   toggleShuffle(): void {
     const s = get()
-    const anchor = s.context[s.index]
-    if (!s.shuffle) {
-      const rest = s.context.filter((_, i) => i !== s.index)
-      set({
-        shuffle: true,
-        original: s.context,
-        context: anchor ? [anchor, ...shuffled(rest)] : shuffled(s.context),
-        index: anchor ? 0 : -1
-      })
-    } else {
-      const orig = s.original ?? s.context
-      const i = anchor ? orig.findIndex((t) => t.id === anchor.id) : -1
-      set({ shuffle: false, context: orig, original: null, index: i })
-    }
+    const on = !s.shuffle
+    // the list stays as it is: switching only changes the order tracks play in
+    set({ shuffle: on, plan: on && !s.source?.kind ? roundOrder(s.context.length, s.index) : [] })
     persistPrefs()
-    persistQueue()
   },
 
   cycleRepeat(): void {
@@ -661,9 +675,10 @@ export const player = {
   },
 
   jumpContext(i: number): void {
-    const t = get().context[i]
+    const s = get()
+    const t = s.context[i]
     if (!t) return
-    set({ index: i, fromManual: false })
+    set({ index: i, fromManual: false, history: pushHistory(s.history, s.index), plan: shuffleOn(s) ? s.plan.filter((j) => j !== i) : [] })
     prefetch()
     void playTrack(t)
   },
@@ -694,8 +709,9 @@ export const player = {
     set({
       current: null,
       context: [],
-      original: null,
       index: -1,
+      plan: [],
+      history: [],
       fromManual: false,
       manual: [],
       source: null,

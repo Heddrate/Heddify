@@ -5,7 +5,7 @@ import { trackArt } from '@/lib/artwork'
 import { cx } from '@/lib/hooks'
 import type { Track } from '@/lib/types'
 import { closePanel, navigate } from '@/store/app'
-import { player, usePlayer } from '@/store/player'
+import { player, remainingCount, upcomingPositions, usePlayer } from '@/store/player'
 import { openMenu } from '@/store/ui'
 import { Artwork } from './Artwork'
 import { Icon } from './Icon'
@@ -26,6 +26,9 @@ export function QueuePanel(): React.JSX.Element {
   const current = usePlayer((s) => s.current)
   const context = usePlayer((s) => s.context)
   const index = usePlayer((s) => s.index)
+  const plan = usePlayer((s) => s.plan)
+  const history = usePlayer((s) => s.history)
+  const shuffle = usePlayer((s) => s.shuffle)
   const manual = usePlayer((s) => s.manual)
   const source = usePlayer((s) => s.source)
   const playing = usePlayer((s) => s.playing)
@@ -33,12 +36,16 @@ export function QueuePanel(): React.JSX.Element {
   const repeat = usePlayer((s) => s.repeat)
   const [drag, setDrag] = useState<Drag | null>(null)
 
-  const start = index + 1
-  const upcoming = context.slice(start, start + SHOW)
-  const hidden = Math.max(0, context.length - start - SHOW)
-  // what already played in this list stays reachable (newest first)
-  const pastFrom = Math.max(0, index - PAST)
-  const past = context.slice(pastFrom, Math.max(0, index)).reverse()
+  // the list shows what plays next in its real order: random while shuffle is on
+  const state = { context, index, plan, shuffle, source }
+  const nextPos = upcomingPositions(state, SHOW)
+  const upcoming = nextPos.map((i) => context[i])
+  const hidden = Math.max(0, remainingCount(state) - upcoming.length)
+  // what already played stays reachable, newest first: the way it played when shuffling
+  const pastPos = shuffle && !source?.kind
+    ? history.slice(-PAST).reverse()
+    : Array.from({ length: Math.min(PAST, index) }, (_, k) => index - 1 - k)
+  const past = pastPos.map((i) => context[i]).filter(Boolean)
 
   return (
     <aside className="queue panel">
@@ -103,7 +110,7 @@ export function QueuePanel(): React.JSX.Element {
             <div className="q-label">{tx("Далее из: ")}<span className="q-source">{source?.label}</span>
             </div>
             {upcoming.map((t, i) => (
-              <QueueRow key={`c-${t.id}-${start + i}`} track={t} onPlay={() => player.jumpContext(start + i)} />
+              <QueueRow key={`c-${t.id}-${nextPos[i]}`} track={t} onPlay={() => player.jumpContext(nextPos[i])} />
             ))}
             {hidden > 0 && <div className="q-more">{tx("и ещё ")}{hidden}</div>}
           </>
@@ -113,7 +120,7 @@ export function QueuePanel(): React.JSX.Element {
           <>
             <div className="q-label">{tx('Недавно звучало')}</div>
             {past.map((t, i) => (
-              <QueueRow key={`p-${t.id}-${i}`} track={t} past onPlay={() => player.jumpContext(index - 1 - i)} />
+              <QueueRow key={`p-${t.id}-${pastPos[i]}`} track={t} past onPlay={() => player.jumpContext(pastPos[i])} />
             ))}
           </>
         )}

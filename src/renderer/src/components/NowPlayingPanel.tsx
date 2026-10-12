@@ -6,7 +6,7 @@ import { countLabel, fmtCount } from '@/lib/format'
 import { cx, useAsync } from '@/lib/hooks'
 import { closePanel, navigate, toggleFollow, toggleLike, toggleLyrics, toggleQueue, useApp } from '@/store/app'
 import { sleepLabel, sleepMenu, useSleep } from '@/lib/sleep'
-import { player, usePlayer } from '@/store/player'
+import { player, upcomingPositions, usePlayer } from '@/store/player'
 import { openMenuAt } from '@/store/ui'
 import { Artwork } from './Artwork'
 import { Icon } from './Icon'
@@ -18,7 +18,7 @@ import { activeLine, fetchLyrics } from '@/lib/lyrics'
 export function NowPlayingPanel(): React.JSX.Element {
   const track = usePlayer((s) => s.current)
   const source = usePlayer((s) => s.source)
-  const upNext = usePlayer((s) => s.manual[0] ?? s.context[s.index + 1] ?? null)
+  const upNext = usePlayer((s) => s.manual[0] ?? upcomingPositions(s, 1).map((i) => s.context[i])[0] ?? null)
   const liked = useLiked(track)
   const userId = track?.user?.id
   const artist = useAsync(() => (userId ? api.user(userId) : Promise.resolve(null)), [userId])

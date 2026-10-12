@@ -28,7 +28,8 @@ export function Sidebar(): React.JSX.Element {
   const [filter, setFilter] = useState<Filter>('all')
   const scIn = useApp((s) => s.auth === 'in')
   const scLoaded = useApp((s) => s.libraryLoaded)
-  const followings = useApp((s) => s.me?.followings_count ?? 0)
+  // the live set follows every subscribe/unsubscribe at once; the account's count only comes at sign-in
+  const followings = useApp((s) => (s.followsKnown ? s.follows.size : (s.me?.followings_count ?? 0)))
   const likes = useApp((s) => s.likes.size) + useYa((s) => s.likeOrder.length) + useAudius((s) => s.likes.length)
   const yaStatus = useYa((s) => s.status)
   const waveActive = useWaveActive()
