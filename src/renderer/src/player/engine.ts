@@ -9,6 +9,7 @@ import type { StreamInfo, StreamRequest } from '../../../shared/ipc'
 import type { Track } from '@/lib/types'
 import { tx } from '@/lib/i18n'
 import { fadeGain } from './audioMath'
+import { initialBass, stepBass, type BassState } from '../lib/bass'
 
 export interface EngineEvents {
   time(position: number, duration: number): void
@@ -66,8 +67,10 @@ class Engine {
   private ev: EngineEvents | null = null
   private leveling = false
   /** "Подсветка баса": the cover glows with the bass, from the next track on. */
-  private reactive = false
-  private freq = new Uint8Array(0)
+  /** "Подсветка баса": how strong the glow is, 0 = off. Applies at once (the playing track reloads). */
+  private glow = 0
+  private freq = new Float32Array(0)
+  private bassState: BassState = initialBass()
   private graph: {
     ctx: AudioContext
     src: MediaElementAudioSourceNode
@@ -327,21 +330,26 @@ class Engine {
   }
 
   /** "Подсветка баса" on or off; like leveling it applies from the next track (Web Audio needs CORS). */
-  setReactive(on: boolean): void {
-    this.reactive = on
+  setBassGlow(strength: number): void {
+    const was = this.glow > 0
+    this.glow = Math.max(0, Math.min(1, strength))
     this.syncCors()
+    // the track that is playing has no analyser yet: it loads again from where it is, now with CORS
+    const t = this.track
+    if (this.glow > 0 && !was && !this.graph && this.stream && t && !t.radio && !t.local && !isOgg(this.stream)) void this.recover()
   }
 
-  /** How loud the bass (kick, sub) is right now, 0..1; 0 while the effect is off or nothing plays through Web Audio. */
+  /** The bass (kick, sub) right now, 0..1; 0 while the effect is off or nothing plays through Web Audio. */
   bass(): number {
     const a = this.graph?.analyser
-    if (!a || !this.reactive) return 0
-    if (this.freq.length !== a.frequencyBinCount) this.freq = new Uint8Array(a.frequencyBinCount)
-    a.getByteFrequencyData(this.freq)
-    // bins 1–4 of a 1024-point FFT are about 47–190 Hz
+    if (!a || this.glow === 0) return 0
+    if (this.freq.length !== a.frequencyBinCount) this.freq = new Float32Array(a.frequencyBinCount)
+    a.getFloatFrequencyData(this.freq)
+    // bins 1–4 of a 1024-point FFT are about 47–190 Hz; the mean dB goes to the pure step (lib/bass.ts)
     let sum = 0
     for (let i = 1; i <= 4; i++) sum += this.freq[i]
-    return Math.min(1, (sum / (4 * 255)) * 1.4)
+    this.bassState = stepBass(this.bassState, sum / 4)
+    return this.bassState.level * this.glow
   }
 
   /**
@@ -350,11 +358,11 @@ class Engine {
    * loudly instead of playing silence.
    */
   private syncCors(): void {
-    this.audio.crossOrigin = this.leveling || this.reactive || this.graph ? 'anonymous' : null
+    this.audio.crossOrigin = this.leveling || this.glow > 0 || this.graph ? 'anonymous' : null
   }
 
   private ensureGraph(): void {
-    if (!this.leveling && !this.reactive) return
+    if (!this.leveling && this.glow === 0) return
     if (this.graph) return
     const ctx = new AudioContext()
     const src = ctx.createMediaElementSource(this.audio)
@@ -368,7 +376,7 @@ class Engine {
     makeup.gain.value = 1.35
     const analyser = ctx.createAnalyser()
     analyser.fftSize = 1024
-    analyser.smoothingTimeConstant = 0.55
+    analyser.smoothingTimeConstant = 0.3
     this.graph = { ctx, src, comp, makeup, analyser }
     this.syncCors()
     this.connectGraph()

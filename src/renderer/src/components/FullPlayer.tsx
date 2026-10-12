@@ -54,7 +54,7 @@ function FullView(): React.JSX.Element {
   const [panel, setPanel] = useState(track)
   const [leaving, setLeaving] = useState(false)
   // the bass drives the glow around the cover: a quick rise on a kick, a slow fall after it
-  const glow = useRef<HTMLDivElement>(null)
+  const root = useRef<HTMLDivElement>(null)
   useEffect(() => {
     let raf = 0
     let level = 0
@@ -66,7 +66,7 @@ function FullView(): React.JSX.Element {
       const next = level.toFixed(3)
       if (next !== shown) {
         shown = next
-        glow.current?.style.setProperty('--bass', next)
+        root.current?.style.setProperty('--bass', next)
       }
       raf = requestAnimationFrame(tick)
     }
@@ -85,12 +85,13 @@ function FullView(): React.JSX.Element {
   }, [track, panel.id])
 
   return (
-    <div className="full-player" style={{ '--full-color': color } as CSSProperties} role="dialog" aria-label={tx('Сейчас играет')}>
+    <div ref={root} className="full-player" style={{ '--full-color': color } as CSSProperties} role="dialog" aria-label={tx('Сейчас играет')}>
+      <div className="full-pulse" aria-hidden />
       <button className="icon-btn full-close" onClick={closeFull} aria-label={tx('Свернуть')} title={tx('Свернуть')}>
         <Icon name="chevronDown" size={30} />
       </button>
       <div className="full-left">
-        <div key={track.id} ref={glow} className="full-cover">
+        <div key={track.id} className="full-cover">
           <div className="full-beat" aria-hidden />
           <Artwork src={art} letter={track.user?.username ?? track.title} />
         </div>

@@ -323,6 +323,22 @@
   max-width: 1240px;
 }
 
+/* a slider in a settings row, with its value beside it */
+.settings-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 150px;
+}
+
+.settings-slider-value {
+  min-width: 36px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  text-align: right;
+}
+
 /* two columns on a wide window: the account and the look on the left, playback and the rest on the right */
 .settings-cols {
   display: grid;

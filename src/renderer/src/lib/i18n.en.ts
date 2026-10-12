@@ -245,7 +245,7 @@ const EN: Record<string, string> = {
   'Похожие исполнители': 'Similar artists',
   'Похожие станции': 'Similar stations',
   'Подсветка баса в полном экране': 'Bass glow in full screen',
-  'Обложка светится в такт басу. Действует с следующего трека': 'The cover glows with the bass. Applies from the next track',
+  'Весь экран светится в такт басу. Ноль — выключено': 'The whole screen glows with the bass. Zero is off',
   'Продолжить без SoundCloud': 'Continue without SoundCloud',
   'Размер кеша': 'Cache size',
   'С Audius': 'From Audius',

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { CacheStats, DiscordStatus } from '../../../shared/ipc'
 import { Artwork } from '@/components/Artwork'
+import { Slider } from '@/components/Slider'
 import { Logo } from '@/components/Icon'
 import { userArt } from '@/lib/artwork'
 import { cx } from '@/lib/hooks'
@@ -47,7 +48,8 @@ export function Settings(): React.JSX.Element {
   const [toTray, setToTray] = useState(false)
   const [leveling, setLeveling] = useState(false)
   const [fade, setFade] = useState(false)
-  const [bassGlow, setBassGlow] = useState(false)
+  /** Glow strength 0..1; 0 is off. */
+  const [bassGlow, setBassGlow] = useState(0)
   const [status, setStatus] = useState<DiscordStatus>('off')
 
   useEffect(() => {
@@ -56,7 +58,7 @@ export function Settings(): React.JSX.Element {
       setToTray(p.closeToTray === true)
       setLeveling(p.leveling === true)
       setFade(p.crossfade === true)
-      setBassGlow(p.bassGlow === true)
+      setBassGlow(typeof p.bassGlow === 'number' ? p.bassGlow : p.bassGlow === true ? 0.6 : 0)
     })
     void window.sc.discord.status().then(setStatus)
     return window.sc.discord.onStatus(setStatus)
@@ -248,17 +250,21 @@ export function Settings(): React.JSX.Element {
           />
           <Row
             label={tx('Подсветка баса в полном экране')}
-            hint={tx('Обложка светится в такт басу. Действует с следующего трека')}
+            hint={tx('Весь экран светится в такт басу. Ноль — выключено')}
             control={
-              <Switch
-                on={bassGlow}
-                onToggle={() => {
-                  setBassGlow(!bassGlow)
-                  engine.setReactive(!bassGlow)
-                  void window.sc.prefs.set({ bassGlow: !bassGlow })
-                }}
-                label={tx('Подсветка баса в полном экране')}
-              />
+              <div className="settings-slider">
+                <Slider
+                  value={Math.round(bassGlow * 100)}
+                  max={100}
+                  label={tx('Подсветка баса в полном экране')}
+                  onChange={(v) => {
+                    setBassGlow(v / 100)
+                    engine.setBassGlow(v / 100)
+                  }}
+                  onCommit={(v) => void window.sc.prefs.set({ bassGlow: v / 100 })}
+                />
+                <span className="settings-slider-value">{Math.round(bassGlow * 100)}%</span>
+              </div>
             }
           />
           <Row

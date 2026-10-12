@@ -827,8 +827,21 @@
   aspect-ratio: 1;
   border-radius: var(--r);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
-  /* the cover breathes a little with the bass (--bass, 0..1, set by FullPlayer) */
-  transform: scale(calc(1 + var(--bass, 0) * 0.015));
+}
+
+/* the whole window breathes with the bass: a wash of the cover's colour behind everything (--bass from FullPlayer) */
+.full-pulse {
+  position: absolute;
+  inset: -10%;
+  pointer-events: none;
+  background: radial-gradient(70% 60% at 50% 70%, var(--full-color) 0%, transparent 100%);
+  mix-blend-mode: screen;
+  opacity: calc(var(--bass, 0) * 0.7);
+}
+
+.full-left,
+.full-right {
+  position: relative;
 }
 
 /* a soft light in the cover's colour behind it, blooming with each kick; invisible while --bass is 0 */
@@ -844,12 +857,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .full-beat {
+  .full-beat,
+  .full-pulse {
     display: none;
-  }
-
-  .full-cover .art {
-    transform: none;
   }
 }
 

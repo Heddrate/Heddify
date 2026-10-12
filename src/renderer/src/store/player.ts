@@ -152,7 +152,8 @@ export async function restoreSession(): Promise<void> {
   })
   engine.setVolume(volume, muted)
   engine.setLeveling(prefs.leveling === true)
-  engine.setReactive(prefs.bassGlow === true)
+  // a saved strength from 0 to 1; the old on/off switch (true) becomes a medium strength
+  engine.setBassGlow(typeof prefs.bassGlow === 'number' ? prefs.bassGlow : prefs.bassGlow === true ? 0.6 : 0)
   engine.setFade(prefs.crossfade === true)
 
   const session = prefs.session as SavedSession | undefined
