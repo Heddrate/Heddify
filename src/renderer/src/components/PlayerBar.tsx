@@ -179,15 +179,44 @@ export function Progress(): React.JSX.Element {
   )
 }
 
-function RightControls(): React.JSX.Element {
+/** Mute button and the volume slider; the same control in the bar and in the full-window player. */
+export function VolumeControl(): React.JSX.Element {
   const volume = usePlayer((s) => s.volume)
   const muted = usePlayer((s) => s.muted)
+  const level = muted || volume === 0 ? 'volumeOff' : volume < 0.5 ? 'volumeLow' : 'volumeHigh'
+  return (
+    <div className="volume">
+      <button className="icon-btn" onClick={player.toggleMute} aria-label={muted ? tx("Включить звук") : tx("Выключить звук")}>
+        <Icon name={level} size={20} />
+      </button>
+      <Slider
+        value={muted ? 0 : volume}
+        max={1}
+        step={0.05}
+        label={tx("Громкость")}
+        onChange={player.setVolume}
+        onCommit={player.setVolume}
+      />
+    </div>
+  )
+}
+
+function RightControls(): React.JSX.Element {
   const queueOpen = useApp((s) => s.panel === 'queue')
   const hasTrack = usePlayer((s) => !!s.current)
-  const level = muted || volume === 0 ? 'volumeOff' : volume < 0.5 ? 'volumeLow' : 'volumeHigh'
+  const autoplay = usePlayer((s) => s.autoplay)
 
   return (
     <div className="pb-right">
+      {/* the quick switch for "after the queue, play similar tracks" (the same setting as in Settings) */}
+      <button
+        className={cx('icon-btn toggle autoplay-btn', autoplay && 'on')}
+        onClick={player.toggleAutoplay}
+        aria-label={tx('Автопродолжение')}
+        title={autoplay ? tx('Автопродолжение: похожие треки после очереди') : tx('Автопродолжение выключено')}
+      >
+        <Icon name="infinity" size={20} />
+      </button>
       <button
         className={cx('icon-btn toggle', queueOpen && 'on')}
         onClick={toggleQueue}
@@ -196,19 +225,7 @@ function RightControls(): React.JSX.Element {
       >
         <Icon name="queue" size={20} />
       </button>
-      <div className="volume">
-        <button className="icon-btn" onClick={player.toggleMute} aria-label={muted ? tx("Включить звук") : tx("Выключить звук")}>
-          <Icon name={level} size={20} />
-        </button>
-        <Slider
-          value={muted ? 0 : volume}
-          max={1}
-          step={0.05}
-          label={tx("Громкость")}
-          onChange={player.setVolume}
-          onCommit={player.setVolume}
-        />
-      </div>
+      <VolumeControl />
       <button className="icon-btn" onClick={toggleFull} disabled={!hasTrack} aria-label={tx('Во весь экран')} title={tx('Во весь экран')}>
         <Icon name="fullscreen" size={20} />
       </button>

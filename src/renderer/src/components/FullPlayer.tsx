@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { create } from 'zustand'
 import { toggleAnyLike, useLiked } from '@/lib/actions'
 import { trackArt, useArtColor } from '@/lib/artwork'
@@ -13,7 +13,7 @@ import { player, upcomingPositions, usePlayer } from '@/store/player'
 import { ArtistLinks } from './ArtistLinks'
 import { Artwork } from './Artwork'
 import { Icon } from './Icon'
-import { Controls, Progress } from './PlayerBar'
+import { Controls, Progress, VolumeControl } from './PlayerBar'
 
 /** Full-window "now playing": big cover, the cover's colour behind it, lyrics or what's next. */
 export const useFull = create<{ on: boolean }>(() => ({ on: false }))
@@ -86,6 +86,7 @@ function FullView(): React.JSX.Element {
 
   return (
     <div ref={root} className="full-player" style={{ '--full-color': color } as CSSProperties} role="dialog" aria-label={tx('Сейчас играет')}>
+      <FullBackdrop art={art} />
       <div className="full-pulse" aria-hidden />
       <button className="icon-btn full-close" onClick={closeFull} aria-label={tx('Свернуть')} title={tx('Свернуть')}>
         <Icon name="chevronDown" size={30} />
@@ -112,6 +113,9 @@ function FullView(): React.JSX.Element {
         </div>
         <Progress />
         <Controls />
+        <div className="full-volume">
+          <VolumeControl />
+        </div>
       </div>
       <div className={cx('full-right', leaving && 'leaving')}>
         {panel.radio ? <StationsMore key={panel.id} track={panel} /> : <FullLyrics key={panel.id} track={panel} />}
@@ -208,6 +212,28 @@ function UpNext({ track }: { track: Track }): React.JSX.Element | null {
           </span>
         </button>
       ))}
+    </div>
+  )
+}
+
+/**
+ * The cover, blurred, behind the whole screen. When the track changes, the new cover fades in
+ * over the old one instead of cutting to it.
+ */
+function FullBackdrop({ art }: { art: string | null }): React.JSX.Element {
+  const last = useRef(art)
+  const [under, setUnder] = useState<string | null>(null)
+  useLayoutEffect(() => {
+    if (last.current === art) return
+    setUnder(last.current)
+    last.current = art
+    const t = window.setTimeout(() => setUnder(null), 1000)
+    return () => window.clearTimeout(t)
+  }, [art])
+  return (
+    <div className="full-bg" aria-hidden>
+      {under && <img key={`under-${under}`} className="full-bg-img" src={under} alt="" />}
+      {art && <img key={`now-${art}`} className="full-bg-img full-bg-in" src={art} alt="" />}
     </div>
   )
 }
