@@ -205,6 +205,10 @@
 }
 
 /* an update is downloaded: the avatar menu has "Обновить" */
+.avatar-dot.downloading {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
 .avatar-dot {
   position: absolute;
   top: 6px;

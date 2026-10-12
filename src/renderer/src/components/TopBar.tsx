@@ -149,7 +149,9 @@ function UserButton(): React.JSX.Element {
       onClick={open}
     >
       {me ? <Artwork src={userArt(me, 'large')} size={32} round placeholder="person" /> : <Icon name="person" size={20} />}
-      {updStatus === 'ready' && <span className="avatar-dot" />}
+      {(updStatus === 'downloading' || updStatus === 'ready') && (
+        <span className={cx('avatar-dot', updStatus === 'downloading' && 'downloading')} />
+      )}
     </button>
   )
 }

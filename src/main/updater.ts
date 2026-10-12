@@ -87,12 +87,22 @@ export function startUpdater(win: () => BrowserWindow | null): void {
   }
   autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = true
-  autoUpdater.on('update-available', (i) => set({ status: 'downloading', version: i.version, percent: 0 }))
-  autoUpdater.on('update-not-available', () => set({ status: 'latest' }))
+  autoUpdater.on('checking-for-update', () => log('update: checking'))
+  autoUpdater.on('update-available', (i) => {
+    log(`update: ${i.version} found, downloading`)
+    set({ status: 'downloading', version: i.version, percent: 0 })
+  })
+  autoUpdater.on('update-not-available', () => {
+    log('update: already on the latest version')
+    set({ status: 'latest' })
+  })
   autoUpdater.on('download-progress', (p) =>
     set({ status: 'downloading', version: state.version, percent: Math.round(p.percent) })
   )
-  autoUpdater.on('update-downloaded', (i) => set({ status: 'ready', version: i.version, notes: noteLines(i.releaseNotes) }))
+  autoUpdater.on('update-downloaded', (i) => {
+    log(`update: ${i.version} downloaded, installs on restart`)
+    set({ status: 'ready', version: i.version, notes: noteLines(i.releaseNotes) })
+  })
   autoUpdater.on('error', (e) => {
     log(`update error: ${e?.message ?? e}`)
     if (state.status !== 'ready') set({ status: 'error' })
