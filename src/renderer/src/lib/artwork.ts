@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { AnyPlaylist, Track, User } from './types'
 
-export type ArtSize = 'large' | 't300x300' | 't500x500'
+export type ArtSize = 'large' | 't300x300' | 't500x500' | 'original'
 
 /** SoundCloud serves artwork in fixed sizes encoded in the file name. */
 export function art(url: string | null | undefined, size: ArtSize = 't300x300'): string | null {
   if (!url) return null
   // Yandex covers end with a WxH size segment
   if (url.includes('avatars.yandex.net')) {
-    const px = size === 'large' ? '100x100' : size === 't300x300' ? '300x300' : '400x400'
+    const px = size === 'large' ? '100x100' : size === 't300x300' ? '300x300' : size === 'original' ? '1000x1000' : '400x400'
     return url.replace(/\/\d+x\d+$/, `/${px}`)
   }
   // Audius artwork: <cid>/150x150.jpg, 480x480.jpg, 1000x1000.jpg

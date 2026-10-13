@@ -29,7 +29,8 @@ const uniq = (tracks: Track[]): Track[] => uniqBy(tracks, (t) => t.id)
 
 /** The banner on top of Home: the last track played (or the newest in the feed), playable at once. */
 function Hero({ track }: { track: Track }): React.JSX.Element {
-  const art = trackArt(track, 't500x500')
+  // the banner is wider than any cover: the full-size art, not the 500 px one, or it blurs
+  const art = trackArt(track, 'original')
   return (
     <section className="hero">
       {art && <img className="hero-art" src={art} alt="" />}
