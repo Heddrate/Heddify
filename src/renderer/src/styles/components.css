@@ -503,6 +503,15 @@
   background:
     linear-gradient(180deg, var(--head-fade-from) 0%, var(--panel) 100%),
     color-mix(in srgb, var(--head-color) var(--head-mix), var(--panel));
+  /* fade the tint out to the page on every side, not to a solid panel: a solid box here cuts across the list */
+  -webkit-mask-image:
+    linear-gradient(180deg, #000 0%, transparent 100%),
+    linear-gradient(90deg, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(180deg, #000 0%, transparent 100%),
+    linear-gradient(90deg, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%);
+  mask-composite: intersect;
 }
 
 .ph-art {

@@ -221,14 +221,21 @@
   color: #0b0b0b;
 }
 
+/* hover keeps the same pair: the theme's accent-hover is black in the mono light theme, which would hide the label */
+.hero .btn-primary:hover:not(:disabled) {
+  background: #f2f2f2;
+  color: #0b0b0b;
+}
+
 .hero .btn-outline {
   color: #fff;
   border-color: rgba(255, 255, 255, 0.6);
 }
 
 /* light theme: the app backdrop is lightened so the panels read as glass; the full player keeps its dark cover */
+/* the light veil is strong enough that grey text ("Показать все", card subtitles) reads over a playing cover */
 :root[data-theme='light'] .app > .cover-bg::after {
-  background: linear-gradient(180deg, rgba(246, 246, 246, 0.06) 0%, rgba(246, 246, 246, 0.2) 100%);
+  background: linear-gradient(180deg, rgba(246, 246, 246, 0.5) 0%, rgba(246, 246, 246, 0.66) 100%);
 }
 
 /* ---------- polish: cards, page heads, the library list ---------- */
