@@ -26,10 +26,11 @@ function watchErrors(page: Page): string[] {
   return errors
 }
 
-test('opens on Home with the logo in the sidebar', async ({ page }) => {
+test('opens on Home with the icon rail and the logo', async ({ page }) => {
   const errors = watchErrors(page)
   await page.goto('/')
-  await expect(page.locator('.sb-brand')).toContainText('Heddify')
+  await expect(page.locator('.rail')).toBeVisible()
+  await expect(page.locator('.rail-logo svg')).toBeVisible()
   await expect(page.locator('h2', { hasText: 'Ваши лайки' })).toBeVisible()
   expect(errors).toEqual([])
 })

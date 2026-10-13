@@ -1631,7 +1631,7 @@
 
 /* ---------- full-window player: the cover, blurred, behind everything ---------- */
 
-.full-bg {
+.cover-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -1639,7 +1639,7 @@
   pointer-events: none;
 }
 
-.full-bg::after {
+.cover-bg::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -1647,7 +1647,7 @@
 }
 
 /* oversized, so the blur does not show an edge; the blur itself is what makes it a backdrop */
-.full-bg-img {
+.cover-bg-img {
   position: absolute;
   top: -120px;
   left: -120px;
@@ -1659,11 +1659,11 @@
   transform: scale(1.05);
 }
 
-.full-bg-in {
-  animation: full-bg-in 0.9s var(--ease-out) backwards;
+.cover-bg-in {
+  animation: cover-bg-in 0.9s var(--ease-out) backwards;
 }
 
-@keyframes full-bg-in {
+@keyframes cover-bg-in {
   from {
     opacity: 0;
   }

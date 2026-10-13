@@ -8,7 +8,7 @@ import { navigate, useApp } from '@/store/app'
 import { usePlayer } from '@/store/player'
 import { openMenu } from '@/store/ui'
 import { Artwork } from './Artwork'
-import { Icon, Logo } from './Icon'
+import { Icon } from './Icon'
 import { tx } from '@/lib/i18n'
 import { useYa } from '@/lib/yandexApi'
 import { useAudius } from '@/lib/audius'
@@ -49,10 +49,6 @@ export function Sidebar(): React.JSX.Element {
 
   return (
     <aside className="sidebar panel">
-      <div className="sb-brand">
-        <Logo size={30} />
-        <span>Heddify</span>
-      </div>
       <div className="sb-head">
         <button className="sb-title" onClick={() => navigate({ name: 'playlists' })}>
           <Icon name="library" size={24} />

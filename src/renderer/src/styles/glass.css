@@ -1,0 +1,219 @@
+/*
+ * Glass: the panels float over a soft, blurred backdrop instead of a flat colour.
+ * Rules (see docs/DESIGN.md): blur 16–24px on a few large surfaces only, translucent fills
+ * from the theme's own colours, a 1px light edge, and an opaque fallback when the person asks
+ * for less transparency. Every glass surface keeps text at 4.5:1 or better: the fill is
+ * mostly opaque, the blur only softens what is behind it.
+ */
+
+:root {
+  /* translucent versions of the theme's surfaces (color-mix follows every theme and palette) */
+  --glass-panel: color-mix(in srgb, var(--panel) 78%, transparent);
+  --glass-raised: color-mix(in srgb, var(--menu) 86%, transparent);
+  --glass-edge: rgba(255, 255, 255, 0.09);
+  --glass-blur: blur(22px) saturate(160%);
+  --glass-r: 18px;
+}
+
+:root[data-theme='light'] {
+  --glass-edge: rgba(0, 0, 0, 0.07);
+}
+
+/* a soft light field behind the panels, so the blur has something to show */
+.app {
+  background:
+    radial-gradient(60% 55% at 12% 0%, color-mix(in srgb, var(--accent, #888) 16%, transparent), transparent 70%),
+    radial-gradient(50% 50% at 100% 100%, color-mix(in srgb, var(--accent, #888) 10%, transparent), transparent 70%),
+    var(--bg);
+}
+
+.panel {
+  background: var(--glass-panel);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--glass-r);
+}
+
+/* the bar at the bottom floats as a capsule */
+.playerbar {
+  margin: 0;
+  padding: 0 18px;
+  border-radius: var(--glass-r);
+  background: var(--glass-panel);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge);
+}
+
+/* popovers and dialogs are the most translucent surfaces: a little more fill, the same edge */
+.menu,
+.dialog {
+  background: var(--glass-raised);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge);
+}
+
+.toast {
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+/* the person asked for less transparency: solid surfaces, no blur */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-panel: var(--panel);
+    --glass-raised: var(--menu);
+    --glass-blur: none;
+  }
+  .app {
+    background: var(--bg);
+  }
+}
+
+/* ---------- the floating icon rail (left) ---------- */
+
+:root {
+  --rail: 80px;
+}
+
+.rail {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 0;
+  border-radius: var(--glass-r);
+  background: var(--glass-panel);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge);
+  min-height: 0;
+}
+
+.rail-logo {
+  margin-bottom: 10px;
+}
+
+.rail-btn {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--text-2);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.rail-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.rail-btn.on {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.rail-btn:focus-visible {
+  outline: 2px solid var(--text-2);
+  outline-offset: 2px;
+}
+
+/* ---------- home: the banner on top ---------- */
+
+.hero {
+  position: relative;
+  height: 270px;
+  margin: 8px 0 22px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--panel-2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  color: #fff;
+}
+
+.hero-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.02);
+}
+
+.hero-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.4) 52%, rgba(0, 0, 0, 0.12) 100%);
+}
+
+.hero-body {
+  position: relative;
+  height: 100%;
+  max-width: 62%;
+  padding: 36px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.hero-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.hero-title {
+  margin: 8px 0 6px;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hero-sub {
+  margin: 0 0 20px;
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.hero-actions .btn {
+  gap: 8px;
+}
+
+@media (max-width: 1000px) {
+  .hero-title {
+    font-size: 30px;
+  }
+}
+
+/* the banner is always dark: its buttons keep white/black ink whatever the theme */
+.hero .btn-primary {
+  background: #fff;
+  color: #0b0b0b;
+}
+
+.hero .btn-outline {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* light theme: the blurred cover is lightened so the panels read as glass, not as dark smoke */
+:root[data-theme='light'] .cover-bg::after {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.7) 60%, rgba(255, 255, 255, 0.88) 100%);
+}

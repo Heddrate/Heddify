@@ -11,6 +11,9 @@ import { UpdateBanner } from '@/components/UpdateBanner'
 import { Onboarding } from '@/components/Onboarding'
 import { FullPlayer } from '@/components/FullPlayer'
 import { Sidebar } from '@/components/Sidebar'
+import { Rail } from '@/components/Rail'
+import { CoverBackdrop } from '@/components/Backdrop'
+import { trackArt } from '@/lib/artwork'
 import { FOCUS_SEARCH, TopBar } from '@/components/TopBar'
 import { cx } from '@/lib/hooks'
 import type { Route } from '@/lib/types'
@@ -156,6 +159,9 @@ function View({ route }: { route: Route }): React.JSX.Element | null {
 function Shell(): React.JSX.Element {
   const route = useApp((s) => s.route)
   const panel = useApp((s) => s.panel)
+  // the app's backdrop is the blurred cover of what plays (or the page gradient when nothing does)
+  const bgTrack = usePlayer((s) => s.current)
+  const bgArt = bgTrack ? trackArt(bgTrack, 't500x500') : null
   const main = useRef<HTMLElement>(null)
   const key = pageKey(route)
 
@@ -167,7 +173,9 @@ function Shell(): React.JSX.Element {
 
   return (
     <div className={cx('app', panel && 'with-queue')}>
+      <CoverBackdrop art={bgArt} />
       <TopBar />
+      <Rail />
       <Sidebar />
       <main ref={main} className="main panel scroll-y">
         <Suspense fallback={<Loading />}>

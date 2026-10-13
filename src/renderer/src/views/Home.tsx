@@ -3,7 +3,8 @@ import { Card, PlaylistCard, Shelf } from '@/components/Card'
 import { ErrorState, LoadMore, Loading } from '@/components/States'
 import { TrackList } from '@/components/TrackList'
 import { LibCard } from '@/components/LibCard'
-import { playOrToggle, sameRoute, trackMenu } from '@/lib/actions'
+import { openArtist, playOrToggle, sameRoute, trackMenu } from '@/lib/actions'
+import { Icon } from '@/components/Icon'
 import { api, isPlaylist, tracksOf } from '@/lib/api'
 import { trackArt } from '@/lib/artwork'
 import { useAsync, usePaged } from '@/lib/hooks'
@@ -26,6 +27,31 @@ import { toggleWave } from '@/lib/wave'
 
 const uniq = (tracks: Track[]): Track[] => uniqBy(tracks, (t) => t.id)
 
+/** The banner on top of Home: the last track played (or the newest in the feed), playable at once. */
+function Hero({ track }: { track: Track }): React.JSX.Element {
+  const art = trackArt(track, 't500x500')
+  return (
+    <section className="hero">
+      {art && <img className="hero-art" src={art} alt="" />}
+      <div className="hero-shade" aria-hidden />
+      <div className="hero-body">
+        <span className="hero-kicker">{tx('Продолжить слушать')}</span>
+        <h1 className="hero-title">{track.title}</h1>
+        {track.user && <p className="hero-sub">{track.user.username}</p>}
+        <div className="hero-actions">
+          <button className="btn btn-primary" onClick={() => player.playContext([track], 0, { label: tx('Продолжить слушать') })}>
+            <Icon name="play" size={18} />
+            {tx('Слушать')}
+          </button>
+          <button className="btn btn-outline" onClick={() => openArtist(track)}>
+            {tx('Исполнитель')}
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export function Home(): React.JSX.Element {
   // guests (no SoundCloud account) get Yandex and Audius only
   const scIn = useApp((s) => s.auth === 'in')
@@ -47,8 +73,11 @@ export function Home(): React.JSX.Element {
   )
   const recentSource: PlaySource = { label: tx("Недавно прослушанное"), route: { name: 'history' } }
 
+  const heroTrack = recent[0] ?? streamTracks[0] ?? null
+
   return (
     <div className="view">
+      {heroTrack && <Hero track={heroTrack} />}
       <ContinueShelf />
       <FavoritesShelf />
       <PlaylistsShelf />
