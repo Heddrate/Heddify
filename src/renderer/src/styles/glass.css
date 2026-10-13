@@ -257,3 +257,44 @@
 .lib-row {
   border-radius: 14px;
 }
+
+/* the top strip is solid in the theme's own background: the window's native caption buttons are
+   drawn in that same colour (main/index.ts frame), so the strip and the buttons read as one */
+.topbar {
+  background: var(--bg);
+}
+
+/* the search: over the page when the window has room; in a narrow window the left block only
+   keeps back / forward, so the field gets the space and its placeholder stays readable */
+.app {
+  container-type: inline-size;
+}
+
+@container (max-width: 1240px) {
+  .topbar {
+    grid-template-columns: 124px minmax(0, 1fr) auto;
+  }
+
+  .tb-center {
+    margin: 0 12px 0 0;
+    justify-content: center;
+  }
+}
+
+.search input {
+  text-overflow: ellipsis;
+}
+
+/* the top bar's row is centred: the field is shorter than the bar, and every block in the bar is
+   centred on the same line, so nothing can sit on the top edge */
+.topbar {
+  align-items: center;
+}
+
+.topbar > * {
+  align-self: center;
+}
+
+.search {
+  height: 40px;
+}
