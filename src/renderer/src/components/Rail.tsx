@@ -15,15 +15,14 @@ interface RailItem {
 }
 
 /**
- * The floating icon column on the left: the main places of the app, one icon each. The library
- * list beside it is the second column; the rail itself never scrolls.
+ * The floating column on the left: the sections of the app, each with an icon and a name. The
+ * library (playlists, likes, history) is the list beside it, so the two never repeat each other.
  */
 export function Rail(): React.JSX.Element {
   const route = useApp((s) => s.route)
   const items: RailItem[] = [
     { label: tx('Главная'), icon: 'home', route: { name: 'home' } },
     { label: tx('Поиск'), icon: 'search', action: () => window.dispatchEvent(new Event(FOCUS_SEARCH)) },
-    { label: tx('Медиатека'), icon: 'library', route: { name: 'playlists' } },
     { label: tx('Файлы'), icon: 'folder', route: { name: 'files' } },
     { label: tx('Радио'), icon: 'radio', route: { name: 'radio' } },
     { label: tx('Настройки'), icon: 'settings', route: { name: 'settings' } }
@@ -45,6 +44,7 @@ export function Rail(): React.JSX.Element {
             onClick={() => (it.action ? it.action() : it.route && navigate(it.route))}
           >
             <Icon name={it.icon} size={22} />
+            <span className="rail-label">{it.label}</span>
           </button>
         )
       })}

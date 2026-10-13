@@ -351,7 +351,8 @@
   min-width: 0;
 }
 
-@media (max-width: 1100px) {
+/* by the width of the page, not the window: the panels beside it take a share */
+@container (max-width: 1040px) {
   .settings-cols {
     grid-template-columns: minmax(0, 1fr);
   }

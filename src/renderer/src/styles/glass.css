@@ -99,13 +99,23 @@
 }
 
 .rail-btn {
-  width: 52px;
-  height: 52px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
+  width: 66px;
+  height: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 16px;
   color: var(--text-2);
   transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.rail-label {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .rail-btn:hover {
@@ -213,7 +223,37 @@
   border-color: rgba(255, 255, 255, 0.6);
 }
 
-/* light theme: the blurred cover is lightened so the panels read as glass, not as dark smoke */
-:root[data-theme='light'] .cover-bg::after {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.7) 60%, rgba(255, 255, 255, 0.88) 100%);
+/* light theme: the app backdrop is lightened so the panels read as glass; the full player keeps its dark cover */
+:root[data-theme='light'] .app > .cover-bg::after {
+  background: linear-gradient(180deg, rgba(246, 246, 246, 0.3) 0%, rgba(246, 246, 246, 0.5) 60%, rgba(246, 246, 246, 0.66) 100%);
+}
+
+/* ---------- polish: cards, page heads, the library list ---------- */
+
+.card {
+  border-radius: 18px;
+  transition: background-color 0.2s ease;
+}
+
+.card:hover {
+  background: color-mix(in srgb, var(--raised) 72%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.card-art .art,
+.card-art .collage,
+.card-art .card-tile {
+  border-radius: 14px;
+}
+
+/* a page head is a card of its own inside the panel, not a band that runs into the edges */
+.view.flush > .page-head {
+  margin: 12px 12px 0;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.lib-row {
+  border-radius: 14px;
 }

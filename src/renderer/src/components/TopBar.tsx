@@ -11,7 +11,6 @@ import { tx } from '@/lib/i18n'
 export const FOCUS_SEARCH = 'sc:focus-search'
 
 export function TopBar(): React.JSX.Element {
-  const isHome = useApp((s) => s.route.name === 'home')
   const canBack = useApp((s) => s.backStack.length > 0)
   const canFwd = useApp((s) => s.fwdStack.length > 0)
 
@@ -29,14 +28,6 @@ export function TopBar(): React.JSX.Element {
       </div>
 
       <div className="tb-center">
-        <button
-          className={cx('round-btn lg', isHome && 'active')}
-          onClick={() => navigate({ name: 'home' })}
-          aria-label={tx("Главная")}
-          title={tx("Главная")}
-        >
-          <Icon name={isHome ? 'homeFill' : 'home'} size={24} />
-        </button>
         <SearchBox />
       </div>
 

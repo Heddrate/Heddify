@@ -64,9 +64,9 @@
 .topbar {
   grid-column: 1 / -1;
   grid-row: 1;
-  /* equal side columns keep home + search centred on the window */
+  /* the left block spans the rail and the library column, so the search is centred over the page */
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 560px) minmax(0, 1fr);
+  grid-template-columns: calc(var(--rail) + clamp(248px, 21vw, 320px) + 28px) minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
   -webkit-app-region: drag;
@@ -132,9 +132,16 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-self: stretch;
+  /* the same width as the right block on the left, so the search is centred over the page, and a gap before the avatar */
+  margin-left: 186px;
+  margin-right: 12px;
 }
 
 .tb-right {
+  /* a fixed width (the avatar and the room for the window buttons): the centre compensates for it */
+  width: 186px;
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -145,7 +152,7 @@
 
 .search {
   position: relative;
-  flex: 1;
+  flex: 0 1 560px;
   min-width: 0;
   height: 48px;
   display: flex;

@@ -803,8 +803,8 @@
   flex-direction: column;
   align-items: stretch;
   gap: 20px;
-  /* the cover grows with the window's height, but the controls always fit below it */
-  width: min(100%, 560px, calc(100vh - 272px));
+  /* the cover shrinks so the volume row always fits under the controls, whatever the window height */
+  width: min(100%, 560px, calc(100vh - 360px));
   justify-self: center;
 }
 

@@ -84,12 +84,6 @@ export function Sidebar(): React.JSX.Element {
             />
             <LibRow {...row({ name: 'likes' })} art={tile('heart', 'accent')} title={tx('Мне нравится')} sub={tx('Плейлист · {0}', tracks(likes))} />
             <LibRow {...row({ name: 'history' })} art={tile('history')} title={tx('История')} sub={tx('Недавно прослушанное')} />
-            <LibRow
-              {...row({ name: 'files' })}
-              art={tile('folder')}
-              title={tx('Файлы на компьютере')}
-              sub={fileCount ? tracks(fileCount) : tx('Добавьте папку с музыкой')}
-            />
             {scIn && (
               <LibRow
                 {...row({ name: 'following' })}
