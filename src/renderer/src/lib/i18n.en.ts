@@ -400,6 +400,8 @@ const EN: Record<string, string> = {
   'Нет связи с SoundCloud': 'Can’t reach SoundCloud',
   'Никаких цветов: только чёрный, белый и серые': 'No colour: only black, white and greys',
   'Ничего не играет': 'Nothing playing',
+  'Восстановить': 'Restore',
+  'Развернуть': 'Maximise',
   'Поиск': 'Search',
   'Файлы': 'Files',
   'Разделы': 'Sections',

@@ -19,6 +19,15 @@ const bridge: ScBridge = {
   openExternal: (url) => ipcRenderer.invoke('shell:open', url),
   copyText: (text) => ipcRenderer.invoke('clipboard:write', text),
   openLogs: () => ipcRenderer.invoke('logs:open'),
+  win: {
+    control: (action) => ipcRenderer.send('window:control', action),
+    isMaximized: () => ipcRenderer.invoke('window:isMaximized'),
+    onMaximized: (cb) => {
+      const listener = (_e: unknown, on: boolean): void => cb(on)
+      ipcRenderer.on('window:maximized', listener)
+      return () => ipcRenderer.removeListener('window:maximized', listener)
+    }
+  },
   cache: {
     stats: () => ipcRenderer.invoke('cache:stats'),
     clear: () => ipcRenderer.invoke('cache:clear'),

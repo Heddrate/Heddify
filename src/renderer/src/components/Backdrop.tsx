@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { cx } from '@/lib/hooks'
 
 /**
  * The cover, blurred, behind a screen. When the cover changes the new one fades in over the
@@ -15,7 +16,7 @@ export function CoverBackdrop({ art }: { art: string | null }): React.JSX.Elemen
     return () => window.clearTimeout(t)
   }, [art])
   return (
-    <div className="cover-bg" aria-hidden>
+    <div className={cx("cover-bg", !art && "empty")} aria-hidden>
       {under && <img key={`under-${under}`} className="cover-bg-img" src={under} alt="" />}
       {art && <img key={`now-${art}`} className="cover-bg-img cover-bg-in" src={art} alt="" />}
     </div>

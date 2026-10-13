@@ -9,7 +9,7 @@ import type { StreamInfo, StreamRequest } from '../../../shared/ipc'
 import type { Track } from '@/lib/types'
 import { tx } from '@/lib/i18n'
 import { fadeGain } from './audioMath'
-import { initialBass, stepBass, type BassState } from '../lib/bass'
+import { BASS_FFT, bassBinRange, bassDb, initialBass, stepBass, type BassState } from '../lib/bass'
 
 export interface EngineEvents {
   time(position: number, duration: number): void
@@ -355,10 +355,9 @@ class Engine {
     if (!a || this.glow === 0) return 0
     if (this.freq.length !== a.frequencyBinCount) this.freq = new Float32Array(a.frequencyBinCount)
     a.getFloatFrequencyData(this.freq)
-    // bins 1–4 of a 1024-point FFT are about 47–190 Hz; the mean dB goes to the pure step (lib/bass.ts)
-    let sum = 0
-    for (let i = 1; i <= 4; i++) sum += this.freq[i]
-    this.bassState = stepBass(this.bassState, sum / 4)
+    // the band 25–200 Hz (lib/bass.ts): its mean level goes to the pure step that makes the glow
+    const { lo, hi } = bassBinRange(a.context.sampleRate, a.fftSize)
+    this.bassState = stepBass(this.bassState, bassDb(this.freq, lo, hi))
     return this.bassState.level * this.glow
   }
 
@@ -385,7 +384,7 @@ class Engine {
     const makeup = ctx.createGain()
     makeup.gain.value = 1.35
     const analyser = ctx.createAnalyser()
-    analyser.fftSize = 1024
+    analyser.fftSize = BASS_FFT
     analyser.smoothingTimeConstant = 0.3
     this.graph = { ctx, src, comp, makeup, analyser }
     this.syncCors()

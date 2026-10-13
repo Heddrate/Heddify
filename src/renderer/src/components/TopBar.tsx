@@ -15,7 +15,7 @@ export function TopBar(): React.JSX.Element {
   const canFwd = useApp((s) => s.fwdStack.length > 0)
 
   return (
-    <header className="topbar">
+    <header className="topbar" onDoubleClick={onBarDoubleClick}>
       <div className="tb-left">
         <div className="tb-nav">
           <button className="nav-btn" disabled={!canBack} onClick={goBack} aria-label={tx("Назад")} title={tx("Назад")}>
@@ -33,8 +33,45 @@ export function TopBar(): React.JSX.Element {
 
       <div className="tb-right">
         <UserButton />
+        <WindowControls />
       </div>
     </header>
+  )
+}
+
+/** Double click on the bar's empty space maximises or restores the window, as a title bar does. */
+function onBarDoubleClick(e: React.MouseEvent): void {
+  if ((e.target as HTMLElement).closest('button,input,a')) return
+  window.sc?.win?.control('maximize')
+}
+
+/** The window's own buttons: the window has no system frame, so they are drawn here. */
+function WindowControls(): React.JSX.Element | null {
+  const win = window.sc?.win
+  const [max, setMax] = useState(false)
+  useEffect(() => {
+    if (!win) return
+    void win.isMaximized().then(setMax)
+    return win.onMaximized(setMax)
+  }, [win])
+  if (!win) return null
+  return (
+    <div className="win-controls">
+      <button className="win-btn" aria-label={tx('Свернуть')} title={tx('Свернуть')} onClick={() => win.control('minimize')}>
+        <Icon name="minimize" size={14} />
+      </button>
+      <button
+        className="win-btn"
+        aria-label={max ? tx('Восстановить') : tx('Развернуть')}
+        title={max ? tx('Восстановить') : tx('Развернуть')}
+        onClick={() => win.control('maximize')}
+      >
+        <Icon name={max ? 'restore' : 'maximize'} size={14} />
+      </button>
+      <button className="win-btn win-close" aria-label={tx('Закрыть')} title={tx('Закрыть')} onClick={() => win.control('close')}>
+        <Icon name="close" size={14} />
+      </button>
+    </div>
   )
 }
 

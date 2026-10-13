@@ -110,8 +110,8 @@ function createWindow(): void {
     show: false,
     title: 'Heddify',
     backgroundColor: frame.bg,
-    titleBarStyle: 'hidden',
-    titleBarOverlay: { color: frame.bg, symbolColor: frame.symbol, height: 56 },
+    // no system frame: the app draws its own window buttons (see TopBar) on a transparent top strip
+    frame: false,
     icon: appIconPath(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -149,6 +149,10 @@ function createWindow(): void {
     mainWindow?.show()
     updateThumbar()
   })
+
+  // the app's own window buttons show whether the window is maximised
+  mainWindow.on('maximize', () => mainWindow?.webContents.send('window:maximized', true))
+  mainWindow.on('unmaximize', () => mainWindow?.webContents.send('window:maximized', false))
 
   mainWindow.on('close', (e) => {
     if (!mainWindow) return
@@ -395,13 +399,24 @@ function registerIpc(): void {
     if (!mainWindow || typeof c?.bg !== 'string' || typeof c.symbol !== 'string') return
     if (!hex.test(c.bg) || !hex.test(c.symbol)) return
     mainWindow.setBackgroundColor(c.bg)
-    mainWindow.setTitleBarOverlay({ color: c.bg, symbolColor: c.symbol, height: 56 })
   })
 
   // the full-window player goes full screen, so the taskbar is hidden too
   ipcMain.on('window:fullscreen', (_e, on: unknown) => {
     if (mainWindow && typeof on === 'boolean') mainWindow.setFullScreen(on)
   })
+
+  // minimise / maximise / close: the same paths the system buttons took (close goes to the tray if set)
+  ipcMain.on('window:control', (_e, action: unknown) => {
+    const w = mainWindow
+    if (!w || w.isDestroyed()) return
+    if (action === 'minimize') w.minimize()
+    else if (action === 'maximize') {
+      if (w.isMaximized()) w.unmaximize()
+      else w.maximize()
+    } else if (action === 'close') w.close()
+  })
+  ipcMain.handle('window:isMaximized', () => !!mainWindow && !mainWindow.isDestroyed() && mainWindow.isMaximized())
 
   ipcMain.handle('ya:headers', () => yandexHeaders)
   ipcMain.handle('ya:login', () => yandexLogin())

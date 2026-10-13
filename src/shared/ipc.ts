@@ -135,6 +135,12 @@ export interface ScBridge {
   openExternal(url: string): Promise<void>
   copyText(text: string): Promise<void>
   openLogs(): Promise<void>
+  /** The window's own buttons (the window has no system frame). */
+  win: {
+    control(action: 'minimize' | 'maximize' | 'close'): void
+    isMaximized(): Promise<boolean>
+    onMaximized(cb: (on: boolean) => void): () => void
+  }
   cache: {
     stats(): Promise<CacheStats>
     clear(): Promise<void>

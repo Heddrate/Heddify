@@ -240,6 +240,8 @@ export function installMock(): void {
     openExternal: async (url) => void window.open(url, '_blank'),
     copyText: async (text) => navigator.clipboard?.writeText(text),
     openLogs: async () => undefined,
+    // the browser has no window to control: the buttons do nothing here
+    win: { control: () => undefined, isMaximized: async () => false, onMaximized: () => () => undefined },
     setWindowTheme: () => undefined,
     setFullScreen: () => undefined,
     yandex: {

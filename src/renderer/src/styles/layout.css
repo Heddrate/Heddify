@@ -134,20 +134,18 @@
   gap: 8px;
   justify-self: stretch;
   /* the same width as the right block on the left, so the search is centred over the page, and a gap before the avatar */
-  margin-left: 186px;
+  margin-left: var(--tb-right);
   margin-right: 12px;
 }
 
 .tb-right {
   /* a fixed width (the avatar and the room for the window buttons): the centre compensates for it */
-  width: 186px;
+  width: var(--tb-right);
   flex: none;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  /* room for the native minimise / maximise / close buttons */
-  padding-right: 146px;
 }
 
 .search {
@@ -1204,4 +1202,9 @@
 .pb-art:focus-visible .pb-art-hint {
   opacity: 1;
   transform: rotate(180deg);
+}
+
+/* the top bar's right block: avatar and the window buttons (see TopBar) */
+:root {
+  --tb-right: 200px;
 }

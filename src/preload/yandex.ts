@@ -8,6 +8,7 @@
  * same level on the element. The app sets the level with `window.__scVolume(level)`.
  */
 import { contextBridge } from 'electron'
+import { BASS_FFT, bassBinRange, bassDb } from '../renderer/src/lib/bass'
 
 function install(): void {
   type Ctx = BaseAudioContext & { __scGain?: GainNode }
@@ -33,7 +34,7 @@ function install(): void {
       g.gain.value = level
       connect.call(g, ctx.destination)
       const node = ctx.createAnalyser()
-      node.fftSize = 1024
+      node.fftSize = BASS_FFT
       node.smoothingTimeConstant = 0
       connect.call(g, node)
       analysers.push({ node, buf: new Float32Array(new ArrayBuffer(node.frequencyBinCount * 4)) })
@@ -101,8 +102,8 @@ function install(): void {
     for (const a of analysers) {
       a.node.getFloatFrequencyData(a.buf)
       let sum = 0
-      for (let i = 1; i <= 4; i++) sum += a.buf[i]
-      db = Math.max(db, sum / 4)
+      const { lo, hi } = bassBinRange(a.node.context.sampleRate, a.node.fftSize)
+      db = Math.max(db, bassDb(a.buf, lo, hi))
     }
     const el = [...media].find((m) => !m.paused) ?? null
     return {
