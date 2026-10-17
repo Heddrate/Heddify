@@ -484,3 +484,58 @@
 .nav-btn:hover:not(:disabled) {
   background: var(--lg-sheen);
 }
+
+/* ---------- 1.8.17: more substance ---------- */
+
+/* the player: the cover is a real object, with a soft shadow of its own */
+.pb-art {
+  border-radius: 14px;
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.55);
+}
+
+.pb-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* home: the banner leads, the sections breathe and their titles carry weight */
+.hero {
+  height: 300px;
+  margin: 8px 0 30px;
+}
+
+.hero-title {
+  font-size: 52px;
+  letter-spacing: -0.03em;
+}
+
+.shelf {
+  margin-top: 40px;
+}
+
+.shelf-head {
+  margin-bottom: 14px;
+}
+
+.shelf-head .h2 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 1000px) {
+  .hero-title {
+    font-size: 36px;
+  }
+}
+
+/* one focus ring for the whole interface: visible from the keyboard, invisible for the mouse */
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+[role='button']:focus:not(:focus-visible) {
+  outline: none;
+}
