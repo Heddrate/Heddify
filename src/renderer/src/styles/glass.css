@@ -436,3 +436,51 @@
 .cover-bg.empty::after {
   display: none;
 }
+
+/* ---------- polish 1.8.16: soft, even shadows; a slow backdrop; a smaller avatar ring ---------- */
+
+/* shadows fall straight down and stay soft: a short offset, a negative spread, low opacity */
+:root {
+  --lg-shadow: 0 2px 10px rgba(0, 0, 0, 0.16), 0 10px 26px -12px rgba(0, 0, 0, 0.42);
+}
+
+:root[data-theme='light'] {
+  --lg-shadow: 0 2px 10px rgba(40, 40, 60, 0.07), 0 10px 26px -12px rgba(40, 40, 60, 0.24);
+}
+
+.hero {
+  box-shadow: 0 6px 22px -12px rgba(0, 0, 0, 0.5);
+}
+
+.menu,
+.dialog,
+.toast {
+  box-shadow: inset 0 1px 0 var(--lg-rim-top), var(--lg-shadow);
+}
+
+/* the backdrop changes slowly: the new cover fades in over seven seconds, nothing cuts */
+.cover-bg-in {
+  animation: cover-bg-in 7s ease both;
+}
+
+/* the full-window player: the cover becomes ambient light, not a picture */
+.full-player .cover-bg-img {
+  filter: blur(120px) saturate(1.05) brightness(0.8);
+}
+
+/* the avatar sits in a smaller ring */
+.avatar-btn {
+  width: 34px;
+  height: 34px;
+}
+
+/* back and forward are glass circles like the rest of the chrome */
+.nav-btn {
+  background: var(--lg-fill);
+  box-shadow: inset 0 1px 0 var(--lg-rim-top), var(--lg-shadow);
+  border: 1px solid var(--lg-rim);
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: var(--lg-sheen);
+}
