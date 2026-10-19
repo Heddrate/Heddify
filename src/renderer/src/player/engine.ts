@@ -180,7 +180,15 @@ class Engine {
       }
       if (id !== this.loadId) return null
     } else {
-      this.attach(res.data, opts.startAt ?? 0)
+      this.resolving = true
+      let s = res.data
+      try {
+        s = await this.own(res.data, id)
+      } finally {
+        if (id === this.loadId) this.resolving = false
+      }
+      if (id !== this.loadId) return null
+      this.attach(s, opts.startAt ?? 0)
     }
     if (this.wantPlay) void this.play()
     else this.ev?.state({ loading: false, playing: false })
@@ -227,6 +235,28 @@ class Engine {
     const a = this.audio
     a.src = this.objectUrl
     if (startAt > 0) a.addEventListener('loadedmetadata', () => (a.currentTime = startAt), { once: true })
+  }
+
+  /**
+   * The cache and the user's own files come from the app's own schemes, which are another origin
+   * to the page: Web Audio (bass glow, leveling) turns such media into silence even though it
+   * loaded with CORS. While Web Audio is in the path they play from memory instead — a blob is the
+   * page's own origin, like the joined Opus files. Anything else, or a failed read, stays as it is.
+   */
+  private async own(s: StreamInfo, id: number): Promise<StreamInfo> {
+    if (!/^(scp-cache|heddify-local):/.test(s.url) || this.audio !== this.main) return s
+    if (!this.leveling && this.glow === 0 && !this.graph) return s
+    try {
+      const r = await fetch(s.url)
+      if (!r.ok) return s
+      const blob = await r.blob()
+      if (id !== this.loadId) return s
+      if (this.objectUrl) URL.revokeObjectURL(this.objectUrl)
+      this.objectUrl = URL.createObjectURL(blob)
+      return { ...s, url: this.objectUrl }
+    } catch {
+      return s
+    }
   }
 
   private attach(s: StreamInfo, startAt: number): void {
@@ -317,8 +347,9 @@ class Engine {
     }
     this.stream = stream
     if (stream.protocol === 'hls') await loadHls()
+    const playable = await this.own(stream, id)
     if (id !== this.loadId) return
-    this.attach(stream, position)
+    this.attach(playable, position)
     if (resume) void this.play()
   }
 

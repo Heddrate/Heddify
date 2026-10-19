@@ -7,7 +7,8 @@ import { userArt } from '@/lib/artwork'
 import { cx } from '@/lib/hooks'
 import { ACCENTS, PALETTES, setAccent, setCustomColors, setTheme, THEMES, usesPalette, useTheme, type AnyTheme } from '@/lib/theme'
 import { derivePalette } from '@/lib/palette'
-import { useAudius } from '@/lib/audius'
+import { pickAvatar, removeAvatar, setProfileName, useProfile } from '@/lib/profile'
+import { ProfileAvatar } from '@/components/ProfileAvatar'
 import { loginWithToken, logout, navigate, openUrl, signInSoundcloud, useApp } from '@/store/app'
 import { askText, toast } from '@/store/ui'
 import { loginYandex, logoutYandex, useYa } from '@/lib/yandexApi'
@@ -39,8 +40,10 @@ export function Settings(): React.JSX.Element {
   const yaName = useYa((s) => s.name)
   const yaLikes = useYa((s) => s.likeOrder.length)
   const yaPlaylists = useYa((s) => s.playlists.length)
+  const yaAvatar = useYa((s) => s.avatar)
+  const ownAvatar = useProfile((s) => s.avatar)
+  const ownName = useProfile((s) => s.name)
   const autoplay = usePlayer((s) => s.autoplay)
-  const auLikes = useAudius((s) => s.likes.length)
   const theme = useTheme((s) => s.theme)
   const accent = useTheme((s) => s.accent)
   const custom = useTheme((s) => s.custom)
@@ -77,6 +80,37 @@ export function Settings(): React.JSX.Element {
       <div className="settings-cols">
         <div className="settings-col">
         <Section title={tx("Аккаунт")}>
+          <Row
+            label={
+              <AccountLabel
+                avatar={<ProfileAvatar size={40} />}
+                service={ownName || me?.username || yaName || tx('Ваш профиль')}
+                stats={tx('Фото и имя видны только в Heddify')}
+              />
+            }
+            control={
+              <div className="settings-inline">
+                <button className="btn btn-outline" onClick={pickAvatar}>
+                  {ownAvatar ? tx('Сменить фото') : tx('Загрузить фото')}
+                </button>
+                {ownAvatar && (
+                  <button className="btn btn-outline" onClick={removeAvatar}>
+                    {tx('Убрать фото')}
+                  </button>
+                )}
+                <button
+                  className="btn btn-outline"
+                  onClick={() =>
+                    void askText(tx('Имя в Heddify'), ownName || me?.username || '', tx('Сохранить'), { placeholder: me?.username ?? '' }).then(
+                      (v) => v !== null && setProfileName(v)
+                    )
+                  }
+                >
+                  {tx('Имя')}
+                </button>
+              </div>
+            }
+          />
           {!me && (
             <Row
               label={
@@ -113,7 +147,13 @@ export function Settings(): React.JSX.Element {
           <Row
             label={
               <AccountLabel
-                avatar={<div className="ya-mark round">Я</div>}
+                avatar={
+                  yaStatus === 'in' && yaAvatar ? (
+                    <Artwork src={yaAvatar} size={40} round placeholder="person" />
+                  ) : (
+                    <div className="ya-mark round">Я</div>
+                  )
+                }
                 service={tx('Яндекс Музыка')}
                 stats={
                   yaStatus === 'in'
@@ -136,20 +176,6 @@ export function Settings(): React.JSX.Element {
                 </div>
               )
             }
-          />
-          <Row
-            label={
-              <AccountLabel
-                avatar={<div className="ya-mark round">A</div>}
-                service="Audius"
-                stats={
-                  auLikes
-                    ? tx('Вход не нужен · {0} в «Мне нравится»', countLabel(auLikes, tx('трек'), tx('трека'), tx('треков')))
-                    : tx('Вход не нужен')
-                }
-              />
-            }
-            control={null}
           />
         </Section>
 

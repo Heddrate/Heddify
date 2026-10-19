@@ -41,7 +41,6 @@ const EN: Record<string, string> = {
   'Станций не нашлось': 'No stations found',
   'Играет только на сайте SoundCloud': 'Plays only on the SoundCloud website',
   '«{0}» играет только на сайте SoundCloud': '“{0}” plays only on the SoundCloud website',
-  '«{0}» играет из Яндекс Музыки: в SoundCloud он только под защитой': '“{0}” plays from Yandex Music: SoundCloud only has it copy-protected',
   'Открыть в браузере': 'Open in browser',
   'Устанавливаю обновление': 'Installing the update',
   'Heddify закроется и откроется сам через полминуты': 'Heddify will close and open again in about 30 seconds',
@@ -627,7 +626,17 @@ const EN: Record<string, string> = {
   'Своя': 'Custom',
   'Свои цвета': 'Custom colours',
   'Фон': 'Background',
-  'Текст': 'Text'
+  'Текст': 'Text',
+  'Ваш профиль': 'Your profile',
+  'Фото и имя видны только в Heddify': 'The photo and name show only in Heddify',
+  'Сменить фото': 'Change photo',
+  'Загрузить фото': 'Upload photo',
+  'Убрать фото': 'Remove photo',
+  'Имя в Heddify': 'Name in Heddify',
+  'Имя': 'Name',
+  'Вышла версия {0}': 'Version {0} is out',
+  'Вышло обновление': 'An update is out',
+  'Установится за полминуты': 'Installs in half a minute'
 }
 
 export default EN

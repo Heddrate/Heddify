@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { userArt } from '@/lib/artwork'
+import { useProfile } from '@/lib/profile'
 import { cx } from '@/lib/hooks'
 import { goBack, goForward, logout, navigate, signInSoundcloud, useApp } from '@/store/app'
 import { openMenuAt } from '@/store/ui'
-import { Artwork } from './Artwork'
+import { ProfileAvatar } from './ProfileAvatar'
 import { Icon } from './Icon'
 import { installUpdate, useUpdate } from '@/lib/update'
 import { tx } from '@/lib/i18n'
@@ -58,7 +58,7 @@ function WindowControls(): React.JSX.Element | null {
   return (
     <div className="win-controls">
       <button className="win-btn" aria-label={tx('Свернуть')} title={tx('Свернуть')} onClick={() => win.control('minimize')}>
-        <Icon name="minimize" size={14} />
+        <WinGlyph d="M0 5.5h10" />
       </button>
       <button
         className="win-btn"
@@ -66,12 +66,21 @@ function WindowControls(): React.JSX.Element | null {
         title={max ? tx('Восстановить') : tx('Развернуть')}
         onClick={() => win.control('maximize')}
       >
-        <Icon name={max ? 'restore' : 'maximize'} size={14} />
+        {max ? <WinGlyph d="M0.5 2.5h7v7h-7zM2.5 2.5v-2h7v7h-2" /> : <WinGlyph d="M0.5 0.5h9v9h-9z" />}
       </button>
       <button className="win-btn win-close" aria-label={tx('Закрыть')} title={tx('Закрыть')} onClick={() => win.control('close')}>
-        <Icon name="close" size={14} />
+        <WinGlyph d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
       </button>
     </div>
+  )
+}
+
+/** Windows' own caption glyphs: 10 px, one-pixel lines on whole pixels, so they stay sharp. */
+function WinGlyph({ d }: { d: string }): React.JSX.Element {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1">
+      <path d={d} />
+    </svg>
   )
 }
 
@@ -149,6 +158,7 @@ function SearchBox(): React.JSX.Element {
 /** Avatar (or a person icon without SoundCloud): profile, settings, update, sign-in / sign-out. */
 function UserButton(): React.JSX.Element {
   const me = useApp((s) => s.me)
+  const name = useProfile((s) => s.name)
   // primitive selectors: the menu re-renders with the download progress without a fresh object each time
   const updStatus = useUpdate((s) => s.status)
   const updVersion = useUpdate((s) => s.version ?? '')
@@ -172,11 +182,11 @@ function UserButton(): React.JSX.Element {
   return (
     <button
       className="avatar-btn"
-      title={updStatus === 'ready' ? tx('Есть обновление') : (me?.username ?? tx('Настройки'))}
+      title={updStatus === 'ready' ? tx('Есть обновление') : name || me?.username || tx('Настройки')}
       aria-label={tx('Профиль')}
       onClick={open}
     >
-      {me ? <Artwork src={userArt(me, 'large')} size={28} round placeholder="person" /> : <Icon name="person" size={20} />}
+      <ProfileAvatar size={28} />
       {(updStatus === 'downloading' || updStatus === 'ready') && (
         <span className={cx('avatar-dot', updStatus === 'downloading' && 'downloading')} />
       )}

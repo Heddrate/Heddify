@@ -293,11 +293,7 @@ async function playTrack(track: Track, startAt = 0, autoplay = true): Promise<vo
       standIns.set(track.id, twin)
       // the user may have moved on while Yandex was searched
       const still = get().current === track
-      if (twin) {
-        if (!still) return
-        toast(tx('«{0}» играет из Яндекс Музыки: в SoundCloud он только под защитой', track.title ?? tx('Трек')))
-        return playExternal(track, twin, startAt, autoplay)
-      }
+      if (twin) return still ? playExternal(track, twin, startAt, autoplay) : undefined
       if (still) set({ loading: false })
     }
     onFail(track, message)

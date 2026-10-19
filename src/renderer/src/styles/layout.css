@@ -721,19 +721,23 @@
   flex-direction: column;
 }
 
-/* Narrow windows (vertical monitors): the queue / now-playing panel lies over the right
-   part of the page instead of squeezing it to a sliver. */
+/* Narrow windows: while the queue / now-playing panel is open the library column steps aside,
+   so the page and the panel sit side by side instead of one covering the other. */
 @media (max-width: 1240px) {
   .app.with-queue {
-    grid-template-columns: var(--rail) clamp(248px, 21vw, 320px) minmax(0, 1fr);
+    grid-template-columns: var(--rail) minmax(0, 1fr) clamp(280px, 30vw, 340px);
   }
 
-  .queue {
+  .app.with-queue > .sidebar {
+    display: none;
+  }
+
+  .app.with-queue > .main {
+    grid-column: 2;
+  }
+
+  .app.with-queue > .queue {
     grid-column: 3;
-    justify-self: end;
-    width: min(340px, 100%);
-    z-index: 20;
-    box-shadow: -16px 0 32px rgba(0, 0, 0, 0.45);
   }
 }
 

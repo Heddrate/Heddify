@@ -148,10 +148,9 @@ export function setPlaylistOffline(id: string, offline: boolean): void {
   update(id, (l) => ({ ...l, offline }))
 }
 
-/** Square-crops and shrinks an image file to a small JPEG data URL for a cover. */
-async function toCover(file: File): Promise<string> {
+/** Square-crops and shrinks an image file to a small JPEG data URL (a cover, an avatar). */
+export async function toCover(file: File, size = 600): Promise<string> {
   const bitmap = await createImageBitmap(file)
-  const size = 600
   const side = Math.min(bitmap.width, bitmap.height)
   const canvas = document.createElement('canvas')
   canvas.width = canvas.height = size

@@ -4,12 +4,11 @@ import { Spinner } from './States'
 import { tx } from '@/lib/i18n'
 import { Logo } from './Icon'
 
-/** "Доступно обновление": once a new version is downloaded, until "Позже" (then the avatar dot stays). */
+/** "Вышла версия …": once a new version is downloaded, until "Позже" (then the avatar dot stays). */
 let dismissed = ''
 
 export function UpdateBanner(): React.JSX.Element | null {
   const version = useUpdate((s) => (s.status === 'ready' ? (s.version ?? '') : null))
-  const notes = useUpdate((s) => s.notes)
   const installing = useInstalling((s) => s.on)
   const [, rerender] = useState(0)
   if (installing) {
@@ -23,22 +22,14 @@ export function UpdateBanner(): React.JSX.Element | null {
     )
   }
   if (version === null || dismissed === version) return null
+  // what changed is in Settings → "Что нового" after the restart; the card only offers it
   return (
     <div className="update-banner" role="status">
-      <div className="update-head">
-        <Logo size={36} />
-        <div className="update-text">
-          <strong>{tx('Доступно обновление')}</strong>
-          <span>{version ? tx('Версия {0} готова к установке', version) : tx('Новая версия готова к установке')}</span>
-        </div>
+      <Logo size={36} />
+      <div className="update-text">
+        <strong>{version ? tx('Вышла версия {0}', version) : tx('Вышло обновление')}</strong>
+        <span>{tx('Установится за полминуты')}</span>
       </div>
-      {notes && notes.length > 0 && (
-        <ul className="update-notes">
-          {notes.map((n) => (
-            <li key={n}>{n}</li>
-          ))}
-        </ul>
-      )}
       <div className="update-actions">
         <button
           className="btn btn-text btn-sm"
@@ -50,7 +41,7 @@ export function UpdateBanner(): React.JSX.Element | null {
           {tx('Позже')}
         </button>
         <button className="btn btn-primary btn-sm" onClick={installUpdate}>
-          {tx('Перезапустить')}
+          {tx('Обновить')}
         </button>
       </div>
     </div>

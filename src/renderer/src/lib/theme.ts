@@ -9,7 +9,7 @@ import { create } from 'zustand'
 import { derivePalette, HEX, isDarkScheme, type Anchors } from './palette'
 
 export type ThemeName = 'dark' | 'oled' | 'graphite' | 'light'
-export type PaletteName = 'azure' | 'asphalt' | 'paper' | 'sunset' | 'pine' | 'custom'
+export type PaletteName = 'azure' | 'asphalt' | 'paper' | 'pine' | 'custom'
 export type AnyTheme = ThemeName | PaletteName
 export type AccentName = 'orange' | 'mono'
 
@@ -26,7 +26,6 @@ export const PALETTES: { id: Exclude<PaletteName, 'custom'>; label: string; colo
   { id: 'azure', label: "Азур", colors: { bg: '#000f0f', text: '#e8f5fb', accent: '#68c7ec' } },
   { id: 'asphalt', label: "Асфальт", colors: { bg: '#302f2c', text: '#efede3', accent: '#efede3' } },
   { id: 'paper', label: "Бумага", colors: { bg: '#efede3', text: '#302f2c', accent: '#302f2c' } },
-  { id: 'sunset', label: "Апельсин", colors: { bg: '#c94a1c', text: '#fffdf2', accent: '#ec5e27' } },
   { id: 'pine', label: "Хвоя", colors: { bg: '#00311f', text: '#fffdf2', accent: '#fffdf2' } }
 ]
 

@@ -11,9 +11,10 @@ export function ContextMenu(): React.JSX.Element | null {
 
   useLayoutEffect(() => {
     if (!open || !ref.current) return
-    const r = ref.current.getBoundingClientRect()
-    const nx = Math.max(8, Math.min(x, window.innerWidth - r.width - 8))
-    const ny = y + r.height > window.innerHeight - 8 ? Math.max(8, y - r.height) : y
+    // the layout size: the opening animation scales the menu, so its on-screen box is smaller
+    const r = { width: ref.current.offsetWidth, height: ref.current.offsetHeight }
+    const nx = Math.max(14, Math.min(x, window.innerWidth - r.width - 14))
+    const ny = y + r.height > window.innerHeight - 14 ? Math.max(14, y - r.height) : y
     setPos({ x: nx, y: ny })
   }, [open, x, y, items])
 

@@ -180,9 +180,12 @@ function createWindow(): void {
   })
   mainWindow.webContents.on('will-navigate', (e) => e.preventDefault())
 
-  // renderer problems land in the same diagnostics log as API errors
+  // renderer problems land in the same diagnostics log as API errors; Chromium reports Web Audio
+  // silencing a track ("outputs zeroes due to CORS") only as info, so that one is kept too
   mainWindow.webContents.on('console-message', (e) => {
-    if (e.level === 'error') log(`renderer: ${e.message.slice(0, 500)} (${e.sourceId.split('/').pop()}:${e.lineNumber})`)
+    if (e.level === 'error' || e.message.includes('outputs zeroes')) {
+      log(`renderer: ${e.message.slice(0, 500)} (${e.sourceId.split('/').pop()}:${e.lineNumber})`)
+    }
   })
   mainWindow.webContents.on('render-process-gone', (_e, d) => log(`renderer gone: ${d.reason} (${d.exitCode})`))
   mainWindow.webContents.on('preload-error', (_e, p, err) => log(`preload error ${p}: ${err.message}`))

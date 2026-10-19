@@ -48,6 +48,11 @@
   box-shadow: var(--shell-shadow);
 }
 
+/* a scrollbar stays clear of the panel's rounded corners */
+.scroll-y::-webkit-scrollbar-track {
+  margin: 12px 0;
+}
+
 /* ---------- the icon rail (left) ---------- */
 
 :root {

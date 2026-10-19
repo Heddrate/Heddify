@@ -27,6 +27,8 @@ interface YaState {
   status: 'unknown' | 'out' | 'in'
   uid: number | null
   name: string | null
+  /** The account's picture (from the Yandex page's header), or null. */
+  avatar: string | null
   likes: Set<number>
   likeOrder: number[]
   /** When each like was made (ms), to sort likes from all services together. */
@@ -43,6 +45,7 @@ const CHECKED_KEY = 'ya-checked'
 interface Saved {
   uid: number
   name: string | null
+  avatar?: string | null
   likeOrder: number[]
   likeAt?: Record<number, number>
   playlists: YaPlaylist[]
@@ -61,11 +64,12 @@ const saved = readSaved()
 
 export const useYa = create<YaState>(() =>
   saved
-    ? { status: 'in', uid: saved.uid, name: saved.name, likes: new Set(saved.likeOrder), likeOrder: saved.likeOrder, likeAt: saved.likeAt ?? {}, playlists: saved.playlists }
+    ? { status: 'in', uid: saved.uid, name: saved.name, avatar: saved.avatar ?? null, likes: new Set(saved.likeOrder), likeOrder: saved.likeOrder, likeAt: saved.likeAt ?? {}, playlists: saved.playlists }
     : {
         status: localStorage.getItem(CHECKED_KEY) ? 'out' : 'unknown',
         uid: null,
         name: null,
+        avatar: null,
         likes: new Set(),
         likeOrder: [],
         likeAt: {},
@@ -74,10 +78,10 @@ export const useYa = create<YaState>(() =>
 )
 
 useYa.subscribe((s, prev) => {
-  if (s.status === prev.status && s.likeOrder === prev.likeOrder && s.likeAt === prev.likeAt && s.playlists === prev.playlists && s.name === prev.name) return
+  if (s.status === prev.status && s.likeOrder === prev.likeOrder && s.likeAt === prev.likeAt && s.playlists === prev.playlists && s.name === prev.name && s.avatar === prev.avatar) return
   try {
     if (s.status === 'in' && s.uid) {
-      const data: Saved = { uid: s.uid, name: s.name, likeOrder: s.likeOrder, likeAt: s.likeAt, playlists: s.playlists }
+      const data: Saved = { uid: s.uid, name: s.name, avatar: s.avatar, likeOrder: s.likeOrder, likeAt: s.likeAt, playlists: s.playlists }
       localStorage.setItem(SAVED_KEY, JSON.stringify(data))
     } else if (s.status === 'out') {
       localStorage.removeItem(SAVED_KEY)
@@ -227,17 +231,36 @@ export async function loadYandex(): Promise<void> {
     const st = await yaApi<{ account?: { uid?: number; displayName?: string; login?: string } }>('GET', '/account/status')
     const uid = st.account?.uid
     if (!uid) {
-      useYa.setState({ status: 'out', uid: null })
+      useYa.setState({ status: 'out', uid: null, avatar: null })
       return
     }
     useYa.setState({ status: 'in', uid, name: st.account?.displayName ?? st.account?.login ?? null })
     void loadLikes()
     void loadPlaylists()
+    void loadAvatar()
   } catch (e) {
     // signed out → 'out'; anything else (page still loading, network) keeps a known library
     const signedOut = e instanceof YaError && (e.status === 401 || e.status === 403)
     // never connected and the page can't be reached: offer sign-in instead of spinning forever
     useYa.setState({ status: signedOut ? 'out' : useYa.getState().uid ? 'in' : 'out' })
+  }
+}
+
+/**
+ * The account's picture as the Yandex page shows it in its header (the music API has none).
+ * The page may still be drawing, so it is looked for a few times.
+ */
+async function loadAvatar(): Promise<void> {
+  for (let i = 0; i < 6; i++) {
+    const src = await runInPage<string | null>(
+      `(() => { const i = document.querySelector('img[src*="get-yapic"]'); return i ? i.src : null })()`
+    ).catch(() => null)
+    if (src) {
+      // the header's small size; the same picture at 200 px
+      useYa.setState({ avatar: src.replace(/\/[^/]+$/, '/islands-200') })
+      return
+    }
+    await new Promise((r) => setTimeout(r, 2000))
   }
 }
 
@@ -470,5 +493,5 @@ export async function fetchAlbum(id: number): Promise<YaAlbum & { tracks: Track[
 export async function logoutYandex(): Promise<void> {
   await window.sc.yandex.logout()
   headers = {}
-  useYa.setState({ status: 'out', uid: null, name: null, likes: new Set(), likeOrder: [], likeAt: {}, playlists: [] })
+  useYa.setState({ status: 'out', uid: null, name: null, avatar: null, likes: new Set(), likeOrder: [], likeAt: {}, playlists: [] })
 }
