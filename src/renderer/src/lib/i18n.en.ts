@@ -41,6 +41,7 @@ const EN: Record<string, string> = {
   'Станций не нашлось': 'No stations found',
   'Играет только на сайте SoundCloud': 'Plays only on the SoundCloud website',
   '«{0}» играет только на сайте SoundCloud': '“{0}” plays only on the SoundCloud website',
+  '«{0}» играет из Яндекс Музыки: в SoundCloud он только под защитой': '“{0}” plays from Yandex Music: SoundCloud only has it copy-protected',
   'Открыть в браузере': 'Open in browser',
   'Устанавливаю обновление': 'Installing the update',
   'Heddify закроется и откроется сам через полминуты': 'Heddify will close and open again in about 30 seconds',

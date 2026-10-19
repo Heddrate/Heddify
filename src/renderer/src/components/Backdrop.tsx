@@ -12,7 +12,7 @@ export function CoverBackdrop({ art }: { art: string | null }): React.JSX.Elemen
     if (last.current === art) return
     setUnder(last.current)
     last.current = art
-    // the new cover fades in over several seconds (see .cover-bg-in in styles/glass.css)
+    // the new cover fades in over several seconds (see .cover-bg-in in styles/shell.css)
     const t = window.setTimeout(() => setUnder(null), 7500)
     return () => window.clearTimeout(t)
   }, [art])

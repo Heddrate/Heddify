@@ -28,19 +28,16 @@ export function PageHeader({ kind, title, art, meta, color, image, round }: Prop
     ...(image ? { '--head-image': `url("${image}")` } : {})
   } as CSSProperties
   return (
-    <>
-      <header className={cx('page-head', image && 'with-image', round && 'round')} style={style}>
-        <div className="ph-art">{art}</div>
-        <div className="ph-info">
-          <div className="ph-kind">{kind}</div>
-          <h1 className={cx('ph-title', `size-${titleSize(title)}`)} title={title}>
-            {title}
-          </h1>
-          {meta && <div className="ph-meta">{meta}</div>}
-        </div>
-      </header>
-      <div className="ph-fade" style={style} />
-    </>
+    <header className={cx('page-head', image && 'with-image', round && 'round')} style={style}>
+      <div className="ph-art">{art}</div>
+      <div className="ph-info">
+        <div className="ph-kind">{kind}</div>
+        <h1 className={cx('ph-title', `size-${titleSize(title)}`)} title={title}>
+          {title}
+        </h1>
+        {meta && <div className="ph-meta">{meta}</div>}
+      </div>
+    </header>
   )
 }
 

@@ -15,6 +15,7 @@ import { tx } from '@/lib/i18n'
 import { engine } from '@/player/engine'
 import { fadeGain } from '@/player/audioMath'
 import { initialBass, stepBass, type BassState } from './bass'
+import { pickTwin, twinQuery } from './twin'
 // circular with yandexApi (which uses this page), fine: only read at call time
 import { useYa } from './yandexApi'
 
@@ -98,7 +99,8 @@ const IDLE_UNLOAD_MS = 15 * 60_000
 
 setInterval(() => {
   const s = usePlayer.getState()
-  const yandexNow = s.current?.origin === 'yandex'
+  // a SoundCloud DRM track may be playing from this page too (store/player.ts)
+  const yandexNow = s.current?.origin === 'yandex' || externalEvents.active()
   if (yandexNow) lastUse = Date.now()
   if (!useApp.getState().yandexMounted || yandexNow) return
   if (Date.now() - lastUse < IDLE_UNLOAD_MS) return
@@ -344,9 +346,13 @@ export async function searchYandex(q: string): Promise<Track[]> {
     // the card: the widest ancestor that still holds only this one track
     let row: Element = link
     while (row.parentElement && row.parentElement.querySelectorAll('a[href*="/track/"]').length === 1) row = row.parentElement
-    const title = link.textContent?.trim()
-    if (!title) continue
+    const name = link.textContent?.trim()
+    if (!name) continue
     seen.add(Number(m[2]))
+    // the version ("Chromatics Remix") sits next to the title link; same "Title (Version)" as the API's tracks
+    const next = link.nextElementSibling
+    const version = next && next.tagName !== 'A' ? next.textContent?.trim() : ''
+    const title = version ? `${name} (${version})` : name
     const artists = Array.from(row.querySelectorAll<HTMLAnchorElement>('a[href^="/artist/"]')).map((a) => ({
       id: Number(a.getAttribute('href')!.match(/\/artist\/(\d+)/)?.[1]) || undefined,
       name: a.textContent?.trim() ?? ''
@@ -364,6 +370,19 @@ export async function searchYandex(q: string): Promise<Track[]> {
     )
   }
   return out
+}
+
+/**
+ * The Yandex copy of a SoundCloud track that SoundCloud only gives out as DRM (lib/twin.ts):
+ * null without a Yandex account (its page couldn't play it) or without a certain match.
+ */
+async function findTwin(track: Track): Promise<Track | null> {
+  if (useYa.getState().status !== 'in') return null
+  const query = twinQuery(track)
+  const found = await searchYandex(query).catch(() => [])
+  const twin = pickTwin(track, found)
+  trace(`twin for soundcloud ${track.id}: ${twin ? `${twin.ya?.trackId}` : `none of ${found.length}`}`)
+  return twin
 }
 
 /* ---------- driver: playback through the page, mirrored into our player ---------- */
@@ -546,7 +565,8 @@ const driver: ExternalDriver = {
     endSignalled = false
     allowPlay(15_000)
     void run(clickButton(PREV_LABELS))
-  }
+  },
+  twin: findTwin
 }
 
 registerExternal(driver)

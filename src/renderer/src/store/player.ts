@@ -219,6 +219,8 @@ export interface ExternalDriver {
   /** Ask the page for its own next / previous track (when our queue has none). */
   next(): void
   prev(): void
+  /** The same recording on this service, for a SoundCloud track that only comes as DRM (lib/twin.ts). */
+  twin(track: Track): Promise<Track | null>
 }
 
 let external: ExternalDriver | null = null
@@ -230,6 +232,15 @@ export function registerExternal(d: ExternalDriver): void {
 }
 
 const isExternal = (t: Track | null | undefined): boolean => !!t && t.origin === 'yandex'
+
+/** SoundCloud tracks that only play in SoundCloud's own player; the error says so. */
+const isDrm = (t: Track, message: string): boolean => !t.origin && message.includes('DRM')
+
+/**
+ * SoundCloud DRM tracks played from Yandex Music instead (SoundCloud id → its Yandex copy;
+ * null: none found). The queue and the screen keep the SoundCloud track, only the sound is Yandex's.
+ */
+const standIns = new Map<number, Track | null>()
 
 /** A user's next / previous press: the track shows at once, but it only loads once the presses settle. */
 const NAV_SETTLE_MS = 180
@@ -263,20 +274,9 @@ async function playTrack(track: Track, startAt = 0, autoplay = true): Promise<vo
     if (seq !== navSeq) return
   }
 
-  if (isExternal(track)) {
-    engine.stop()
-    externalActive = true
-    if (!external) return onFail(track, tx("Яндекс Музыка не подключена"))
-    set({ loading: true, playing: autoplay })
-    try {
-      await external.play(track, startAt)
-      const { volume, muted } = get()
-      external.setVolume(volume, muted)
-    } catch (e) {
-      onFail(track, e instanceof Error ? e.message : tx("ошибка"))
-    }
-    return
-  }
+  if (isExternal(track)) return playExternal(track, track, startAt, autoplay)
+  const standIn = standIns.get(track.id)
+  if (standIn) return playExternal(track, standIn, startAt, autoplay)
   if (externalActive) {
     externalActive = false
     external?.release()
@@ -286,6 +286,35 @@ async function playTrack(track: Track, startAt = 0, autoplay = true): Promise<vo
     const stream = await engine.load(track, { autoplay, startAt })
     if (stream) set({ preview: stream.snipped })
   } catch (e) {
+    const message = e instanceof Error ? e.message : tx("ошибка")
+    if (isDrm(track, message) && external && !standIns.has(track.id)) {
+      set({ loading: true })
+      const twin = await external.twin(track).catch(() => null)
+      standIns.set(track.id, twin)
+      // the user may have moved on while Yandex was searched
+      const still = get().current === track
+      if (twin) {
+        if (!still) return
+        toast(tx('«{0}» играет из Яндекс Музыки: в SoundCloud он только под защитой', track.title ?? tx('Трек')))
+        return playExternal(track, twin, startAt, autoplay)
+      }
+      if (still) set({ loading: false })
+    }
+    onFail(track, message)
+  }
+}
+
+/** Plays `target` through the Yandex page; `track` is what the player shows (itself, or a SoundCloud stand-in's original). */
+async function playExternal(track: Track, target: Track, startAt: number, autoplay: boolean): Promise<void> {
+  engine.stop()
+  externalActive = true
+  if (!external) return onFail(track, tx("Яндекс Музыка не подключена"))
+  set({ loading: true, playing: autoplay })
+  try {
+    await external.play(target, startAt)
+    const { volume, muted } = get()
+    external.setVolume(volume, muted)
+  } catch (e) {
     onFail(track, e instanceof Error ? e.message : tx("ошибка"))
   }
 }
@@ -294,7 +323,7 @@ function onFail(track: Track, message: string): void {
   // lands in logs/api.log via main's console listener
   console.error(`playback failed [${track.origin ?? 'soundcloud'} ${track.id}]: ${message}`)
   set({ unplayable: new Set(get().unplayable).add(track.id) })
-  if (!track.origin && message.includes('DRM')) {
+  if (isDrm(track, message)) {
     // only SoundCloud's own player has the keys: offer the site instead of a dead end
     set({ drm: new Set(get().drm).add(track.id) })
     const url = track.permalink_url

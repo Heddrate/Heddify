@@ -9,6 +9,7 @@ import type { StreamInfo, StreamRequest } from '../../../shared/ipc'
 import type { Track } from '@/lib/types'
 import { tx } from '@/lib/i18n'
 import { fadeGain } from './audioMath'
+import { recovery } from './recovery'
 import { BASS_FFT, bassBinRange, bassDb, initialBass, stepBass, type BassState } from '../lib/bass'
 
 export interface EngineEvents {
@@ -19,8 +20,6 @@ export interface EngineEvents {
   ended(): void
   error(message: string): void
 }
-
-const MAX_RECOVERIES = 3
 
 /** The bits of a track worth keeping next to its cached file (offline list). */
 export const trackMeta = (t: Track): Track => ({
@@ -49,12 +48,22 @@ export const streamRequest = (t: Track): StreamRequest => ({
 const isOgg = (s: StreamInfo): boolean => s.protocol === 'hls' && /ogg|opus/i.test(s.mime)
 
 /**
- * Wraps a single <audio> element. Progressive MP3 plays natively; HLS (AAC/MP3)
- * goes through hls.js. Signed stream URLs expire, so on a network/media error we
- * resolve a fresh URL and continue from the same position.
+ * Wraps the <audio> element (and a plain spare for radio, see `bare`). Progressive MP3
+ * plays natively; HLS (AAC/MP3) goes through hls.js. Signed stream URLs expire, so on a
+ * network/media error we resolve a fresh URL and continue from the same position (a radio
+ * station or an own file loads its one address again).
  */
 class Engine {
-  readonly audio = new Audio()
+  /** Everything plays here; Web Audio (leveling, bass glow) takes it over once switched on. */
+  private readonly main = new Audio()
+  /**
+   * Once Web Audio has the main element it loads with CORS, and a radio server without CORS
+   * headers is refused there. Such a station breaks and comes back on this plain element,
+   * outside Web Audio: it plays, just with no glow and no leveling.
+   */
+  private readonly bare = new Audio()
+  /** The element in use: `main`, or `bare` for a station that fell back to it. */
+  private audio = this.main
   private hls: HlsClass | null = null
   private objectUrl: string | null = null
   private loadId = 0
@@ -84,30 +93,36 @@ class Engine {
   private fadeTimer: ReturnType<typeof setInterval> | null = null
 
   constructor() {
-    const a = this.audio
-    a.preload = 'auto'
-    a.addEventListener('timeupdate', () => this.ev?.time(a.currentTime, this.duration()))
-    a.addEventListener('durationchange', () => this.ev?.time(a.currentTime, this.duration()))
-    a.addEventListener('progress', () => {
-      const b = a.buffered
-      if (b.length) this.ev?.buffered(b.end(b.length - 1))
-    })
-    a.addEventListener('playing', () => {
-      this.ev?.state({ playing: true, loading: false })
-      if (this.startedFor !== this.loadId && this.track) {
-        this.startedFor = this.loadId
-        this.ev?.started(this.track)
-      }
-    })
-    a.addEventListener('pause', () => {
-      if (!this.resolving) this.ev?.state({ playing: false })
-    })
-    a.addEventListener('waiting', () => this.ev?.state({ loading: true }))
-    a.addEventListener('canplay', () => this.ev?.state({ loading: false }))
-    a.addEventListener('ended', () => this.ev?.ended())
-    a.addEventListener('error', () => {
-      if (a.error && this.stream && !this.hls) this.recover()
-    })
+    for (const a of [this.main, this.bare]) {
+      a.preload = 'auto'
+      // only the element in use speaks: the other one is idle, or still being emptied
+      const on = (type: string, fn: () => void): void =>
+        a.addEventListener(type, () => {
+          if (a === this.audio) fn()
+        })
+      on('timeupdate', () => this.ev?.time(a.currentTime, this.duration()))
+      on('durationchange', () => this.ev?.time(a.currentTime, this.duration()))
+      on('progress', () => {
+        const b = a.buffered
+        if (b.length) this.ev?.buffered(b.end(b.length - 1))
+      })
+      on('playing', () => {
+        this.ev?.state({ playing: true, loading: false })
+        if (this.startedFor !== this.loadId && this.track) {
+          this.startedFor = this.loadId
+          this.ev?.started(this.track)
+        }
+      })
+      on('pause', () => {
+        if (!this.resolving) this.ev?.state({ playing: false })
+      })
+      on('waiting', () => this.ev?.state({ loading: true }))
+      on('canplay', () => this.ev?.state({ loading: false }))
+      on('ended', () => this.ev?.ended())
+      on('error', () => {
+        if (a.error && this.stream && !this.hls) void this.recover()
+      })
+    }
   }
 
   bind(ev: EngineEvents): void {
@@ -133,6 +148,8 @@ class Engine {
     this.track = track
     this.recoveries = 0
     this.teardown()
+    // every track, a station too, starts on the main element (with glow if CORS lets it)
+    this.audio = this.main
     this.resolving = true
     this.wantPlay = opts.autoplay
     this.ev?.state({ loading: true, playing: opts.autoplay })
@@ -213,7 +230,7 @@ class Engine {
   }
 
   private attach(s: StreamInfo, startAt: number): void {
-    this.ensureGraph()
+    if (this.audio === this.main) this.ensureGraph()
     const a = this.audio
     const H = Hls
     if (s.protocol === 'hls' && H?.isSupported()) {
@@ -254,37 +271,54 @@ class Engine {
     a.load()
   }
 
+  /** The stream broke (network or media error): bring it back where it was, or give up (see player/recovery.ts). */
   private async recover(): Promise<void> {
     const track = this.track
-    if (!track || this.resolving) return
-    // a downloaded Opus file never expires: a media error there is final
-    if (this.recoveries >= MAX_RECOVERIES || (this.stream && isOgg(this.stream))) {
+    let stream = this.stream
+    if (!track || !stream || this.resolving) return
+    const how = recovery(track, {
+      tries: this.recoveries,
+      final: isOgg(stream),
+      played: this.startedFor === this.loadId,
+      cors: this.audio === this.main && this.main.crossOrigin !== null
+    })
+    if (how === 'fail') {
       this.ev?.error(tx("Не удалось воспроизвести трек"))
       return
     }
     this.recoveries++
     const id = this.loadId
-    const position = this.audio.currentTime
+    // a live station comes back at "now", anything else where it broke
+    const position = track.radio ? 0 : this.audio.currentTime
     const resume = this.wantPlay || !this.audio.paused
-    this.resolving = true
     this.ev?.state({ loading: true })
 
-    // fresh: skip (and drop) a cached copy that failed, and for Audius ask another node
-    const res = await window.sc.resolveStream({ ...streamRequest(track), fresh: true })
-    if (id !== this.loadId) return
-    this.resolving = false
-    if (!res.ok) {
-      this.ev?.error(res.error)
-      return
+    if (how === 'fresh') {
+      this.resolving = true
+      // fresh: skip (and drop) a cached copy that failed, and for Audius ask another node
+      const res = await window.sc.resolveStream({ ...streamRequest(track), fresh: true })
+      if (id !== this.loadId) return
+      this.resolving = false
+      if (!res.ok) {
+        this.ev?.error(res.error)
+        return
+      }
+      stream = res.data
     }
     if (this.hls) {
       this.hls.destroy()
       this.hls = null
     }
-    this.stream = res.data
-    if (res.data.protocol === 'hls') await loadHls()
+    if (how === 'bare') {
+      this.main.pause()
+      this.main.removeAttribute('src')
+      this.main.load()
+      this.audio = this.bare
+    }
+    this.stream = stream
+    if (stream.protocol === 'hls') await loadHls()
     if (id !== this.loadId) return
-    this.attach(res.data, position)
+    this.attach(stream, position)
     if (resume) void this.play()
   }
 
@@ -352,7 +386,7 @@ class Engine {
   /** The bass (kick, sub) right now, 0..1; 0 while the effect is off or nothing plays through Web Audio. */
   bass(): number {
     const a = this.graph?.analyser
-    if (!a || this.glow === 0) return 0
+    if (!a || this.glow === 0 || this.audio !== this.main) return 0
     if (this.freq.length !== a.frequencyBinCount) this.freq = new Float32Array(a.frequencyBinCount)
     a.getFloatFrequencyData(this.freq)
     // the band 25–200 Hz (lib/bass.ts): its mean level goes to the pure step that makes the glow
@@ -364,17 +398,18 @@ class Engine {
   /**
    * The element must load with CORS while Web Audio is in its path. Once the graph exists it
    * stays in the path for good, so the CORS mode stays too: a stream without CORS then fails
-   * loudly instead of playing silence.
+   * loudly instead of playing silence (a radio station then falls back to `bare`, which never
+   * uses CORS).
    */
   private syncCors(): void {
-    this.audio.crossOrigin = this.leveling || this.glow > 0 || this.graph ? 'anonymous' : null
+    this.main.crossOrigin = this.leveling || this.glow > 0 || this.graph ? 'anonymous' : null
   }
 
   private ensureGraph(): void {
     if (!this.leveling && this.glow === 0) return
     if (this.graph) return
     const ctx = new AudioContext()
-    const src = ctx.createMediaElementSource(this.audio)
+    const src = ctx.createMediaElementSource(this.main)
     const comp = ctx.createDynamicsCompressor()
     comp.threshold.value = -24
     comp.knee.value = 24
@@ -432,8 +467,11 @@ class Engine {
   private applyVolume(): void {
     // squared curve feels linear to the ear
     const gain = fadeGain(this.audio.currentTime, this.duration(), this.fade && !this.track?.radio)
-    this.audio.volume = Math.max(0, Math.min(1, this.level * this.level * gain))
-    this.audio.muted = this.muted
+    // both elements, so a station that falls back to `bare` keeps the volume
+    for (const a of [this.main, this.bare]) {
+      a.volume = Math.max(0, Math.min(1, this.level * this.level * gain))
+      a.muted = this.muted
+    }
   }
 
   stop(): void {

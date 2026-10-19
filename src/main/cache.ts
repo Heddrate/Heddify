@@ -11,6 +11,7 @@ import { createReadStream, promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
 import type { CacheStats, CachedTrack, StreamInfo, StreamRequest } from '../shared/ipc'
+import { APP_SCHEMES } from './schemes'
 import { log } from './soundcloud'
 import { store } from './store'
 
@@ -68,13 +69,9 @@ function limitBytes(): number {
   return (Number.isFinite(mb) && mb > 0 ? mb : DEFAULT_LIMIT_MB) * 1024 * 1024
 }
 
-/** Must run before app 'ready': lets <audio> stream and seek in cached files. */
+/** Must run before app 'ready': lets <audio> stream and seek in cached (and own) files. */
 export function registerCacheScheme(): void {
-  protocol.registerSchemesAsPrivileged([
-    { scheme: CACHE_SCHEME, privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } },
-    // the user's own music files (main/local.ts); registered here: all schemes go in one call
-    { scheme: 'heddify-local', privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } }
-  ])
+  protocol.registerSchemesAsPrivileged(APP_SCHEMES)
 }
 
 /** The cached copy of a track, as a stream the player can use directly. */

@@ -1,0 +1,377 @@
+/*
+ * The shell: solid panels on a calm background. The rail, the library column, the page, the queue
+ * and the player are panels of the theme's own colour with even gaps; nothing is translucent and
+ * nothing is blurred behind them (the blurred cover lives only in the full player). Loads last.
+ */
+
+:root {
+  --shell-r: 18px;
+  --shell-edge: rgba(255, 255, 255, 0.04);
+  /* shadows fall straight down and stay soft: a short offset, a negative spread, low opacity */
+  --shell-shadow: 0 2px 10px rgba(0, 0, 0, 0.16), 0 10px 26px -12px rgba(0, 0, 0, 0.42);
+}
+
+:root[data-theme='light'] {
+  --shell-edge: rgba(0, 0, 0, 0.06);
+  --shell-shadow: 0 2px 10px rgba(40, 40, 60, 0.07), 0 10px 26px -12px rgba(40, 40, 60, 0.24);
+}
+
+.app {
+  background: var(--bg);
+}
+
+/* every column is the same kind of panel */
+.rail,
+.sidebar,
+.queue,
+.main.panel,
+.playerbar {
+  background: var(--panel);
+  border: 1px solid var(--shell-edge);
+  border-radius: var(--shell-r);
+}
+
+.playerbar {
+  margin: 0;
+  padding: 0 22px;
+}
+
+/* popovers and dialogs stand above the panels */
+.menu,
+.dialog {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shell-shadow);
+}
+
+.toast {
+  box-shadow: var(--shell-shadow);
+}
+
+/* ---------- the icon rail (left) ---------- */
+
+:root {
+  --rail: 80px;
+}
+
+.rail {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 0;
+  min-height: 0;
+}
+
+.rail-logo {
+  margin-bottom: 10px;
+}
+
+.rail-btn {
+  width: 66px;
+  height: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 14px;
+  color: var(--text-2);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.rail-label {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.rail-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.rail-btn.on {
+  background: var(--raised);
+  color: var(--text);
+}
+
+/* ---------- the page: its header is the top of the panel, fading into it ---------- */
+
+/* the tint runs to the panel's own colour at the bottom: no edge between the header and the list */
+.view.flush > .page-head {
+  margin: 0;
+  border-radius: 0;
+  background: linear-gradient(
+    180deg,
+    var(--head-tint) 0%,
+    color-mix(in srgb, var(--head-tint) 55%, var(--panel)) 70%,
+    var(--panel) 100%
+  );
+}
+
+.view.flush > .page-head.with-image {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.7) 100%),
+    var(--head-image) center / cover no-repeat,
+    var(--head-color);
+}
+
+/* ---------- home: the banner on top ---------- */
+
+.hero {
+  position: relative;
+  height: 300px;
+  margin: 8px 0 30px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--panel-2);
+  box-shadow: 0 6px 22px -12px rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+
+.hero-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.02);
+}
+
+.hero-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.4) 52%, rgba(0, 0, 0, 0.12) 100%);
+}
+
+.hero-body {
+  position: relative;
+  height: 100%;
+  max-width: 62%;
+  padding: 36px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.hero-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.hero-title {
+  margin: 8px 0 6px;
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hero-sub {
+  margin: 0 0 20px;
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.hero-actions .btn {
+  gap: 8px;
+}
+
+@media (max-width: 1000px) {
+  .hero-title {
+    font-size: 36px;
+  }
+}
+
+/* the banner is always dark: its buttons keep white/black ink whatever the theme */
+.hero .btn-primary {
+  background: #fff;
+  color: #0b0b0b;
+}
+
+/* hover keeps the same pair: the theme's accent-hover is black in the mono light theme, which would hide the label */
+.hero .btn-primary:hover:not(:disabled) {
+  background: #f2f2f2;
+  color: #0b0b0b;
+}
+
+.hero .btn-outline {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* the sections breathe and their titles carry weight */
+.shelf {
+  margin-top: 40px;
+}
+
+.shelf-head {
+  margin-bottom: 14px;
+}
+
+.shelf-head .h2 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- cards and lists ---------- */
+
+.card {
+  border-radius: 16px;
+  transition: background-color 0.2s ease;
+}
+
+.card:hover {
+  background: var(--raised);
+}
+
+.card-art .art,
+.card-art .collage,
+.card-art .card-tile {
+  border-radius: 12px;
+}
+
+.lib-row {
+  border-radius: 12px;
+}
+
+/* ---------- the player bar ---------- */
+
+/* the cover is a real object, with a soft shadow of its own */
+.pb-art {
+  border-radius: 12px;
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.55);
+}
+
+.pb-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pb-text {
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* ---------- the top bar: back / forward, search, avatar, window buttons ---------- */
+
+.nav-btn {
+  background: var(--panel);
+  border: 1px solid var(--shell-edge);
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.avatar-btn {
+  width: 34px;
+  height: 34px;
+}
+
+/* the window's own buttons: flat, Windows-style, the close one turns red */
+.win-controls {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-left: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.win-btn {
+  width: 46px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--text-2);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.win-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.win-close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+/* the search: over the page when the window has room; in a narrow window the left block only
+   keeps back / forward, so the field gets the space and its placeholder stays readable */
+.app {
+  container-type: inline-size;
+}
+
+@container (max-width: 1240px) {
+  .topbar {
+    grid-template-columns: 124px minmax(0, 1fr) auto;
+  }
+
+  .tb-center {
+    margin: 0 12px 0 0;
+    justify-content: center;
+  }
+}
+
+.search {
+  height: 40px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--shell-edge);
+}
+
+.search input {
+  text-overflow: ellipsis;
+}
+
+/* the top bar's row is centred: the field is shorter than the bar, and every block in the bar is
+   centred on the same line, so nothing can sit on the top edge */
+.topbar {
+  align-items: center;
+}
+
+.topbar > * {
+  align-self: center;
+}
+
+/* ---------- the full player keeps its blurred cover: ambient light, not a picture ---------- */
+
+.full-player .cover-bg-img {
+  filter: blur(120px) saturate(1.05) brightness(0.8);
+}
+
+/* the cover changes slowly: the new one fades in over seven seconds, nothing cuts */
+.cover-bg-in {
+  animation: cover-bg-in 7s ease both;
+}
+
+/* ---------- one focus ring for the whole interface: visible from the keyboard, invisible for the mouse ---------- */
+
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+[role='button']:focus:not(:focus-visible) {
+  outline: none;
+}
