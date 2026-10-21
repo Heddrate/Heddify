@@ -12,6 +12,9 @@ import { Onboarding } from '@/components/Onboarding'
 import { FullPlayer } from '@/components/FullPlayer'
 import { Sidebar } from '@/components/Sidebar'
 import { Rail } from '@/components/Rail'
+import { CoverBackdrop } from '@/components/Backdrop'
+import { trackArt } from '@/lib/artwork'
+import { useTheme } from '@/lib/theme'
 import { FOCUS_SEARCH, TopBar } from '@/components/TopBar'
 import { cx } from '@/lib/hooks'
 import type { Route } from '@/lib/types'
@@ -157,6 +160,10 @@ function View({ route }: { route: Route }): React.JSX.Element | null {
 function Shell(): React.JSX.Element {
   const route = useApp((s) => s.route)
   const panel = useApp((s) => s.panel)
+  // the blurred cover of what plays behind the panels (Settings → Appearance), or the plain background
+  const coverBg = useTheme((s) => s.coverBg)
+  const bgTrack = usePlayer((s) => (coverBg ? s.current : null))
+  const bgArt = bgTrack ? trackArt(bgTrack, 't500x500') : null
   const main = useRef<HTMLElement>(null)
   const key = pageKey(route)
 
@@ -167,7 +174,8 @@ function Shell(): React.JSX.Element {
   useHotkeys()
 
   return (
-    <div className={cx('app', panel && 'with-queue')}>
+    <div className={cx('app', panel && 'with-queue', coverBg && 'cover-on')}>
+      {coverBg && <CoverBackdrop art={bgArt} />}
       <TopBar />
       <Rail />
       <Sidebar />

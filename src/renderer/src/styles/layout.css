@@ -64,9 +64,10 @@
 .topbar {
   grid-column: 1 / -1;
   grid-row: 1;
-  /* the left block spans the rail and the library column, so the search is centred over the page */
+  /* the search sits in the middle of the window at any width: the blocks on both sides get the same
+     room (as much as the wider one needs), the field takes what is left up to its own width */
   display: grid;
-  grid-template-columns: calc(var(--rail) + clamp(248px, 21vw, 320px) + 28px) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(var(--tb-right), 1fr) minmax(0, 560px) minmax(var(--tb-right), 1fr);
   align-items: center;
   gap: 16px;
   -webkit-app-region: drag;
@@ -132,15 +133,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-content: center;
   justify-self: stretch;
-  /* the same width as the right block on the left, so the search is centred over the page, and a gap before the avatar */
-  margin-left: var(--tb-right);
-  margin-right: 12px;
 }
 
 .tb-right {
-  /* a fixed width (the avatar and the room for the window buttons): the centre compensates for it */
+  /* a fixed width (the avatar and the room for the window buttons): the left side gets the same */
   width: var(--tb-right);
+  justify-self: end;
   flex: none;
   display: flex;
   align-items: center;

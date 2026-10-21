@@ -1,11 +1,14 @@
 /*
- * The shell: solid panels on a calm background. The rail, the library column, the page, the queue
- * and the player are panels of the theme's own colour with even gaps; nothing is translucent and
- * nothing is blurred behind them (the blurred cover lives only in the full player). Loads last.
+ * The shell: panels on a calm background. The rail, the library column, the page, the queue
+ * and the player are panels of the theme's own colour with even gaps. With the blurred cover on
+ * (Settings → Appearance, `.cover-on`) the panels let the cover of what plays show through;
+ * off, they are solid on --bg. Loads last.
  */
 
 :root {
   --shell-r: 18px;
+  /* the panels' fill: solid, or see-through over the blurred cover */
+  --shell-fill: var(--panel);
   --shell-edge: rgba(255, 255, 255, 0.04);
   /* shadows fall straight down and stay soft: a short offset, a negative spread, low opacity */
   --shell-shadow: 0 2px 10px rgba(0, 0, 0, 0.16), 0 10px 26px -12px rgba(0, 0, 0, 0.42);
@@ -26,9 +29,30 @@
 .queue,
 .main.panel,
 .playerbar {
-  background: var(--panel);
+  background: var(--shell-fill);
   border: 1px solid var(--shell-edge);
   border-radius: var(--shell-r);
+}
+
+/* ---------- the blurred cover behind the app ---------- */
+
+/* the cover is already blurred: a see-through fill is enough, no backdrop-filter on top of it */
+.app.cover-on {
+  --shell-fill: color-mix(in srgb, var(--panel) 70%, transparent);
+}
+
+/* a veil of the theme's own background keeps the cover calm and the text readable in every theme */
+.app > .cover-bg::after {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg) 30%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 60%, transparent) 100%
+  );
+}
+
+/* nothing plays: the plain background */
+.app > .cover-bg.empty::after {
+  display: none;
 }
 
 .playerbar {
@@ -113,8 +137,8 @@
   background: linear-gradient(
     180deg,
     var(--head-tint) 0%,
-    color-mix(in srgb, var(--head-tint) 55%, var(--panel)) 70%,
-    var(--panel) 100%
+    color-mix(in srgb, var(--head-tint) 55%, var(--shell-fill)) 70%,
+    var(--shell-fill) 100%
   );
 }
 
@@ -278,7 +302,7 @@
 /* ---------- the top bar: back / forward, search, avatar, window buttons ---------- */
 
 .nav-btn {
-  background: var(--panel);
+  background: var(--shell-fill);
   border: 1px solid var(--shell-edge);
 }
 
@@ -320,27 +344,10 @@
   color: #fff;
 }
 
-/* the search: over the page when the window has room; in a narrow window the left block only
-   keeps back / forward, so the field gets the space and its placeholder stays readable */
-.app {
-  container-type: inline-size;
-}
-
-@container (max-width: 1240px) {
-  .topbar {
-    grid-template-columns: 124px minmax(0, 1fr) auto;
-  }
-
-  .tb-center {
-    margin: 0 12px 0 0;
-    justify-content: center;
-  }
-}
-
 .search {
   height: 40px;
   border-radius: 999px;
-  background: var(--panel);
+  background: var(--shell-fill);
   border: 1px solid var(--shell-edge);
 }
 

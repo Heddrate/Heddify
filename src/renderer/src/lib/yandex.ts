@@ -24,7 +24,8 @@ const YA = 'https://music.yandex.ru'
 
 /** The bits of Electron's <webview> element we use. */
 export interface WebviewEl extends HTMLElement {
-  executeJavaScript(code: string): Promise<unknown>
+  /** `userGesture`: the page takes it as the user's own click (lets its audio start). */
+  executeJavaScript(code: string, userGesture?: boolean): Promise<unknown>
   insertCSS(css: string): Promise<string>
   loadURL(url: string): Promise<void>
   goBack(): void
@@ -61,7 +62,7 @@ export function attachView(el: WebviewEl): void {
  * otherwise it would start by itself, e.g. after a reload. Calls keep their order.
  */
 function allowPlay(ms: number): void {
-  if (view) void view.executeJavaScript(`window.__scAllowPlay && window.__scAllowPlay(${ms})`).catch(() => undefined)
+  if (view) void view.executeJavaScript(`window.__scAllowPlay && window.__scAllowPlay(${ms})`, true).catch(() => undefined)
 }
 
 /**
@@ -128,6 +129,14 @@ export async function runInPage<T>(code: string): Promise<T> {
 
 const run = <T,>(code: string): Promise<T | null> =>
   view ? (view.executeJavaScript(code) as Promise<T>).catch(() => null) : Promise.resolve(null)
+
+/**
+ * A press of one of the page's buttons, as the user's own click: Yandex starts its sound only
+ * after a real click on the page (a scripted one leaves its audio suspended, the track "plays"
+ * in silence).
+ */
+const press = <T,>(code: string): Promise<T | null> =>
+  view ? (view.executeJavaScript(code, true) as Promise<T>).catch(() => null) : Promise.resolve(null)
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 
@@ -402,12 +411,32 @@ let bass: BassState = initialBass()
 let pageLevel = -1
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
+/** Whether the track the page last started was heard (one line in api.log per track: how soon, or why not). */
+let heard: { id: string; at: number; done: boolean } | null = null
+const listenFor = (id: string): void => {
+  heard = { id, at: Date.now(), done: false }
+}
+
+async function checkHeard(db: number, pos: number, dur: number): Promise<void> {
+  const h = heard
+  if (!h || h.done) return
+  if (db > -100) {
+    h.done = true
+    trace(`${h.id}: sound after ${Date.now() - h.at} ms`)
+  } else if (Date.now() - h.at > 8000) {
+    h.done = true
+    const diag = await run<unknown>(`window.__scDiag ? window.__scDiag() : null`)
+    trace(`${h.id}: no sound for 8 s at ${pos.toFixed(1)} of ${dur.toFixed(0)} s, page ${JSON.stringify(diag)}`)
+  }
+}
+
 /** Reads the page's sound about 20 times a second: the bass for the glow, and the fade of its volume. */
 async function pollPage(): Promise<void> {
   if (!view || !externalEvents.active()) return
   const r = await run<{ db: number; pos: number; dur: number }>(`window.__scBass ? window.__scBass() : null`)
   if (!r) return
   bass = stepBass(bass, r.db)
+  void checkHeard(r.db, r.pos, r.dur)
   const level = pageVolume * fadeGain(r.pos, r.dur, engine.fadeOn())
   if (Math.abs(level - pageLevel) > 0.005) {
     pageLevel = level
@@ -507,7 +536,7 @@ const driver: ExternalDriver = {
     for (let attempt = 1; attempt <= 4; attempt++) {
       let clicked = false
       for (let i = 0; i < 30 && !clicked; i++) {
-        clicked = (await run<boolean>(clickPlay(id, track.title?.replace(/\s*\(.*\)$/, '')))) === true
+        clicked = (await press<boolean>(clickPlay(id, track.title?.replace(/\s*\(.*\)$/, '')))) === true
         if (token !== playToken) return
         if (!clicked) await sleep(500)
       }
@@ -518,6 +547,7 @@ const driver: ExternalDriver = {
         const st = await run<PageState>(READ_STATE)
         if (st && !st.paused && sameTitle(st.title, track.title)) {
           trace(`play ${id}: playing after ${attempt} click(s)`)
+          listenFor(`play ${id}`)
           matched = true
           externalEvents.started(track)
           void run(`window.__scVolume && window.__scVolume(${pageVolume})`)
@@ -532,12 +562,12 @@ const driver: ExternalDriver = {
     if (token !== playToken) return
     throw new Error(tx('Яндекс Музыка не дала запустить трек'))
   },  pause() {
-    void run(setPlaying(false))
+    void press(setPlaying(false))
     externalEvents.state({ playing: false })
   },
   resume() {
     allowPlay(10_000)
-    void run(setPlaying(true))
+    void press(setPlaying(true))
     externalEvents.state({ playing: true })
   },
   seek(t) {
@@ -554,17 +584,17 @@ const driver: ExternalDriver = {
     playToken++
     stopMirror()
     expected = null
-    void run(setPlaying(false))
+    void press(setPlaying(false))
   },
   next() {
     endSignalled = false
     allowPlay(15_000)
-    void run(clickButton(NEXT_LABELS))
+    void press(clickButton(NEXT_LABELS))
   },
   prev() {
     endSignalled = false
     allowPlay(15_000)
-    void run(clickButton(PREV_LABELS))
+    void press(clickButton(PREV_LABELS))
   },
   twin: findTwin
 }
@@ -648,7 +678,7 @@ export async function startYandexWave(): Promise<void> {
       for (let attempt = 0; attempt < 4 && !st; attempt++) {
         let clicked = false
         for (let i = 0; i < 40 && !clicked; i++) {
-          clicked = (await run<boolean>(VIBE_PLAY)) === true
+          clicked = (await press<boolean>(VIBE_PLAY)) === true
           if (!clicked) await sleep(150)
         }
         if (!clicked) break
@@ -665,6 +695,7 @@ export async function startYandexWave(): Promise<void> {
     }
     if (!st) throw new Error(tx('Яндекс Музыка не дала запустить волну'))
     trace(`wave: playing ${at()}`)
+    listenFor('wave')
     expected = trackFromPage(st)
     matched = true
     endSignalled = false
@@ -680,7 +711,7 @@ export async function startYandexWave(): Promise<void> {
 export function dislikeYandex(): void {
   endSignalled = false
   allowPlay(15_000)
-  void run(clickButton(['Не нравится', 'Dislike']))
+  void press(clickButton(['Не нравится', 'Dislike']))
 }
 
 /**

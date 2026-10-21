@@ -69,11 +69,13 @@ const initialCustom = (): Anchors => {
   }
 }
 
-export const useTheme = create<{ theme: AnyTheme; accent: AccentName; custom: Anchors }>(() => ({
+export const useTheme = create<{ theme: AnyTheme; accent: AccentName; custom: Anchors; coverBg: boolean }>(() => ({
   theme: isTheme(initialTheme) || isPalette(initialTheme) ? (initialTheme as AnyTheme) : 'dark',
   // new installs start dark and fully monochrome
   accent: isAccent(initialAccent) ? initialAccent : 'mono',
-  custom: initialCustom()
+  custom: initialCustom(),
+  // the blurred cover of what plays, behind the panels (styles/shell.css); on unless turned off
+  coverBg: stored('coverBg') !== '0'
 }))
 
 /** The colours a palette theme uses, or null for a stylesheet theme. */
@@ -109,18 +111,19 @@ export function syncWindowFrame(): void {
 }
 
 function persist(): void {
-  const { theme, accent, custom } = useTheme.getState()
+  const { theme, accent, custom, coverBg } = useTheme.getState()
   try {
     localStorage.setItem('theme', theme)
     localStorage.setItem('accent', accent)
     localStorage.setItem('customPalette', JSON.stringify(custom))
+    localStorage.setItem('coverBg', coverBg ? '1' : '0')
   } catch {
     /* storage unavailable: prefs below still keep it */
   }
   // the window frame's colours for the next launch's first frame (the main process reads them)
   const css = getComputedStyle(document.documentElement)
   const frame = { bg: css.getPropertyValue('--bg').trim(), symbol: css.getPropertyValue('--text-2').trim() }
-  void window.sc?.prefs.set({ theme, accent, customPalette: custom, frame })
+  void window.sc?.prefs.set({ theme, accent, customPalette: custom, coverBg, frame })
 }
 
 export function setTheme(theme: AnyTheme): void {
@@ -132,6 +135,11 @@ export function setTheme(theme: AnyTheme): void {
 export function setAccent(accent: AccentName): void {
   useTheme.setState({ accent })
   apply()
+  persist()
+}
+
+export function setCoverBg(coverBg: boolean): void {
+  useTheme.setState({ coverBg })
   persist()
 }
 

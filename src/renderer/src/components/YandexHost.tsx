@@ -35,6 +35,15 @@ export function YandexHost(): React.JSX.Element {
     const onConsole = (e: Event): void => {
       const msg = (e as Event & { message?: string }).message ?? ''
       if (msg.startsWith('__sc_media:')) onPageMediaKey(msg.slice('__sc_media:'.length))
+      // the page's own sound troubles go to logs/api.log (main records renderer errors); Chromium
+      // reports a silenced Web Audio source only as info, the rest come as warnings or errors
+      else {
+        const level = (e as Event & { level?: number | string }).level
+        const loud = level === 2 || level === 3 || level === 'warning' || level === 'error'
+        if (/outputs zeroes/.test(msg) || (loud && /AudioContext|MediaSource|SourceBuffer|decode|NotAllowed|audio/i.test(msg))) {
+          console.error(`yandex page: ${msg.slice(0, 300)}`)
+        }
+      }
     }
 
     wv.addEventListener('console-message', onConsole)

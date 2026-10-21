@@ -283,6 +283,8 @@ const EN: Record<string, string> = {
   'Автопродолжение: похожие треки после очереди': 'Autoplay: similar tracks after the queue',
   'Аккаунт': 'Account',
   'Акцент': 'Accent',
+  'Размытая обложка на фоне': 'Blurred cover in the background',
+  'За панелями видна обложка того, что играет': 'The cover of what’s playing shows behind the panels',
   'Альбом': 'Album',
   'Альбомов нет': 'No albums',
   'Альбомы': 'Albums',

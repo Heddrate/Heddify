@@ -10,13 +10,26 @@
 import { contextBridge } from 'electron'
 import { BASS_FFT, bassBinRange, bassDb } from '../renderer/src/lib/bass'
 
-function install(): void {
+/** The bass math from lib/bass, handed over as arguments (see `install`). */
+interface BassMath {
+  fft: number
+  range: typeof bassBinRange
+  db: typeof bassDb
+}
+
+/**
+ * Runs in the page's own world from its source text alone: nothing from this module
+ * (imports, constants) exists there, whatever it needs comes in as an argument.
+ * Using an import here broke every connect to the speakers, the page played in silence.
+ */
+function install(bass: BassMath): void {
   type Ctx = BaseAudioContext & { __scGain?: GainNode }
   type Media = HTMLMediaElement & { __scRouted?: boolean; __scPageVolume?: number }
   const w = window as unknown as {
     __scVolume?: (level: number) => void
     __scAllowPlay?: (ms: number) => void
     __scBass?: () => { db: number; pos: number; dur: number }
+    __scDiag?: () => unknown
   }
   if (w.__scVolume) return
 
@@ -34,7 +47,7 @@ function install(): void {
       g.gain.value = level
       connect.call(g, ctx.destination)
       const node = ctx.createAnalyser()
-      node.fftSize = BASS_FFT
+      node.fftSize = bass.fft
       node.smoothingTimeConstant = 0
       connect.call(g, node)
       analysers.push({ node, buf: new Float32Array(new ArrayBuffer(node.frequencyBinCount * 4)) })
@@ -45,7 +58,13 @@ function install(): void {
   }
   AudioNode.prototype.connect = function (this: AudioNode, dest: unknown, ...rest: unknown[]) {
     if (dest instanceof AudioDestinationNode && this !== (dest.context as Ctx).__scGain) {
-      return connect.call(this, master(dest.context as Ctx), ...rest)
+      let via: GainNode | null = null
+      try {
+        via = master(dest.context as Ctx)
+      } catch {
+        // our volume must never cost the page its sound: straight to the speakers then
+      }
+      if (via) return connect.call(this, via, ...rest)
     }
     return connect.call(this, dest, ...rest)
   } as typeof AudioNode.prototype.connect
@@ -56,6 +75,14 @@ function install(): void {
     ;(el as Media).__scRouted = true
     applyTo(el as Media)
     return capture.call(this, el)
+  }
+
+  // A context the page made before any click stays suspended until one: our requests count as one.
+  const resume = (): void => {
+    for (const g of gains) {
+      const ctx = g.context as AudioContext
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') void ctx.resume().catch(() => undefined)
+    }
   }
 
   // The page keeps its own idea of the element volume; what actually sounds is ours.
@@ -80,6 +107,7 @@ function install(): void {
   let allowUntil = 0
   w.__scAllowPlay = (ms: number) => {
     allowUntil = Math.max(allowUntil, Date.now() + ms)
+    resume()
   }
   const play = HTMLMediaElement.prototype.play
   HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
@@ -93,7 +121,25 @@ function install(): void {
     for (const g of gains) g.gain.value = level
     document.querySelectorAll('audio, video').forEach((el) => media.add(el as Media))
     media.forEach(applyTo)
+    resume()
   }
+
+  // for the app's log when a track the page calls playing makes no sound: where the sound stops
+  w.__scDiag = () => ({
+    level: +level.toFixed(3),
+    contexts: gains.map((g) => `${g.context.state}:${g.gain.value.toFixed(2)}`),
+    media: [...media].map((m) => ({
+      paused: m.paused,
+      muted: m.muted,
+      volume: +(vol.get!.call(m) as number).toFixed(2),
+      routed: !!m.__scRouted,
+      ready: m.readyState,
+      error: m.error?.code ?? 0,
+      src: (m.currentSrc || '').split(':')[0]
+    })),
+    allowMs: Math.max(0, allowUntil - Date.now()),
+    visibility: document.visibilityState
+  })
 
   // what the app reads about the page's sound, about 20 times a second: the bass in dB (mean of
   // the bass bins, the loudest context wins; a floor when silent), and where the playing element is
@@ -101,9 +147,8 @@ function install(): void {
     let db = -Infinity
     for (const a of analysers) {
       a.node.getFloatFrequencyData(a.buf)
-      let sum = 0
-      const { lo, hi } = bassBinRange(a.node.context.sampleRate, a.node.fftSize)
-      db = Math.max(db, bassDb(a.buf, lo, hi))
+      const { lo, hi } = bass.range(a.node.context.sampleRate, a.node.fftSize)
+      db = Math.max(db, bass.db(a.buf, lo, hi))
     }
     const el = [...media].find((m) => !m.paused) ?? null
     return {
@@ -114,4 +159,4 @@ function install(): void {
   }
 }
 
-contextBridge.executeInMainWorld({ func: install })
+contextBridge.executeInMainWorld({ func: install, args: [{ fft: BASS_FFT, range: bassBinRange, db: bassDb } satisfies BassMath] })

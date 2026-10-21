@@ -5,7 +5,7 @@ import { Slider } from '@/components/Slider'
 import { Logo } from '@/components/Icon'
 import { userArt } from '@/lib/artwork'
 import { cx } from '@/lib/hooks'
-import { ACCENTS, PALETTES, setAccent, setCustomColors, setTheme, THEMES, usesPalette, useTheme, type AnyTheme } from '@/lib/theme'
+import { ACCENTS, PALETTES, setAccent, setCoverBg, setCustomColors, setTheme, THEMES, usesPalette, useTheme, type AnyTheme } from '@/lib/theme'
 import { derivePalette } from '@/lib/palette'
 import { pickAvatar, removeAvatar, setProfileName, useProfile } from '@/lib/profile'
 import { ProfileAvatar } from '@/components/ProfileAvatar'
@@ -47,6 +47,7 @@ export function Settings(): React.JSX.Element {
   const theme = useTheme((s) => s.theme)
   const accent = useTheme((s) => s.accent)
   const custom = useTheme((s) => s.custom)
+  const coverBg = useTheme((s) => s.coverBg)
   const [discordOn, setDiscordOn] = useState(true)
   const [toTray, setToTray] = useState(false)
   const [leveling, setLeveling] = useState(false)
@@ -240,6 +241,11 @@ export function Settings(): React.JSX.Element {
               }
             />
           )}
+          <Row
+            label={tx('Размытая обложка на фоне')}
+            hint={tx('За панелями видна обложка того, что играет')}
+            control={<Switch on={coverBg} onToggle={() => setCoverBg(!coverBg)} label={tx('Размытая обложка на фоне')} />}
+          />
           {!usesPalette(theme) && (
             <Row
               label={tx("Акцент")}
