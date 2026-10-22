@@ -250,6 +250,10 @@ export function installMock(): void {
       login: async () => false,
       logout: async () => undefined
     },
+    vk: {
+      login: async () => false,
+      logout: async () => undefined
+    },
     playerState: () => undefined,
     onPlayerCommand: () => () => undefined,
     local: {

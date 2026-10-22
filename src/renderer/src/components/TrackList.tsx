@@ -13,6 +13,7 @@ import { Artwork } from './Artwork'
 import { Icon } from './Icon'
 import { tx } from '@/lib/i18n'
 import { useYa } from '@/lib/yandexApi'
+import { useVk } from '@/lib/vkLibrary'
 import { useAudius } from '@/lib/audius'
 import { useRadio } from '@/lib/radio'
 import { useLocal } from '@/lib/local'
@@ -53,6 +54,7 @@ export function TrackList({
   const playing = usePlayer((s) => s.playing)
   const likes = useApp((s) => s.likes)
   const yaLikes = useYa((s) => s.likes)
+  const vkMine = useVk((s) => s.mineKeys)
   const auLikes = useAudius((s) => s.likeIds)
   const radioFavs = useRadio((s) => s.favIds)
   const fileLikes = useLocal((s) => s.likeIds)
@@ -154,7 +156,7 @@ export function TrackList({
           index={i}
           current={t.id === currentId}
           playing={t.id === currentId && playing}
-          liked={t.origin === 'local' ? fileLikes.has(t.id) : t.origin === 'radio' ? radioFavs.has(t.id) : t.origin === 'yandex' ? yaLikes.has(t.ya?.trackId ?? 0) : t.origin === 'audius' ? auLikes.has(t.id) : likes.has(t.id)}
+          liked={t.origin === 'local' ? fileLikes.has(t.id) : t.origin === 'radio' ? radioFavs.has(t.id) : t.origin === 'yandex' ? yaLikes.has(t.ya?.trackId ?? 0) : t.origin === 'vk' ? vkMine.has(t.vk?.key ?? '') : t.origin === 'audius' ? auLikes.has(t.id) : likes.has(t.id)}
           unavailable={unplayable.has(t.id)}
           drm={drmSet.has(t.id) || drmOnly(t)}
           selected={selected === i}
@@ -275,6 +277,9 @@ const TrackRow = memo(function TrackRow({
           <div className="tr-title">
             {badge && track.origin === 'yandex' && (
               <span className="src-badge" title={tx("Яндекс Музыка")}>{tx("Я")}</span>
+            )}
+            {badge && track.origin === 'vk' && (
+              <span className="src-badge" title={tx('ВКонтакте')}>{tx('ВК')}</span>
             )}
             {badge && track.origin === 'audius' && (
               <span className="src-badge" title="Audius">A</span>

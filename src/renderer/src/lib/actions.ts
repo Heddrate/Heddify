@@ -1,6 +1,7 @@
 import { api, hydrate, tracksOf } from './api'
 import type { AnyPlaylist, PlaySource, Route, Track, User } from './types'
 import { toggleYaLike, useYa } from './yandexApi'
+import { toggleVkMine, useVk } from './vkLibrary'
 import { toggleAudiusLike, useAudius } from './audius'
 import { addToPlaylistMenu } from './playlists'
 import { toggleRadioFav, useRadio } from './radio'
@@ -84,6 +85,7 @@ export function toggleAnyLike(track: Track): void {
   if (track.origin === 'radio') toggleRadioFav(track)
   else if (track.origin === 'local') toggleLocalLike(track)
   else if (track.origin === 'yandex') void toggleYaLike(track)
+  else if (track.origin === 'vk') void toggleVkMine(track)
   else if (track.origin === 'audius') toggleAudiusLike(track)
   else void toggleLike(track)
 }
@@ -92,13 +94,24 @@ export function toggleAnyLike(track: Track): void {
 export function useLiked(track: Track | null | undefined): boolean {
   const sc = useApp((s) => (track && !track.origin ? s.likes.has(track.id) : false))
   const ya = useYa((s) => (track?.ya ? s.likes.has(track.ya.trackId) : false))
+  const vk = useVk((s) => (track?.vk ? s.mineKeys.has(track.vk.key) : false))
   const au = useAudius((s) => (track?.au ? s.likeIds.has(track.id) : false))
   const fav = useRadio((s) => (track?.radio ? s.favIds.has(track.id) : false))
   const file = useLocal((s) => (track?.local ? s.likeIds.has(track.id) : false))
-  return track?.origin === 'local' ? file : track?.origin === 'radio' ? fav : track?.origin === 'yandex' ? ya : track?.origin === 'audius' ? au : sc
+  return track?.origin === 'local'
+    ? file
+    : track?.origin === 'radio'
+      ? fav
+      : track?.origin === 'yandex'
+        ? ya
+        : track?.origin === 'vk'
+          ? vk
+          : track?.origin === 'audius'
+            ? au
+            : sc
 }
 
-/** Artist of a track: SoundCloud profile, or the artist page of Yandex / Audius. */
+/** Artist of a track: SoundCloud profile, the artist page of Yandex / Audius, or a search for a VK artist. */
 export function openArtist(track: Track): void {
   if (track.origin === 'radio') {
     navigate({ name: 'radio' })
@@ -109,6 +122,9 @@ export function openArtist(track: Track): void {
   } else if (track.origin === 'yandex') {
     const id = track.ya?.artistId
     if (id) navigate({ name: 'ya-artist', id })
+  } else if (track.origin === 'vk') {
+    const name = track.vk?.artists?.[0]?.name ?? track.user?.username
+    if (name) navigate({ name: 'search', q: name })
   } else if (track.user) {
     navigate({ name: 'user', id: track.user.id })
   }
@@ -117,6 +133,7 @@ export function openArtist(track: Track): void {
 /** Opens one artist of a track (see lib/artists.ts): each name leads to its own page. */
 export function openArtistRef(track: Track, ref: ArtistRef): void {
   if (track.origin === 'yandex' && ref.id) navigate({ name: 'ya-artist', id: ref.id })
+  else if (track.origin === 'vk') navigate({ name: 'search', q: ref.name })
   else if (!track.origin && ref.id) navigate({ name: 'user', id: ref.id })
   else if (!track.origin && !ref.id) void findSoundcloudArtist(ref.name)
   else openArtist(track)
@@ -196,6 +213,25 @@ export function trackMenu(track: Track, extra: MenuItem[] = []): MenuItem[] {
       { separator: true },
       { label: tx("Скопировать ссылку"), icon: 'link', onSelect: () => copyLink(track.permalink_url) },
       { label: tx("Открыть в Яндекс Музыке"), icon: 'external', onSelect: () => openUrl(track.permalink_url) }
+    ]
+  }
+  if (track.origin === 'vk') {
+    const mine = track.vk ? useVk.getState().mineKeys.has(track.vk.key) : false
+    return [
+      { label: tx("Играть следующим"), icon: 'playNext', onSelect: () => player.playNext(track) },
+      { label: tx("Добавить в очередь"), icon: 'queueAdd', onSelect: () => player.enqueue(track) },
+      { label: tx('Добавить в плейлист'), icon: 'add', onSelect: () => addToPlaylistMenu([track]) },
+      { separator: true },
+      {
+        label: mine ? tx('Убрать из моей музыки ВКонтакте') : tx('Добавить в мою музыку ВКонтакте'),
+        icon: mine ? 'heart' : 'heartOutline',
+        onSelect: () => void toggleVkMine(track)
+      },
+      { label: tx("Перейти к исполнителю"), icon: 'person', onSelect: () => openArtist(track) },
+      ...extra,
+      { separator: true },
+      { label: tx("Скопировать ссылку"), icon: 'link', onSelect: () => copyLink(track.permalink_url) },
+      { label: tx('Открыть во ВКонтакте'), icon: 'external', onSelect: () => openUrl(track.permalink_url) }
     ]
   }
   const liked = useApp.getState().likes.has(track.id)

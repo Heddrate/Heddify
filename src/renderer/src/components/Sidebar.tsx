@@ -12,6 +12,7 @@ import { Icon } from './Icon'
 import { tx } from '@/lib/i18n'
 import { useYa } from '@/lib/yandexApi'
 import { useAudius } from '@/lib/audius'
+import { useVk } from '@/lib/vkLibrary'
 import { addToPlaylist, createPlaylist, draggedTrack, TRACK_MIME } from '@/lib/playlists'
 import { isAlbumItem, libArt, libRoute, libSub, libTitle, useLibraryItems } from '@/lib/library'
 import { Collage } from '@/views/Local'
@@ -30,7 +31,8 @@ export function Sidebar(): React.JSX.Element {
   const scLoaded = useApp((s) => s.libraryLoaded)
   // the live set follows every subscribe/unsubscribe at once; the account's count only comes at sign-in
   const followings = useApp((s) => (s.followsKnown ? s.follows.size : (s.me?.followings_count ?? 0)))
-  const likes = useApp((s) => s.likes.size) + useYa((s) => s.likeOrder.length) + useAudius((s) => s.likes.length)
+  const likes =
+    useApp((s) => s.likes.size) + useYa((s) => s.likeOrder.length) + useAudius((s) => s.likes.length) + useVk((s) => (s.status === 'in' ? s.mine.length : 0))
   const yaStatus = useYa((s) => s.status)
   const waveActive = useWaveActive()
   const wavePlaying = useWavePlaying()

@@ -69,9 +69,9 @@ function allowPlay(ms: number): void {
  * Media keys and the Windows media overlay talk to whichever page plays audio — for
  * Yandex tracks that is the hidden Yandex page. Re-route its media-session actions to
  * our player (via console messages picked up by YandexHost), so next / previous follow
- * our queue just like for SoundCloud.
+ * our queue just like for SoundCloud. The hidden VK page gets the same (lib/vk.ts).
  */
-const MEDIA_BRIDGE = `(() => {
+export const MEDIA_BRIDGE = `(() => {
   if (window.__scMedia) return
   window.__scMedia = true
   const send = (a) => console.log('__sc_media:' + a)
@@ -101,7 +101,7 @@ const IDLE_UNLOAD_MS = 15 * 60_000
 setInterval(() => {
   const s = usePlayer.getState()
   // a SoundCloud DRM track may be playing from this page too (store/player.ts)
-  const yandexNow = s.current?.origin === 'yandex' || externalEvents.active()
+  const yandexNow = s.current?.origin === 'yandex' || externalEvents.active(driver)
   if (yandexNow) lastUse = Date.now()
   if (!useApp.getState().yandexMounted || yandexNow) return
   if (Date.now() - lastUse < IDLE_UNLOAD_MS) return
@@ -434,7 +434,7 @@ async function checkHeard(db: number, pos: number, dur: number): Promise<void> {
 
 /** Reads the page's sound about 20 times a second: the bass for the glow, and the fade of its volume. */
 async function pollPage(): Promise<void> {
-  if (!view || !externalEvents.active()) return
+  if (!view || !externalEvents.active(driver)) return
   const r = await run<{ db: number; pos: number; dur: number }>(`window.__scBass ? window.__scBass() : null`)
   if (!r) return
   bass = stepBass(bass, r.db)
@@ -475,7 +475,7 @@ function startMirror(): void {
 }
 
 async function tick(): Promise<void> {
-  if (!externalEvents.active()) return stopMirror()
+  if (!externalEvents.active(driver)) return stopMirror()
   // while a Yandex track is the current one, the page may carry on with its own queue
   allowPlay(5000)
   const st = await run<PageState>(READ_STATE)
@@ -614,10 +614,11 @@ const driver: ExternalDriver = {
     allowPlay(15_000)
     void press(clickButton(PREV_LABELS))
   },
-  twin: findTwin
+  twin: findTwin,
+  glow: yandexGlowLevel
 }
 
-registerExternal(driver)
+registerExternal('yandex', driver)
 
 /* ---------- Yandex's own "Моя волна" ---------- */
 

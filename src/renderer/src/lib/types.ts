@@ -44,9 +44,11 @@ export interface Track {
   media?: { transcodings: Transcoding[] }
   publisher_metadata?: { artist?: string } | null
   /** Set for Yandex Music tracks; they play through the embedded Yandex player. */
-  origin?: 'yandex' | 'audius' | 'radio' | 'local'
+  origin?: 'yandex' | 'vk' | 'audius' | 'radio' | 'local'
   /** `artists`: every artist of the track, each with its own Yandex id (the joined name is user.username). */
   ya?: { trackId: number; albumId?: number; artistId?: number; artists?: { id?: number; name: string }[] }
+  /** Set for VK tracks: `key` is "owner_id" of the track's page (vk.com/audio<key>); they play through the embedded VK page. */
+  vk?: { key: string; artists?: { name: string }[] }
   /** Set for Audius tracks (string ids of the Audius API). */
   au?: { id: string; userId: string; handle?: string }
   /** A music file from the user's own folders (key in main/local.ts's index). */

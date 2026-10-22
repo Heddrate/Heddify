@@ -403,6 +403,12 @@
   border-radius: 50%;
 }
 
+/* two letters in the same circle */
+.ya-mark.vk {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
 .ya-mark.big {
   width: 64px;
   height: 64px;
@@ -843,7 +849,8 @@
 /* ---------- invisible Yandex Music engine ---------- */
 
 /* kept rendered (off-screen, real size) so the page runs normally, never visible */
-.yandex-engine {
+.yandex-engine,
+.engine-page {
   position: fixed;
   left: -10000px;
   top: 0;
@@ -853,7 +860,8 @@
   opacity: 0;
 }
 
-.yandex-engine webview {
+.yandex-engine webview,
+.engine-page webview {
   width: 100%;
   height: 100%;
 }

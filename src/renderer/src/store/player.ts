@@ -207,7 +207,7 @@ function updatePositionState(position: number, duration: number): void {
 
 let failStreak = 0
 
-/* ---------- external player (Yandex Music page), see lib/yandex.ts ---------- */
+/* ---------- external players (the Yandex Music and VK pages), see lib/yandex.ts, lib/vk.ts ---------- */
 
 export interface ExternalDriver {
   play(track: Track, startAt: number): Promise<void>
@@ -222,24 +222,54 @@ export interface ExternalDriver {
   prev(): void
   /** The same recording on this service, for a SoundCloud track that only comes as DRM (lib/twin.ts). */
   twin(track: Track): Promise<Track | null>
+  /** The bass glow of what the page plays now, 0..1 (the glow strength applied). */
+  glow(): number
 }
 
+type ExternalOrigin = 'yandex' | 'vk'
+
+/** Where a DRM stand-in is looked for, in this order. */
+const STAND_IN_ORDER: ExternalOrigin[] = ['yandex', 'vk']
+
+const drivers = new Map<ExternalOrigin, ExternalDriver>()
+/** The driver that played last; it plays `current` while `externalActive`. */
 let external: ExternalDriver | null = null
-/** True while `current` is played by the external driver. */
+/** True while `current` is played by an external driver. */
 let externalActive = false
 
-export function registerExternal(d: ExternalDriver): void {
-  external = d
+export function registerExternal(origin: ExternalOrigin, d: ExternalDriver): void {
+  drivers.set(origin, d)
 }
 
-const isExternal = (t: Track | null | undefined): boolean => !!t && t.origin === 'yandex'
+const isExternal = (t: Track | null | undefined): boolean => !!t && (t.origin === 'yandex' || t.origin === 'vk')
+
+const driverOf = (t: Track): ExternalDriver | null => (t.origin === 'yandex' || t.origin === 'vk' ? (drivers.get(t.origin) ?? null) : null)
+
+/** Makes `d` the one playing; the page that played before stops. */
+function takeOver(d: ExternalDriver | null): void {
+  if (externalActive && external && external !== d) external.release()
+  if (d) external = d
+  externalActive = true
+}
+
+/** The same recording on the first service that has it (Yandex, then VK). */
+async function findStandIn(track: Track): Promise<Track | null> {
+  for (const origin of STAND_IN_ORDER) {
+    const twin = await drivers
+      .get(origin)
+      ?.twin(track)
+      .catch(() => null)
+    if (twin) return twin
+  }
+  return null
+}
 
 /** SoundCloud tracks that only play in SoundCloud's own player; the error says so. */
 const isDrm = (t: Track, message: string): boolean => !t.origin && message.includes('DRM')
 
 /**
- * SoundCloud DRM tracks played from Yandex Music instead (SoundCloud id → its Yandex copy;
- * null: none found). The queue and the screen keep the SoundCloud track, only the sound is Yandex's.
+ * SoundCloud DRM tracks played from Yandex Music or VK instead (SoundCloud id → its copy there;
+ * null: none found). The queue and the screen keep the SoundCloud track, only the sound is the copy's.
  */
 const standIns = new Map<number, Track | null>()
 /** Stand-in searches still running: a second play of the same track waits for the same search. */
@@ -292,15 +322,14 @@ async function playTrack(track: Track, startAt = 0, autoplay = true): Promise<vo
     const message = e instanceof Error ? e.message : tx("ошибка")
     // no stand-in known yet (or one was found while this load ran)
     const known = standIns.get(track.id)
-    if (isDrm(track, message) && external && (known || !standIns.has(track.id))) {
-      // still "playing": a play button would invite a second start while Yandex is searched
+    if (isDrm(track, message) && drivers.size && (known || !standIns.has(track.id))) {
+      // still "playing": a play button would invite a second start while Yandex and VK are searched
       set({ loading: true, playing: autoplay })
-      const ext = external
-      const twin = known ?? (await shareInFlight(standInSearches, track.id, () => ext.twin(track).catch(() => null)))
+      const twin = known ?? (await shareInFlight(standInSearches, track.id, () => findStandIn(track)))
       standIns.set(track.id, twin)
       // this very track was asked for again meanwhile: the newer request carries on
       if (seq !== navSeq && get().current === track) return
-      // the user may have moved on while Yandex was searched
+      // the user may have moved on while the copy was searched
       const still = get().current === track
       if (twin) return still ? playExternal(track, twin, startAt, autoplay) : undefined
       if (still) set({ loading: false, playing: false })
@@ -309,16 +338,17 @@ async function playTrack(track: Track, startAt = 0, autoplay = true): Promise<vo
   }
 }
 
-/** Plays `target` through the Yandex page; `track` is what the player shows (itself, or a SoundCloud stand-in's original). */
+/** Plays `target` through its service's page; `track` is what the player shows (itself, or a SoundCloud stand-in's original). */
 async function playExternal(track: Track, target: Track, startAt: number, autoplay: boolean): Promise<void> {
   engine.stop()
-  externalActive = true
-  if (!external) return onFail(track, tx("Яндекс Музыка не подключена"))
+  const d = driverOf(target)
+  takeOver(d)
+  if (!d) return onFail(track, target.origin === 'vk' ? tx('ВКонтакте не подключён') : tx("Яндекс Музыка не подключена"))
   set({ loading: true, playing: autoplay })
   try {
-    await external.play(target, startAt)
+    await d.play(target, startAt)
     const { volume, muted } = get()
-    external.setVolume(volume, muted)
+    d.setVolume(volume, muted)
   } catch (e) {
     onFail(track, e instanceof Error ? e.message : tx("ошибка"))
   }
@@ -455,7 +485,7 @@ async function next(auto = false, failed = false): Promise<void> {
     void playTrack(get().context[start])
     return
   }
-  // our queue is done but Yandex is playing: let its own player continue
+  // our queue is done but Yandex or VK is playing: let its own player continue
   if (externalActive && external) {
     external.next()
     return
@@ -510,17 +540,20 @@ const events: Parameters<typeof engine.bind>[0] = {
 
 engine.bind(events)
 
-/** The external driver reports its playback through the same events as our engine. */
+/** The external drivers report their playback through the same events as our engine. */
 export const externalEvents = {
   ...events,
-  active: (): boolean => externalActive,
+  /** Whether a page plays `current` (with `d`: this driver's page). */
+  active: (d?: ExternalDriver): boolean => externalActive && (!d || external === d),
+  /** The glow level of the page that plays now (see FullPlayer). */
+  glow: (): number => (externalActive && external ? external.glow() : 0),
   /**
    * The Yandex page started playing on its own (user pressed play there): make it
    * the current track so the player bar mirrors and controls it.
    */
   adopt(track: Track, source: PlaySource = { label: tx('Яндекс Музыка'), route: { name: 'yandex' } }): void {
     if (engine.hasSource() && !engine.isPaused()) engine.pause()
-    externalActive = true
+    takeOver(driverOf(track))
     set({
       current: track,
       context: [track],

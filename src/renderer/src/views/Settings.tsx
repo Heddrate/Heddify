@@ -12,6 +12,7 @@ import { ProfileAvatar } from '@/components/ProfileAvatar'
 import { loginWithToken, logout, navigate, openUrl, signInSoundcloud, useApp } from '@/store/app'
 import { askText, toast } from '@/store/ui'
 import { loginYandex, logoutYandex, useYa } from '@/lib/yandexApi'
+import { loginVk, logoutVk, useVk } from '@/lib/vkLibrary'
 import { countLabel } from '@/lib/format'
 import { player, usePlayer } from '@/store/player'
 import { engine } from '@/player/engine'
@@ -41,6 +42,9 @@ export function Settings(): React.JSX.Element {
   const yaLikes = useYa((s) => s.likeOrder.length)
   const yaPlaylists = useYa((s) => s.playlists.length)
   const yaAvatar = useYa((s) => s.avatar)
+  const vkStatus = useVk((s) => s.status)
+  const vkUid = useVk((s) => s.uid)
+  const vkTracks = useVk((s) => s.mine.length)
   const ownAvatar = useProfile((s) => s.avatar)
   const ownName = useProfile((s) => s.name)
   const autoplay = usePlayer((s) => s.autoplay)
@@ -174,6 +178,35 @@ export function Settings(): React.JSX.Element {
               ) : (
                 <div className="settings-inline">
                   <button className="btn btn-outline" onClick={() => void loginYandex()}>{tx("Войти")}</button>
+                </div>
+              )
+            }
+          />
+          <Row
+            label={
+              <AccountLabel
+                avatar={<div className="ya-mark round vk">{tx('ВК')}</div>}
+                service={tx('ВКонтакте')}
+                stats={
+                  vkStatus === 'in'
+                    ? tx('Моя музыка · {0}', countLabel(vkTracks, tx('трек'), tx('трека'), tx('треков')))
+                    : vkStatus === 'unknown'
+                      ? tx('Подключаюсь…')
+                      : tx('Не подключено')
+                }
+              />
+            }
+            control={
+              vkStatus === 'in' ? (
+                <div className="settings-inline">
+                  <button className="btn btn-outline" onClick={() => openUrl(vkUid ? `https://vk.com/audios${vkUid}` : 'https://vk.com/audio')}>
+                    {tx("Профиль")}
+                  </button>
+                  <button className="btn btn-outline" onClick={() => void logoutVk()}>{tx("Выйти")}</button>
+                </div>
+              ) : (
+                <div className="settings-inline">
+                  <button className="btn btn-outline" onClick={() => void loginVk()}>{tx("Войти")}</button>
                 </div>
               )
             }

@@ -25,7 +25,6 @@ usePlayer.subscribe((s, prev) => {
   if (key === shownKey && !seeked) return
   shownKey = key
 
-  const yandex = t.origin === 'yandex'
   const startedAt = Date.now() - s.position * 1000
   window.sc.discord.update({
     title: t.title ?? tx("Без названия"),
@@ -33,7 +32,14 @@ usePlayer.subscribe((s, prev) => {
     artwork: trackArt(t, 't500x500'),
     radio: !!t.radio,
     url: t.permalink_url,
-    buttonLabel: yandex ? tx("Открыть в Яндекс Музыке") : t.origin === 'audius' ? tx('Слушать на Audius') : tx("Слушать на SoundCloud"),
+    buttonLabel:
+      t.origin === 'yandex'
+        ? tx("Открыть в Яндекс Музыке")
+        : t.origin === 'vk'
+          ? tx('Открыть во ВКонтакте')
+          : t.origin === 'audius'
+            ? tx('Слушать на Audius')
+            : tx("Слушать на SoundCloud"),
     startedAt,
     endsAt: duration > 0 ? startedAt + duration * 1000 : undefined
   })

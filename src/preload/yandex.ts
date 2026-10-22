@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /**
- * Preload of the hidden music.yandex.ru engine page. Its only job: give our volume slider
- * a handle on the page's sound before the site's own scripts run.
+ * Preload of the hidden engine pages, music.yandex.ru and vk.com. Its only job: give our
+ * volume slider a handle on the page's sound before the site's own scripts run.
  *
  * Yandex plays through Web Audio, so everything the page connects to the speakers is
  * routed through one gain node per AudioContext; plain <audio>/<video> playback gets the

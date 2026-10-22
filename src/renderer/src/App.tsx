@@ -6,6 +6,7 @@ import { PlayerBar } from '@/components/PlayerBar'
 import { NowPlayingPanel } from '@/components/NowPlayingPanel'
 import { LyricsPanel } from '@/components/LyricsPanel'
 import { YandexHost } from '@/components/YandexHost'
+import { VkHost } from '@/components/VkHost'
 import { QueuePanel } from '@/components/QueuePanel'
 import { UpdateBanner } from '@/components/UpdateBanner'
 import { Onboarding } from '@/components/Onboarding'
@@ -25,6 +26,7 @@ import { Login, Offline } from '@/views/Login'
 import { LocalPlaylistView, OfflineView } from '@/views/Local'
 import { Loading } from '@/components/States'
 import '@/lib/yandexApi'
+import '@/lib/vkLibrary'
 import '@/lib/played'
 import '@/lib/continue'
 import '@/lib/radio'
@@ -81,6 +83,7 @@ export function App(): React.JSX.Element {
     <>
       <Shell key={langKey} />
       <YandexEngine />
+      <VkEngine />
     </>
   )
 }
@@ -89,6 +92,12 @@ export function App(): React.JSX.Element {
 function YandexEngine(): React.JSX.Element | null {
   const mounted = useApp((s) => s.yandexMounted)
   return mounted ? <YandexHost /> : null
+}
+
+/** The hidden VK page, the same way (lib/vk.ts). */
+function VkEngine(): React.JSX.Element | null {
+  const mounted = useApp((s) => s.vkMounted)
+  return mounted ? <VkHost /> : null
 }
 
 /** Views keep their state across tab/query changes; only a new page remounts. */

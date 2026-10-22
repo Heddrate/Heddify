@@ -36,6 +36,11 @@ export function artistRefs(track: Track): ArtistRef[] {
     if (list.length) return list.map((a) => ({ name: a.name, id: a.id }))
     return track.user?.username ? [{ name: track.user.username, id: track.ya?.artistId }] : []
   }
+  if (track.origin === 'vk') {
+    const list = track.vk?.artists?.filter((a) => a.name) ?? []
+    if (list.length) return list.map((a) => ({ name: a.name }))
+    return track.user?.username ? [{ name: track.user.username }] : []
+  }
   // radio, own files and Audius keep the single name they always had
   if (track.origin) return track.user?.username ? [{ name: track.user.username, id: track.user.id }] : []
 

@@ -1,7 +1,7 @@
 /**
- * The same recording on Yandex Music, for SoundCloud tracks that SoundCloud only hands out
- * as DRM (they play in its own player alone). Pure matching, no requests: lib/yandex.ts
- * searches, the player plays the match instead. A wrong song is worse than none, so every
+ * The same recording on Yandex Music or VK, for SoundCloud tracks that SoundCloud only hands
+ * out as DRM (they play in its own player alone). Pure matching, no requests: lib/yandex.ts
+ * and lib/vk.ts search, the player plays the match instead. A wrong song is worse than none, so every
  * check has to pass — title, at least one artist, the version (remix, slowed…) and the length.
  */
 import type { Track } from './types'
@@ -64,7 +64,7 @@ const sameArtist = (a: string, b: string): boolean => {
 
 const lengthOf = (t: Track): number => t.full_duration || t.duration || 0
 
-/** What to type into Yandex's search for this SoundCloud track. */
+/** What to type into Yandex's or VK's search for this SoundCloud track. */
 export function twinQuery(track: Track): string {
   const { title, main } = scSide(track)
   const name = title
@@ -74,7 +74,7 @@ export function twinQuery(track: Track): string {
   return [main, name, ...versionTags(track.title ?? '')].join(' ').replace(/\s+/g, ' ').trim()
 }
 
-/** The Yandex track that is this SoundCloud track, or null when none is certain. */
+/** The Yandex or VK track that is this SoundCloud track, or null when none is certain. */
 export function pickTwin(track: Track, candidates: Track[]): Track | null {
   const sc = scSide(track)
   const core = coreTitle(sc.title)
@@ -85,10 +85,11 @@ export function pickTwin(track: Track, candidates: Track[]): Track | null {
   let best: Track | null = null
   let bestDiff = Infinity
   for (const c of candidates) {
-    if (c.origin !== 'yandex' || !c.ya) continue
+    const service = c.origin === 'yandex' ? c.ya : c.origin === 'vk' ? c.vk : undefined
+    if (!service) continue
     if (coreTitle(c.title ?? '') !== core) continue
     if (versionTags(c.title ?? '').join() !== tags) continue
-    const names = c.ya.artists?.length ? c.ya.artists.map((a) => a.name) : [c.user?.username ?? '']
+    const names = service.artists?.length ? service.artists.map((a) => a.name) : [c.user?.username ?? '']
     if (!names.some((n) => sc.artists.some((a) => sameArtist(a, n)))) continue
     const diff = Math.abs(lengthOf(c) - length)
     if (!lengthOf(c) || diff > MAX_LENGTH_DIFF_MS) continue

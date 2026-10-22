@@ -1,6 +1,7 @@
 /**
  * "Мне нравится" from every service as one list, newest like first: SoundCloud likes
- * (paged, with likes still waiting to be delivered on top), Yandex likes and Audius likes.
+ * (paged, with likes still waiting to be delivered on top), Yandex likes, the user's VK
+ * tracks ("Моя музыка") and Audius likes.
  */
 import { useMemo, useState } from 'react'
 import { api, collectTracks } from './api'
@@ -9,6 +10,7 @@ import { mergeLikeRows, timed, type LikeGroup, type Row } from './listOps'
 import type { LikeItem, Track } from './types'
 import { fetchTracks, useYa } from './yandexApi'
 import { useAudius } from './audius'
+import { useVk } from './vkLibrary'
 import { useLocal } from './local'
 import { useApp } from '@/store/app'
 import { tx } from './i18n'
@@ -41,6 +43,8 @@ export function useAllLikes(): AllLikes {
   const yaOrder = useYa((s) => s.likeOrder)
   const yaAt = useYa((s) => s.likeAt)
   const au = useAudius((s) => s.likes)
+  const vkMine = useVk((s) => (s.status === 'in' ? s.mine : null))
+  const vkAdded = useVk((s) => s.added)
   const files = useLocal((s) => s.likes)
   const [yaCount, setYaCount] = useState(YA_PAGE)
 
@@ -61,10 +65,14 @@ export function useAllLikes(): AllLikes {
     return [...local, ...remote]
   }, [sc.items, pending])
   const yaRows = useMemo(() => timed(ya.data ?? [], (t) => (t.ya ? yaAt[t.ya.trackId] : undefined)), [ya.data, yaAt])
-  // likes kept in the app (Audius, own files) carry their own time
+  // likes kept in the app (Audius, own files) carry their own time; VK's tracks the time they showed up
   const auRows = useMemo(
-    () => [...timed(au, (t) => (t.liked_at ? Date.parse(t.liked_at) : undefined)), ...timed(files, (t) => (t.liked_at ? Date.parse(t.liked_at) : undefined))],
-    [au, files]
+    () => [
+      ...timed(au, (t) => (t.liked_at ? Date.parse(t.liked_at) : undefined)),
+      ...timed(files, (t) => (t.liked_at ? Date.parse(t.liked_at) : undefined)),
+      ...timed(vkMine ?? [], (t) => (t.vk ? vkAdded[t.vk.key] : undefined))
+    ],
+    [au, files, vkMine, vkAdded]
   )
 
   const scMore = !!me && !!sc.next
@@ -104,7 +112,7 @@ export function useAllLikes(): AllLikes {
   return {
     tracks,
     dates,
-    total: scCount + yaOrder.length + au.length + files.length,
+    total: scCount + yaOrder.length + au.length + files.length + (vkMine?.length ?? 0),
     loading: sc.loading || ya.loading,
     hasMore: scMore || yaMore,
     error: !tracks.length ? (sc.error ?? ya.error) : null,

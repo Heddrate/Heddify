@@ -38,11 +38,11 @@ function clean(s: string): string {
     .trim()
 }
 
-/** Artist and title: "Artist - Title" uploads first, then the uploader / Yandex artists. */
+/** Artist and title: "Artist - Title" uploads first, then the uploader / Yandex and VK artists. */
 function split(t: Track): { artist: string; title: string } {
   const title = t.title ?? ''
   const m = title.match(/^(.+?)\s+[-–—]\s+(.+)$/)
-  if (m && t.origin !== 'yandex') return { artist: clean(m[1]), title: clean(m[2]) }
+  if (m && t.origin !== 'yandex' && t.origin !== 'vk') return { artist: clean(m[1]), title: clean(m[2]) }
   const artist = (t.user?.username ?? '').split(/,|&| x /i)[0]
   return { artist: clean(artist), title: clean(title) }
 }

@@ -638,7 +638,22 @@ const EN: Record<string, string> = {
   'Имя': 'Name',
   'Вышла версия {0}': 'Version {0} is out',
   'Вышло обновление': 'An update is out',
-  'Установится за полминуты': 'Installs in half a minute'
+  'Установится за полминуты': 'Installs in half a minute',
+  'ВК': 'VK',
+  'ВКонтакте': 'VK',
+  'ВКонтакте не подключён': 'VK isn’t connected',
+  'Добавить в мою музыку ВКонтакте': 'Add to my music on VK',
+  'Убрать из моей музыки ВКонтакте': 'Remove from my music on VK',
+  'Моя музыка · {0}': 'My music · {0}',
+  'Открыть во ВКонтакте': 'Open on VK',
+  'Скачиваю {0} треков, кроме ВКонтакте': 'Downloading {0} tracks, except VK',
+  'Скачиваю {0} треков, кроме Яндекс Музыки и ВКонтакте': 'Downloading {0} tracks, except Yandex Music and VK',
+  'Без подписки ВКонтакте включает рекламу перед треком': 'Without a subscription VK plays an ad before the track',
+  'ВКонтакте не дал включить трек': 'VK wouldn’t play the track',
+  'ВКонтакте не дал изменить «Мою музыку»': 'VK wouldn’t change “My music”',
+  'ВКонтакте не загрузился': 'VK didn’t load',
+  'Войдите во ВКонтакте в настройках': 'Sign in to VK in Settings',
+  'у трека нет ссылки на ВКонтакте': 'the track has no VK link'
 }
 
 export default EN

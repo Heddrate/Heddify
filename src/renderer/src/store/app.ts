@@ -27,6 +27,8 @@ interface AppState {
   panel: 'queue' | 'now' | 'lyrics' | null
   /** The Yandex Music page is created on first use and then kept alive. */
   yandexMounted: boolean
+  /** The same for the VK page (lib/vk.ts). */
+  vkMounted: boolean
   /** Likes/follows SoundCloud refused for now (anti-bot); applied locally, re-sent later. */
   pending: Record<string, PendingOp>
 }
@@ -54,7 +56,8 @@ const initial = (): Omit<AppState, 'auth'> => ({
   libraryLoaded: false,
   likedPlaylists: new Set(),
   panel: null,
-  yandexMounted: false
+  yandexMounted: false,
+  vkMounted: false
 })
 
 export const useApp = create<AppState>(() => ({ auth: 'checking', ...initial() }))

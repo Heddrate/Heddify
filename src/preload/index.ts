@@ -52,6 +52,10 @@ const bridge: ScBridge = {
     login: () => ipcRenderer.invoke('ya:login'),
     logout: () => ipcRenderer.invoke('ya:logout')
   },
+  vk: {
+    login: () => ipcRenderer.invoke('vk:login'),
+    logout: () => ipcRenderer.invoke('vk:logout')
+  },
   playerState: (s) => ipcRenderer.send('player:state', s),
   onPlayerCommand: (cb) => {
     const listener = (_e: Electron.IpcRendererEvent, cmd: 'prev' | 'toggle' | 'next' | 'play' | 'pause'): void => cb(cmd)

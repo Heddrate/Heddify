@@ -21,7 +21,7 @@ interface OfflineState {
 export const useOffline = create<OfflineState>(() => ({ pinned: new Set(), progress: null }))
 
 export const offlineKey = (t: Track): string => (t.au ? `au-${t.au.id}` : `sc-${t.id}`)
-const downloadable = (t: Track): boolean => t.origin !== 'yandex' && t.origin !== 'radio' && t.origin !== 'local' && t.policy !== 'BLOCK'
+const downloadable = (t: Track): boolean => t.origin !== 'yandex' && t.origin !== 'vk' && t.origin !== 'radio' && t.origin !== 'local' && t.policy !== 'BLOCK'
 
 export async function refreshOffline(): Promise<void> {
   const list = await window.sc.cache.list()
@@ -56,10 +56,16 @@ export async function downloadTracks(tracks: Track[]): Promise<void> {
     return
   }
   useOffline.setState({ progress: { done: 0, total: todo.length, failed: 0 } })
+  const ya = tracks.some((t) => t.origin === 'yandex')
+  const vk = tracks.some((t) => t.origin === 'vk')
   toast(
-    tracks.some((t) => t.origin === 'yandex')
-      ? tx('Скачиваю {0} треков, кроме Яндекс Музыки', todo.length)
-      : tx('Скачиваю {0} треков', todo.length)
+    ya && vk
+      ? tx('Скачиваю {0} треков, кроме Яндекс Музыки и ВКонтакте', todo.length)
+      : vk
+        ? tx('Скачиваю {0} треков, кроме ВКонтакте', todo.length)
+        : ya
+          ? tx('Скачиваю {0} треков, кроме Яндекс Музыки', todo.length)
+          : tx('Скачиваю {0} треков', todo.length)
   )
   await window.sc.cache.download(todo.map(streamRequest))
 }

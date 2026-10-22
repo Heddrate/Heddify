@@ -162,6 +162,12 @@ export interface ScBridge {
     login(): Promise<boolean>
     logout(): Promise<void>
   }
+  /** VK's own site in its own session (see main/vk.ts). */
+  vk: {
+    /** Opens the VK sign-in window; true once signed in. */
+    login(): Promise<boolean>
+    logout(): Promise<void>
+  }
   /** Taskbar thumbnail buttons mirror the player and send commands back. */
   playerState(s: { playing: boolean; hasTrack: boolean; title?: string }): void
   onPlayerCommand(cb: (cmd: 'prev' | 'toggle' | 'next' | 'play' | 'pause') => void): () => void

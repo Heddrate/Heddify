@@ -10,7 +10,6 @@ import { engine } from '@/player/engine'
 import { radio } from '@/lib/radio'
 import type { PlaySource, Track } from '@/lib/types'
 import { externalEvents, player, upcomingPositions, usePlayer } from '@/store/player'
-import { yandexGlowLevel } from '@/lib/yandex'
 import { ArtistLinks } from './ArtistLinks'
 import { CoverBackdrop } from './Backdrop'
 import { Artwork } from './Artwork'
@@ -62,7 +61,7 @@ function FullView(): React.JSX.Element {
     let level = 0
     let shown = ''
     const tick = (): void => {
-      const target = externalEvents.active() ? yandexGlowLevel() : engine.bass()
+      const target = externalEvents.active() ? externalEvents.glow() : engine.bass()
       level += (target - level) * (target > level ? 0.6 : 0.12)
       // write the style only when the value changes (with the effect off it stays at 0)
       const next = level.toFixed(3)

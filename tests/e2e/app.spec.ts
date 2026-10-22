@@ -65,6 +65,21 @@ test("settings: autoplay is off by default, what's new is there, About is last",
   expect(errors).toEqual([])
 })
 
+test('settings: VK has its own account row, not connected until signed in', async ({ page }) => {
+  const errors = watchErrors(page)
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Профиль' }).click()
+  await page.getByRole('menuitem', { name: 'Настройки' }).click()
+
+  const vk = page.locator('.settings-row', { has: page.locator('.settings-account-text strong', { hasText: /^ВКонтакте$/ }) })
+  await expect(vk).toHaveCount(1)
+  await expect(vk.locator('.settings-hint')).toHaveText('Не подключено')
+  await expect(vk.getByRole('button', { name: 'Войти' })).toBeVisible()
+  // the hidden VK page only comes up for someone who connected VK
+  await expect(page.locator('.engine-page')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
 test('a track played from "Моя волна" stays in the list', async ({ page }) => {
   watchErrors(page)
   await page.goto('/')

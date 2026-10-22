@@ -10,6 +10,8 @@ import { playlistRoute, playUser } from '@/lib/actions'
 import { api, tracksOf } from '@/lib/api'
 import { searchYandex, searchYandexArtists, type YaArtistHit } from '@/lib/yandex'
 import { audius } from '@/lib/audius'
+import { searchVk } from '@/lib/vk'
+import { useVk } from '@/lib/vkLibrary'
 import { radio } from '@/lib/radio'
 import { searchLocal } from '@/lib/local'
 import { stationCards } from '@/views/Radio'
@@ -120,9 +122,19 @@ function normalize(s: string): string {
   return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
 }
 
+const NO_TRACKS: Track[] = []
+
+/** VK's results come from its hidden page, a moment after the others: they join the list when they arrive. */
+function useVkSearch(q: string): Track[] {
+  const vkIn = useVk((s) => s.status === 'in')
+  const res = useAsync(() => (vkIn ? searchVk(q).catch(() => NO_TRACKS) : Promise.resolve(NO_TRACKS)), [q, vkIn])
+  return res.data ?? NO_TRACKS
+}
+
 function SearchAll({ q }: { q: string }): React.JSX.Element {
-  // without a SoundCloud account only Yandex and Audius are searched
+  // without a SoundCloud account only Yandex, VK and Audius are searched
   const scIn = useApp((s) => s.auth === 'in')
+  const vk = useVkSearch(q)
   const res = useAsync(
     () =>
       Promise.all([
@@ -145,7 +157,7 @@ function SearchAll({ q }: { q: string }): React.JSX.Element {
   const sc = tracksOf(tracksC.collection)
   // all services side by side in one list
   // the user's own files first: if they have it on disk, that's what they mean
-  const tracks = [...searchLocal(q, 5), ...interleave(interleave(sc, ya), au.slice(0, 6))]
+  const tracks = [...searchLocal(q, 5), ...interleave(interleave(interleave(sc, ya), vk), au.slice(0, 6))]
   const users = usersC.collection
   if (!tracks.length && !stations.length && !users.length && !yaArtists.length && !playlistsC.collection.length && !albumsC.collection.length) {
     return <Empty icon="search" title={tx("Ничего не нашлось по запросу «{0}»", q)} />
@@ -265,9 +277,10 @@ function TopTrack({ t, tracks, source }: { t: Track; tracks: Track[]; source: Pl
   )
 }
 
-/** Tracks from every service: SoundCloud pages on scroll, Yandex and Audius mixed into the top. */
+/** Tracks from every service: SoundCloud pages on scroll, Yandex, VK and Audius mixed into the top. */
 function SearchTracks({ q }: { q: string }): React.JSX.Element {
   const scIn = useApp((s) => s.auth === 'in')
+  const vk = useVkSearch(q)
   const pg = usePaged<Track>(scIn ? `s-tracks-${q}` : null, () => api.searchTracks(q))
   const other = useAsync(
     () => Promise.all([searchYandex(q).catch(() => [] as Track[]), audius.search(q).catch(() => [] as Track[])]),
@@ -277,8 +290,8 @@ function SearchTracks({ q }: { q: string }): React.JSX.Element {
     const [ya, au] = other.data ?? [[], []]
     const sc = tracksOf(pg.items)
     // the first SoundCloud page is mixed with the others; later pages just follow
-    return [...searchLocal(q), ...interleave(interleave(sc.slice(0, 40), ya), au), ...sc.slice(40)]
-  }, [pg.items, other.data, q])
+    return [...searchLocal(q), ...interleave(interleave(interleave(sc.slice(0, 40), ya), vk), au), ...sc.slice(40)]
+  }, [pg.items, other.data, vk, q])
   const source = useMemo<PlaySource>(() => ({ label: tx("Поиск: {0}", q), route: { name: 'search', q, tab: 'tracks' }, next: pg.next }), [q, pg.next])
   const loading = (scIn && pg.loading) || other.loading
   if (pg.error && !tracks.length && !loading) return <ErrorState text={pg.error} onRetry={pg.reload} />

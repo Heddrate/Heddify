@@ -26,6 +26,7 @@ import { appIconPath, closeToTray, createTray, showWindow, updateTray } from './
 import { setMediaKeys } from './mediaKeys'
 import { checkForUpdates, installUpdate, startUpdater, updateState } from './updater'
 import { addFolder, folders, localTracks, removeFolder, scanLocal, serveLocal } from './local'
+import { isVk, isVkFamily, lightenVkEngine, VK_PARTITION, vkLogin, vkLogout } from './vk'
 
 /** Window frame colours per theme, so the first frame already matches (see themes.css). */
 const FRAME: Record<string, { bg: string; symbol: string }> = {
@@ -70,6 +71,7 @@ if (!app.requestSingleInstanceLock()) {
     prepareWebSession(join(__dirname, '../preload/login.js'))
     watchYandexApi()
     lightenYandexEngine()
+    lightenVkEngine(() => vkEngineId)
     allowMediaCors()
     serveCache()
     serveLocal()
@@ -119,17 +121,19 @@ function createWindow(): void {
       contextIsolation: true,
       backgroundThrottling: false,
       spellcheck: false,
-      // only for the embedded Yandex Music page, locked down in 'will-attach-webview'
+      // only for the embedded Yandex Music and VK pages, locked down in 'will-attach-webview'
       webviewTag: true
     }
   })
 
   mainWindow.webContents.on('will-attach-webview', (e, prefs, params) => {
-    if (!isYandexMusic(params.src) || params.partition !== YANDEX_PARTITION) {
+    const yandex = isYandexMusic(params.src) && params.partition === YANDEX_PARTITION
+    const vk = isVk(params.src) && params.partition === VK_PARTITION
+    if (!yandex && !vk) {
       e.preventDefault()
       return
     }
-    // never a preload chosen by the page; only our own volume hook (src/preload/yandex.ts)
+    // never a preload chosen by the page; only our own volume hook (src/preload/yandex.ts, the same for VK)
     prefs.preload = join(__dirname, '../preload/yandex.js')
     prefs.nodeIntegration = false
     prefs.nodeIntegrationInSubFrames = false
@@ -138,6 +142,13 @@ function createWindow(): void {
   })
 
   mainWindow.webContents.on('did-attach-webview', (_e, wc) => {
+    if (wc.session === session.fromPartition(VK_PARTITION)) {
+      vkEngineId = wc.id
+      wc.once('destroyed', () => {
+        if (vkEngineId === wc.id) vkEngineId = null
+      })
+      return
+    }
     yandexEngineId = wc.id
     wc.once('destroyed', () => {
       if (yandexEngineId === wc.id) yandexEngineId = null
@@ -251,6 +262,8 @@ function watchYandexApi(): void {
  * show a captcha) gets these requests cut, which saves a lot of memory and CPU.
  */
 let yandexEngineId: number | null = null
+/** The hidden VK page (see main/vk.ts). */
+let vkEngineId: number | null = null
 const YA_JUNK = /^https?:\/\/([a-z0-9-]+\.)*(mc\.yandex\.[a-z]+|an\.yandex\.ru|adfox\.(ru|yandex\.ru)|ads\.adfox\.ru|yandexadexchange\.net)(\/|$)/i
 const YA_SKIP_TYPES = new Set(['image', 'font', 'ping', 'cspReport'])
 
@@ -312,6 +325,8 @@ app.on('web-contents-created', (_e, contents) => {
     if (/^https:\/\/([a-z0-9-]+\.)*(yandex\.(ru|com|by|kz|uz)|ya\.ru)(\/|$)/i.test(url)) {
       return { action: 'allow', overrideBrowserWindowOptions: { width: 520, height: 720, autoHideMenuBar: true } }
     }
+    // the hidden VK page has nobody to show a window to (subscription offers, ads): nothing opens
+    if (isVkFamily(url)) return { action: 'deny' }
     if (url.startsWith('https://')) void shell.openExternal(url)
     return { action: 'deny' }
   })
@@ -393,7 +408,7 @@ function registerIpc(): void {
 
   ipcMain.handle('shell:open', (_e, url: unknown) => {
     const u = String(url)
-    if (/^https:\/\/([a-z0-9-]+\.)*(soundcloud\.com|discord\.com|music\.yandex\.ru|audius\.co)(\/|$)/i.test(u)) return shell.openExternal(u)
+    if (/^https:\/\/([a-z0-9-]+\.)*(soundcloud\.com|discord\.com|music\.yandex\.ru|audius\.co|vk\.com|vk\.ru)(\/|$)/i.test(u)) return shell.openExternal(u)
   })
   ipcMain.handle('logs:open', () => shell.openPath(join(app.getPath('userData'), 'logs')))
 
@@ -427,6 +442,8 @@ function registerIpc(): void {
     yandexHeaders = {}
     await session.fromPartition(YANDEX_PARTITION).clearStorageData()
   })
+  ipcMain.handle('vk:login', () => vkLogin(mainWindow, store.getPrefs().lang === 'en'))
+  ipcMain.handle('vk:logout', () => vkLogout())
 
   ipcMain.on('player:state', (_e, s: { playing?: unknown; hasTrack?: unknown; title?: unknown }) => {
     thumbState = { playing: s?.playing === true, hasTrack: s?.hasTrack === true }
