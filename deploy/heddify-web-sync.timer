@@ -1,0 +1,10 @@
+[Unit]
+Description=heddrate.com: check for a new Heddify website every minute
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

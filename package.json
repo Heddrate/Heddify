@@ -1,7 +1,7 @@
 {
   "name": "heddify",
   "productName": "Heddify",
-  "version": "1.8.23",
+  "version": "1.8.24",
   "description": "SoundCloud, Яндекс Музыка и Audius в одном плеере",
   "main": "./out/main/index.js",
   "author": "Heddrate",
@@ -9,6 +9,9 @@
   "scripts": {
     "dev": "electron-vite dev",
     "dev:web": "vite --config vite.web.config.ts",
+    "dev:site": "vite --config vite.web.config.ts --mode web",
+    "build:web": "vite build --config vite.web.config.ts --mode web",
+    "preview:web": "vite preview --config vite.web.config.ts --mode web --port 4173 --strictPort",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",

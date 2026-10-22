@@ -49,7 +49,9 @@ export function Search({ q, tab = 'all' }: { q: string; tab?: SearchTab }): Reac
   return (
     <div className="view">
       <div className="chips tabs">
-        {tabs().filter(([key]) => scIn || !SC_TABS.has(key)).map(([key, label]) => (
+        {tabs()
+          .filter(([key]) => (scIn || !SC_TABS.has(key)) && !(__WEB__ && key === 'users'))
+          .map(([key, label]) => (
           <button
             key={key}
             className={cx('chip', tab === key && 'on')}

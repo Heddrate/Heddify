@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# heddrate.com: the Heddify website (the player in a browser).
+# Run by heddify-web-sync.timer every minute as heddify-web. When a newer Heddify release on
+# GitHub carries heddify-web.tar.gz, it is unpacked next to the old one and switched to in one step.
+# Nothing from the archive is run: its files are only served by nginx.
+set -euo pipefail
+
+REPO="Heddrate/Heddify"
+ASSET="heddify-web.tar.gz"
+BASE="/var/www/heddify"
+STATE="/var/lib/heddify-web/deployed"
+
+# github.com (not the API, which has an hourly limit) answers the latest release's file with a
+# redirect that names its tag (even when that release has no such file: then the download is 404)
+location="$(curl -fsSI --max-time 20 "https://github.com/$REPO/releases/latest/download/$ASSET" | tr -d '\r' | awk 'tolower($1) == "location:" { print $2 }' | head -n 1)" || exit 0
+tag="$(printf '%s' "$location" | sed -n 's#.*/releases/download/\([^/]*\)/.*#\1#p')"
+[[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 0
+[ "$tag" = "$(cat "$STATE" 2>/dev/null || true)" ] && exit 0
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+code="$(curl -sSL --max-time 300 -o "$tmp/$ASSET" -w '%{http_code}' "https://github.com/$REPO/releases/download/$tag/$ASSET")"
+# this release was published without the website build: the site stays as it is
+[ "$code" = 404 ] && exit 0
+if [ "$code" != 200 ]; then
+  echo "<4>$tag: GitHub ответил $code — попробую через минуту"
+  exit 1
+fi
+
+dest="$BASE/releases/$tag"
+rm -rf "$dest.new"
+mkdir -p "$dest.new"
+tar -xzf "$tmp/$ASSET" -C "$dest.new" --no-same-owner --no-same-permissions
+if [ ! -s "$dest.new/index.html" ] || [ ! -d "$dest.new/assets" ]; then
+  rm -rf "$dest.new"
+  echo "<3>$tag: в архиве нет сайта — не выкатываю"
+  exit 1
+fi
+chmod -R u=rwX,go=rX "$dest.new"
+rm -rf "$dest"
+mv "$dest.new" "$dest"
+
+# one step: nginx serves either the old site or the new one, never half of each
+ln -sfn "releases/$tag" "$BASE/current.new"
+mv -T "$BASE/current.new" "$BASE/current"
+echo "$tag" > "$STATE"
+
+# the last three versions stay (a quick way back); older ones go
+ls -1dt "$BASE"/releases/*/ | tail -n +4 | xargs -r rm -rf
+echo "<5>выкачено: $tag"

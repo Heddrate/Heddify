@@ -27,6 +27,11 @@ interface ApiLyrics {
 
 const API = 'https://lrclib.net/api'
 const cache = new Map<number, Lyrics | null>()
+/** Lookups still running: the full player, the side panel and the prefetch share one. */
+const pending = new Map<number, Promise<Lyrics | null>>()
+
+/** What is known already, without waiting: the lyrics, null for none, undefined when not looked up yet. */
+export const peekLyrics = (t: Track): Lyrics | null | undefined => (t.origin === 'radio' ? null : cache.get(t.id))
 
 /** Drops "(Original Mix)", "[Free DL]", "feat. X", quotes and the like. */
 function clean(s: string): string {
@@ -91,9 +96,18 @@ function best(list: ApiLyrics[] | null, duration: number): ApiLyrics | null {
   return usable.sort((a, b) => score(a) - score(b))[0]
 }
 
-export async function fetchLyrics(t: Track): Promise<Lyrics | null> {
-  if (t.origin === 'radio') return null
-  if (cache.has(t.id)) return cache.get(t.id) ?? null
+export function fetchLyrics(t: Track): Promise<Lyrics | null> {
+  if (t.origin === 'radio') return Promise.resolve(null)
+  if (cache.has(t.id)) return Promise.resolve(cache.get(t.id) ?? null)
+  let p = pending.get(t.id)
+  if (!p) {
+    p = lookUp(t).finally(() => pending.delete(t.id))
+    pending.set(t.id, p)
+  }
+  return p
+}
+
+async function lookUp(t: Track): Promise<Lyrics | null> {
   const { artist, title } = split(t)
   const duration = Math.round((t.full_duration || t.duration || 0) / 1000)
   let found: ApiLyrics | null = null

@@ -158,7 +158,7 @@ class Engine {
     const res: Awaited<ReturnType<typeof window.sc.resolveStream>> = track.radio
       ? { ok: true, status: 200, data: { url: track.radio.url, protocol: track.radio.hls ? 'hls' : 'progressive', mime: 'audio/mpeg', snipped: false } }
       : track.local
-        ? { ok: true, status: 200, data: { url: `heddify-local://track/${track.local.key}`, protocol: 'progressive', mime: 'audio/mpeg', snipped: false } }
+        ? { ok: true, status: 200, data: { url: window.sc.local.url?.(track.local.key) ?? `heddify-local://track/${track.local.key}`, protocol: 'progressive', mime: 'audio/mpeg', snipped: false } }
         : await window.sc.resolveStream(streamRequest(track))
     if (id !== this.loadId) return null
     this.resolving = false

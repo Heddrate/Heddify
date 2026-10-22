@@ -6,6 +6,7 @@ import { player, restoreSession, slim } from './player'
 import { tx } from '@/lib/i18n'
 import { clearListCache } from '@/lib/listCache'
 import { withFallback } from '@/lib/deadEnds'
+import { onSite, pathOf, routeOf } from '@/lib/webRoutes'
 
 /** 'guest': using the app without SoundCloud (Yandex / Audius only). */
 type AuthState = 'checking' | 'out' | 'in' | 'offline' | 'guest'
@@ -42,11 +43,14 @@ export interface PendingOp {
   user?: Pick<User, 'id' | 'kind' | 'username' | 'avatar_url' | 'permalink_url'>
 }
 
+/** The website opens the page its address names (heddrate.com/wave); the app opens home. */
+const startRoute = (): Route => (__WEB__ ? onSite(routeOf(location.pathname, location.search)) : { name: 'home' })
+
 const initial = (): Omit<AppState, 'auth'> => ({
   pending: {},
   bootError: null,
   me: null,
-  route: { name: 'home' },
+  route: startRoute(),
   backStack: [],
   fwdStack: [],
   likes: new Set(),
@@ -74,16 +78,53 @@ export function navigate(route: Route, replace = false): void {
   if (sameRoute(s.route, route)) return
   if (replace) set({ route })
   else set({ route, backStack: [...s.backStack.slice(-60), s.route], fwdStack: [] })
+  showAddress(route, replace)
+}
+
+/* On the website every page has its address (lib/webRoutes.ts): a step in the app is a step in the
+   browser's history, and the browser's back / forward move the app. `step` numbers the entries so
+   a move through history knows its direction. */
+let step = 0
+
+function showAddress(route: Route, replace: boolean): void {
+  if (!__WEB__) return
+  const path = pathOf(route)
+  if (replace) history.replaceState({ step }, '', path)
+  else history.pushState({ step: ++step }, '', path)
+}
+
+if (__WEB__) {
+  history.replaceState({ step }, '', location.pathname + location.search)
+  window.addEventListener('popstate', (e) => {
+    const to = typeof (e.state as { step?: unknown } | null)?.step === 'number' ? (e.state as { step: number }).step : 0
+    if (to < step) stepBack()
+    else if (to > step) stepForward()
+    step = to
+    // a jump of several entries at once: the address decides the page
+    const r = onSite(routeOf(location.pathname, location.search))
+    if (!sameRoute(get().route, r)) set({ route: r })
+  })
 }
 
 export function goBack(): void {
+  // on the website the browser's history leads; the popstate above moves the app
+  if (__WEB__) history.back()
+  else stepBack()
+}
+
+export function goForward(): void {
+  if (__WEB__) history.forward()
+  else stepForward()
+}
+
+function stepBack(): void {
   const s = get()
   const prev = s.backStack[s.backStack.length - 1]
   if (!prev) return
   set({ route: prev, backStack: s.backStack.slice(0, -1), fwdStack: [s.route, ...s.fwdStack] })
 }
 
-export function goForward(): void {
+function stepForward(): void {
   const s = get()
   const [next, ...rest] = s.fwdStack
   if (!next) return

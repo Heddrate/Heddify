@@ -48,6 +48,15 @@ jobs:
           CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
+      # The website (heddrate.com) is the same interface in a browser: its build rides along with
+      # the release, and the server (deploy/heddify-web-sync) switches to it within a minute.
+      - run: npm run build:web
+      - name: Attach the website build
+        shell: bash
+        run: |
+          tar -czf heddify-web.tar.gz -C out/web .
+          gh release upload "$GITHUB_REF_NAME" heddify-web.tar.gz --clobber
+
       - name: Publish release
         shell: bash
         run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest

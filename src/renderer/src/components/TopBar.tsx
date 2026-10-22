@@ -7,6 +7,7 @@ import { ProfileAvatar } from './ProfileAvatar'
 import { Icon } from './Icon'
 import { installUpdate, useUpdate } from '@/lib/update'
 import { tx } from '@/lib/i18n'
+import { GetAppLink } from './GetApp'
 
 export const FOCUS_SEARCH = 'sc:focus-search'
 
@@ -32,8 +33,10 @@ export function TopBar(): React.JSX.Element {
       </div>
 
       <div className="tb-right">
+        {/* the website offers the app; the app draws its own window buttons */}
+        {__WEB__ && <GetAppLink compact />}
         <UserButton />
-        <WindowControls />
+        {!__WEB__ && <WindowControls />}
       </div>
     </header>
   )

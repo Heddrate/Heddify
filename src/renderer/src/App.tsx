@@ -92,13 +92,14 @@ export function App(): React.JSX.Element {
 /** The hidden Yandex page lives outside the shell so re-renders never reload it. */
 function YandexEngine(): React.JSX.Element | null {
   const mounted = useApp((s) => s.yandexMounted)
-  return mounted ? <YandexHost /> : null
+  // the website has no Yandex page to run (a browser won't host it)
+  return mounted && !__WEB__ ? <YandexHost /> : null
 }
 
 /** The hidden VK page, the same way (lib/vk.ts). */
 function VkEngine(): React.JSX.Element | null {
   const mounted = useApp((s) => s.vkMounted)
-  return mounted ? <VkHost /> : null
+  return mounted && !__WEB__ ? <VkHost /> : null
 }
 
 /** Views keep their state across tab/query changes; only a new page remounts. */

@@ -18,8 +18,8 @@ export function DownloadButton({
 }): React.JSX.Element | null {
   const state = useDownloadState(tracks)
   const progress = useOffline((s) => s.progress)
-  // Yandex and VK tracks play in their own pages only: nothing to download
-  if (!tracks.some((t) => t.origin !== 'yandex' && t.origin !== 'vk')) return null
+  // Yandex and VK tracks play in their own pages only: nothing to download; the website keeps no files at all
+  if (__WEB__ || !tracks.some((t) => t.origin !== 'yandex' && t.origin !== 'vk')) return null
 
   const busy = !!progress && state !== 'all'
   const label =

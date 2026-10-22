@@ -179,6 +179,8 @@ export interface ScBridge {
     tracks(): Promise<LocalTrack[]>
     scan(): Promise<LocalScan>
     onProgress(cb: (p: { done: number; total: number }) => void): () => void
+    /** Where a file plays from, when not the app's own heddify-local:// (the website: a file in the browser). */
+    url?(key: string): string | null
   }
   update: {
     state(): Promise<UpdateState>

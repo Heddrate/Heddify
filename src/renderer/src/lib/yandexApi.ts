@@ -371,7 +371,7 @@ window.sc?.yandex.onHeaders((h) => {
 // connected (or on the very first run, to find out). Others never pay for the hidden page.
 useApp.subscribe((s, prev) => {
   const entered = (s.auth === 'in' || s.auth === 'guest') && prev.auth !== s.auth
-  if (!entered || (!readSaved() && localStorage.getItem(CHECKED_KEY))) return
+  if (__WEB__ || !entered || (!readSaved() && localStorage.getItem(CHECKED_KEY))) return
   if (!useApp.getState().yandexMounted) useApp.setState({ yandexMounted: true })
   setTimeout(() => void loadYandex(), 2500)
 })

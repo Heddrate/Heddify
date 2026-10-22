@@ -52,6 +52,31 @@ test('a track opens in the full player, and the next one replaces its panel', as
   expect(errors).toEqual([])
 })
 
+test('the next track flies from "next up" onto the full player', async ({ page }) => {
+  // no words for these tracks: the full "next up" list shows
+  await page.route(/lrclib\.net/, (r) => r.fulfill({ status: 404, headers: { 'access-control-allow-origin': '*' }, body: '' }))
+  await page.goto('/')
+  await page.locator('.play-fab').first().click()
+  await page.getByRole('button', { name: 'Во весь экран' }).click()
+  const full = page.locator('.full-player')
+  const first = full.locator('.full-next-row').first()
+  await expect(first).toBeVisible()
+  const next = await first.locator('.full-next-text > :first-child').textContent()
+  await page.evaluate(() => {
+    const w = window as unknown as { flew: boolean }
+    w.flew = false
+    new MutationObserver(() => {
+      if (document.querySelector('.full-cover.flying')) w.flew = true
+    }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] })
+  })
+
+  await full.getByRole('button', { name: 'Следующий' }).click()
+  await expect(full.locator('.full-title')).toHaveText(next ?? '')
+  expect(await page.evaluate(() => (window as unknown as { flew: boolean }).flew)).toBe(true)
+  // it lands: nothing stays in flight
+  await expect(page.locator('.flying')).toHaveCount(0, { timeout: 2000 })
+})
+
 test("settings: autoplay is off by default, what's new is there, About is last", async ({ page }) => {
   const errors = watchErrors(page)
   await page.goto('/')

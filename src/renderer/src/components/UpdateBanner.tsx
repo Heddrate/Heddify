@@ -15,8 +15,8 @@ export function UpdateBanner(): React.JSX.Element | null {
     return (
       <div className="update-installing" role="status">
         <Logo size={64} />
-        <strong>{tx('Устанавливаю обновление')}</strong>
-        <span>{tx('Heddify закроется и откроется сам через полминуты')}</span>
+        <strong>{__WEB__ ? tx('Обновляю страницу') : tx('Устанавливаю обновление')}</strong>
+        <span>{__WEB__ ? tx('Музыка продолжится с начала трека') : tx('Heddify закроется и откроется сам через полминуты')}</span>
         <Spinner size={22} />
       </div>
     )
@@ -28,7 +28,7 @@ export function UpdateBanner(): React.JSX.Element | null {
       <Logo size={36} />
       <div className="update-text">
         <strong>{version ? tx('Вышла версия {0}', version) : tx('Вышло обновление')}</strong>
-        <span>{tx('Установится за полминуты')}</span>
+        <span>{__WEB__ ? tx('Страница обновится за секунду') : tx('Установится за полминуты')}</span>
       </div>
       <div className="update-actions">
         <button

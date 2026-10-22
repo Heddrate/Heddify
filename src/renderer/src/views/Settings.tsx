@@ -12,6 +12,7 @@ import { getImage, prepareImage, setWallpaper, themeImageKey, useWallpaper } fro
 import { derivePalette } from '@/lib/palette'
 import { pickAvatar, removeAvatar, setProfileName, useProfile } from '@/lib/profile'
 import { ProfileAvatar } from '@/components/ProfileAvatar'
+import { GetAppLink } from '@/components/GetApp'
 import { loginWithToken, logout, navigate, openUrl, signInSoundcloud, useApp } from '@/store/app'
 import { askConfirm, askText, openMenu, toast } from '@/store/ui'
 import { loginYandex, logoutYandex, useYa } from '@/lib/yandexApi'
@@ -115,101 +116,118 @@ export function Settings(): React.JSX.Element {
               </div>
             }
           />
-          {!me && (
-            <Row
-              label={
-                <AccountLabel avatar={<div className="ya-mark round sc">SC</div>} service="SoundCloud" stats={tx('Не подключено')} />
-              }
-              control={
-                <div className="settings-inline">
-                  <button className="btn btn-outline" onClick={() => void signInSoundcloud()}>{tx("Войти")}</button>
-                  <button className="btn btn-outline" onClick={() => void signInWithToken()}>{tx('По токену')}</button>
-                </div>
-              }
-            />
+          {!__WEB__ && (
+            <>
+              {!me && (
+                <Row
+                  label={
+                    <AccountLabel avatar={<div className="ya-mark round sc">SC</div>} service="SoundCloud" stats={tx('Не подключено')} />
+                  }
+                  control={
+                    <div className="settings-inline">
+                      <button className="btn btn-outline" onClick={() => void signInSoundcloud()}>{tx("Войти")}</button>
+                      <button className="btn btn-outline" onClick={() => void signInWithToken()}>{tx('По токену')}</button>
+                    </div>
+                  }
+                />
+              )}
+              {me && (
+                <Row
+                  label={
+                    <AccountLabel
+                      avatar={<Artwork src={userArt(me, 'large')} size={40} round placeholder="person" />}
+                      service="SoundCloud"
+                      stats={`${me.username} · ${libraryStats(scLikes, scPlaylists)}`}
+                    />
+                  }
+                  control={
+                    <div className="settings-inline">
+                      <button className="btn btn-outline" onClick={() => openUrl(me.permalink_url)}>{tx("Профиль")}</button>
+                      <button className="btn btn-outline" onClick={() => void signInWithToken()} title={tx('Если сессия слетела — вставьте свежий токен')}>
+                        {tx('Токен')}
+                      </button>
+                      <button className="btn btn-outline" onClick={() => void logout()}>{tx("Выйти")}</button>
+                    </div>
+                  }
+                />
+              )}
+              <Row
+                label={
+                  <AccountLabel
+                    avatar={
+                      yaStatus === 'in' && yaAvatar ? (
+                        <Artwork src={yaAvatar} size={40} round placeholder="person" />
+                      ) : (
+                        <div className="ya-mark round">Я</div>
+                      )
+                    }
+                    service={tx('Яндекс Музыка')}
+                    stats={
+                      yaStatus === 'in'
+                        ? `${yaName ? yaName + ' · ' : ''}${libraryStats(yaLikes, yaPlaylists)}`
+                        : yaStatus === 'unknown'
+                          ? tx('Подключаюсь…')
+                          : tx('Не подключено')
+                    }
+                  />
+                }
+                control={
+                  yaStatus === 'in' ? (
+                    <div className="settings-inline">
+                      <button className="btn btn-outline" onClick={() => openUrl('https://music.yandex.ru/')}>{tx("Профиль")}</button>
+                      <button className="btn btn-outline" onClick={() => void logoutYandex()}>{tx("Выйти")}</button>
+                    </div>
+                  ) : (
+                    <div className="settings-inline">
+                      <button className="btn btn-outline" onClick={() => void loginYandex()}>{tx("Войти")}</button>
+                    </div>
+                  )
+                }
+              />
+              <Row
+                label={
+                  <AccountLabel
+                    avatar={<div className="ya-mark round vk">{tx('ВК')}</div>}
+                    service={tx('ВКонтакте')}
+                    stats={
+                      vkStatus === 'in'
+                        ? tx('Моя музыка · {0}', countLabel(vkTracks, tx('трек'), tx('трека'), tx('треков')))
+                        : vkStatus === 'unknown'
+                          ? tx('Подключаюсь…')
+                          : tx('Не подключено')
+                    }
+                  />
+                }
+                control={
+                  vkStatus === 'in' ? (
+                    <div className="settings-inline">
+                      <button className="btn btn-outline" onClick={() => openUrl(vkUid ? `https://vk.com/audios${vkUid}` : 'https://vk.com/audio')}>
+                        {tx("Профиль")}
+                      </button>
+                      <button className="btn btn-outline" onClick={() => void logoutVk()}>{tx("Выйти")}</button>
+                    </div>
+                  ) : (
+                    <div className="settings-inline">
+                      <button className="btn btn-outline" onClick={() => void loginVk()}>{tx("Войти")}</button>
+                    </div>
+                  )
+                }
+              />
+            </>
           )}
-          {me && (
+          {/* the website: these services live in the desktop app */}
+          {__WEB__ && (
             <Row
               label={
                 <AccountLabel
-                  avatar={<Artwork src={userArt(me, 'large')} size={40} round placeholder="person" />}
-                  service="SoundCloud"
-                  stats={`${me.username} · ${libraryStats(scLikes, scPlaylists)}`}
+                  avatar={<Logo size={40} />}
+                  service={tx('Heddify для Windows')}
+                  stats={tx('SoundCloud, Яндекс Музыка, ВКонтакте, Discord и музыка без интернета')}
                 />
               }
-              control={
-                <div className="settings-inline">
-                  <button className="btn btn-outline" onClick={() => openUrl(me.permalink_url)}>{tx("Профиль")}</button>
-                  <button className="btn btn-outline" onClick={() => void signInWithToken()} title={tx('Если сессия слетела — вставьте свежий токен')}>
-                    {tx('Токен')}
-                  </button>
-                  <button className="btn btn-outline" onClick={() => void logout()}>{tx("Выйти")}</button>
-                </div>
-              }
+              control={<GetAppLink />}
             />
           )}
-          <Row
-            label={
-              <AccountLabel
-                avatar={
-                  yaStatus === 'in' && yaAvatar ? (
-                    <Artwork src={yaAvatar} size={40} round placeholder="person" />
-                  ) : (
-                    <div className="ya-mark round">Я</div>
-                  )
-                }
-                service={tx('Яндекс Музыка')}
-                stats={
-                  yaStatus === 'in'
-                    ? `${yaName ? yaName + ' · ' : ''}${libraryStats(yaLikes, yaPlaylists)}`
-                    : yaStatus === 'unknown'
-                      ? tx('Подключаюсь…')
-                      : tx('Не подключено')
-                }
-              />
-            }
-            control={
-              yaStatus === 'in' ? (
-                <div className="settings-inline">
-                  <button className="btn btn-outline" onClick={() => openUrl('https://music.yandex.ru/')}>{tx("Профиль")}</button>
-                  <button className="btn btn-outline" onClick={() => void logoutYandex()}>{tx("Выйти")}</button>
-                </div>
-              ) : (
-                <div className="settings-inline">
-                  <button className="btn btn-outline" onClick={() => void loginYandex()}>{tx("Войти")}</button>
-                </div>
-              )
-            }
-          />
-          <Row
-            label={
-              <AccountLabel
-                avatar={<div className="ya-mark round vk">{tx('ВК')}</div>}
-                service={tx('ВКонтакте')}
-                stats={
-                  vkStatus === 'in'
-                    ? tx('Моя музыка · {0}', countLabel(vkTracks, tx('трек'), tx('трека'), tx('треков')))
-                    : vkStatus === 'unknown'
-                      ? tx('Подключаюсь…')
-                      : tx('Не подключено')
-                }
-              />
-            }
-            control={
-              vkStatus === 'in' ? (
-                <div className="settings-inline">
-                  <button className="btn btn-outline" onClick={() => openUrl(vkUid ? `https://vk.com/audios${vkUid}` : 'https://vk.com/audio')}>
-                    {tx("Профиль")}
-                  </button>
-                  <button className="btn btn-outline" onClick={() => void logoutVk()}>{tx("Выйти")}</button>
-                </div>
-              ) : (
-                <div className="settings-inline">
-                  <button className="btn btn-outline" onClick={() => void loginVk()}>{tx("Войти")}</button>
-                </div>
-              )
-            }
-          />
         </Section>
 
         <LookSection />
@@ -217,69 +235,73 @@ export function Settings(): React.JSX.Element {
         </div>
         <div className="settings-col">
         <Section title={tx("Воспроизведение")}>
-          <Row
-            label={tx('Выравнивать громкость')}
-            hint={tx('Тихие и громкие треки звучат ровнее')}
-            control={
-              <Switch
-                on={leveling}
-                onToggle={() => {
-                  setLeveling(!leveling)
-                  engine.setLeveling(!leveling)
-                  void window.sc.prefs.set({ leveling: !leveling })
-                }}
+          {!__WEB__ && (
+            <>
+              <Row
                 label={tx('Выравнивать громкость')}
+                hint={tx('Тихие и громкие треки звучат ровнее')}
+                control={
+                  <Switch
+                    on={leveling}
+                    onToggle={() => {
+                      setLeveling(!leveling)
+                      engine.setLeveling(!leveling)
+                      void window.sc.prefs.set({ leveling: !leveling })
+                    }}
+                    label={tx('Выравнивать громкость')}
+                  />
+                }
               />
-            }
-          />
-          <Row
-            label={tx('Подсветка баса в полном экране')}
-            hint={tx('Весь экран светится в такт басу. Ноль — выключено')}
-            control={
-              <div className="settings-slider">
-                <Slider
-                  value={Math.round(bassGlow * 100)}
-                  max={100}
-                  label={tx('Подсветка баса в полном экране')}
-                  onChange={(v) => {
-                    setBassGlow(v / 100)
-                    engine.setBassGlow(v / 100)
-                  }}
-                  onCommit={(v) => void window.sc.prefs.set({ bassGlow: v / 100 })}
-                />
-                <span className="settings-slider-value">{Math.round(bassGlow * 100)}%</span>
-              </div>
-            }
-          />
-          <Row
-            label={tx('Плавный переход между треками')}
-            hint={tx('Звук плавно нарастает в начале трека и затихает в конце')}
-            control={
-              <Switch
-                on={fade}
-                onToggle={() => {
-                  setFade(!fade)
-                  engine.setFade(!fade)
-                  void window.sc.prefs.set({ crossfade: !fade })
-                }}
+              <Row
+                label={tx('Подсветка баса в полном экране')}
+                hint={tx('Весь экран светится в такт басу. Ноль — выключено')}
+                control={
+                  <div className="settings-slider">
+                    <Slider
+                      value={Math.round(bassGlow * 100)}
+                      max={100}
+                      label={tx('Подсветка баса в полном экране')}
+                      onChange={(v) => {
+                        setBassGlow(v / 100)
+                        engine.setBassGlow(v / 100)
+                      }}
+                      onCommit={(v) => void window.sc.prefs.set({ bassGlow: v / 100 })}
+                    />
+                    <span className="settings-slider-value">{Math.round(bassGlow * 100)}%</span>
+                  </div>
+                }
+              />
+              <Row
                 label={tx('Плавный переход между треками')}
+                hint={tx('Звук плавно нарастает в начале трека и затихает в конце')}
+                control={
+                  <Switch
+                    on={fade}
+                    onToggle={() => {
+                      setFade(!fade)
+                      engine.setFade(!fade)
+                      void window.sc.prefs.set({ crossfade: !fade })
+                    }}
+                    label={tx('Плавный переход между треками')}
+                  />
+                }
               />
-            }
-          />
-          <Row
-            label={tx('Сворачивать в трей при закрытии')}
-            hint={tx('Музыка продолжит играть')}
-            control={
-              <Switch
-                on={toTray}
-                onToggle={() => {
-                  setToTray(!toTray)
-                  void window.sc.prefs.set({ closeToTray: !toTray })
-                }}
+              <Row
                 label={tx('Сворачивать в трей при закрытии')}
+                hint={tx('Музыка продолжит играть')}
+                control={
+                  <Switch
+                    on={toTray}
+                    onToggle={() => {
+                      setToTray(!toTray)
+                      void window.sc.prefs.set({ closeToTray: !toTray })
+                    }}
+                    label={tx('Сворачивать в трей при закрытии')}
+                  />
+                }
               />
-            }
-          />
+            </>
+          )}
           <Row
             label={tx("Автопродолжение")}
             hint={tx("Когда очередь закончится, играть похожие треки. Выключено по умолчанию")}
@@ -287,17 +309,19 @@ export function Settings(): React.JSX.Element {
           />
         </Section>
 
-        <CacheSection />
+        {!__WEB__ && <CacheSection />}
 
-        <Section title="Discord">
-          <Row
-            label={tx("Показывать в Discord, что я слушаю")}
-            control={<Switch on={discordOn} onToggle={toggleDiscord} label="Discord Rich Presence" />}
-          />
-          {discordOn && (
-            <p className={cx('settings-status', status === 'ready' && 'ok', status === 'bad-id' && 'bad')}>{discordText()[status]}</p>
-          )}
-        </Section>
+        {!__WEB__ && (
+          <Section title="Discord">
+            <Row
+              label={tx("Показывать в Discord, что я слушаю")}
+              control={<Switch on={discordOn} onToggle={toggleDiscord} label="Discord Rich Presence" />}
+            />
+            {discordOn && (
+              <p className={cx('settings-status', status === 'ready' && 'ok', status === 'bad-id' && 'bad')}>{discordText()[status]}</p>
+            )}
+          </Section>
+        )}
 
         <Section title={tx('Что нового')}>
           <p className="settings-hint">{tx('Версия {0}', __APP_VERSION__)}</p>
@@ -338,13 +362,17 @@ export function Settings(): React.JSX.Element {
               </div>
             }
           />
-          <UpdateRow />
-          <Row
-            label={tx("Журнал ошибок")}
-            control={
-              <button className="btn btn-outline" onClick={() => void window.sc.openLogs()}>{tx("Открыть папку")}</button>
-            }
-          />
+          {!__WEB__ && (
+            <>
+              <UpdateRow />
+              <Row
+                label={tx("Журнал ошибок")}
+                control={
+                  <button className="btn btn-outline" onClick={() => void window.sc.openLogs()}>{tx("Открыть папку")}</button>
+                }
+              />
+            </>
+          )}
         </Section>
         </div>
       </div>

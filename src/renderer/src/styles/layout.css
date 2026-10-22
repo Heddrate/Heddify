@@ -646,7 +646,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  width: clamp(150px, 13vw, 220px);
+  /* one size on every screen: it must not grow or shrink when the window moves to another monitor */
+  width: 148px;
 }
 
 /* ---------- slider ---------- */

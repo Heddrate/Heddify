@@ -1,0 +1,16 @@
+[Unit]
+Description=heddrate.com: Heddify website from GitHub releases
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=heddify-web
+Group=heddify-web
+ExecStart=/usr/local/bin/heddify-web-sync
+LogLevelMax=notice
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/heddify-web /var/www/heddify

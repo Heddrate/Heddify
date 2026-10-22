@@ -5,6 +5,7 @@ import { TrackList } from '@/components/TrackList'
 import { LibCard } from '@/components/LibCard'
 import { openArtist, playOrToggle, sameRoute, trackMenu } from '@/lib/actions'
 import { Icon } from '@/components/Icon'
+import { GetAppLink } from '@/components/GetApp'
 import { api, isPlaylist, tracksOf } from '@/lib/api'
 import { trackArt, useArtColor } from '@/lib/artwork'
 import { useAsync, usePaged } from '@/lib/hooks'
@@ -55,6 +56,28 @@ function Hero({ track }: { track: Track }): React.JSX.Element {
   )
 }
 
+/** The website's first screen for someone who hasn't listened to anything yet: what is here, what the app adds. */
+function SiteHero(): React.JSX.Element {
+  return (
+    <section className="hero site-hero">
+      <div className="hero-body">
+        <span className="hero-kicker">{tx('Плеер в браузере')}</span>
+        <h1 className="hero-title">Heddify</h1>
+        <p className="hero-sub">
+          {tx('Здесь играют Audius, радио со всего мира и ваши файлы. SoundCloud, Яндекс Музыка и ВКонтакте — в приложении для Windows.')}
+        </p>
+        <div className="hero-actions">
+          <button className="btn btn-outline" onClick={() => navigate({ name: 'wave' })}>
+            <Icon name="wave" size={18} />
+            {tx('Включить волну')}
+          </button>
+          <GetAppLink />
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export function Home(): React.JSX.Element {
   // guests (no SoundCloud account) get Yandex and Audius only
   const scIn = useApp((s) => s.auth === 'in')
@@ -80,7 +103,7 @@ export function Home(): React.JSX.Element {
 
   return (
     <div className="view">
-      {heroTrack && <Hero track={heroTrack} />}
+      {heroTrack ? <Hero track={heroTrack} /> : __WEB__ && <SiteHero />}
       <ContinueShelf />
       <FavoritesShelf />
       <PlaylistsShelf />

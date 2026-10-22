@@ -47,7 +47,8 @@ export function Sidebar(): React.JSX.Element {
       <Icon name={icon} size={22} />
     </div>
   )
-  const missing = [!scIn && 'SoundCloud', yaStatus === 'out' && tx('Яндекс Музыка')].filter(Boolean).join(', ')
+  // the website can't connect them at all: no offer there
+  const missing = __WEB__ ? '' : [!scIn && 'SoundCloud', yaStatus === 'out' && tx('Яндекс Музыка')].filter(Boolean).join(', ')
 
   return (
     <aside className="sidebar panel">

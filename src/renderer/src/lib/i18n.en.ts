@@ -680,7 +680,18 @@ const EN: Record<string, string> = {
   'Прозрачность панелей': 'Panel transparency',
   'Без фона': 'None',
   'Обложка трека': 'Track cover',
-  'Своя картинка': 'My picture'
+  'Своя картинка': 'My picture',
+  'Скачать Heddify для Windows': 'Download Heddify for Windows',
+  'Скачать для Windows': 'Download for Windows',
+  'Обновляю страницу': 'Reloading the page',
+  'Музыка продолжится с начала трека': 'The music goes on from the start of the track',
+  'Страница обновится за секунду': 'The page reloads in a second',
+  'Плеер в браузере': 'A player in your browser',
+  'Здесь играют Audius, радио со всего мира и ваши файлы. SoundCloud, Яндекс Музыка и ВКонтакте — в приложении для Windows.': 'Audius, radio from all over the world and your own files play here. SoundCloud, Yandex Music and VK are in the Windows app.',
+  'Включить волну': 'Start the wave',
+  'Heddify для Windows': 'Heddify for Windows',
+  'SoundCloud, Яндекс Музыка, ВКонтакте, Discord и музыка без интернета': 'SoundCloud, Yandex Music, VK, Discord and music without internet',
+  'Это работает в приложении Heddify для Windows': 'This works in the Heddify app for Windows'
 }
 
 export default EN

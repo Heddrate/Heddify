@@ -325,6 +325,8 @@ export interface YaArtistHit {
 
 /** Artists from Yandex's public search page: the cards with a name link, and their picture. */
 export async function searchYandexArtists(q: string): Promise<YaArtistHit[]> {
+  // the website can't read Yandex's pages (a browser blocks other sites)
+  if (__WEB__) return []
   const res = await fetch(`${YA}/search?text=${encodeURIComponent(q)}`, { credentials: 'omit' })
   if (!res.ok) throw new Error(tx("Яндекс Музыка: {0}", res.status))
   const doc = new DOMParser().parseFromString(await res.text(), 'text/html')
@@ -344,6 +346,7 @@ export async function searchYandexArtists(q: string): Promise<YaArtistHit[]> {
 }
 
 export async function searchYandex(q: string): Promise<Track[]> {
+  if (__WEB__) return []
   const res = await fetch(`${YA}/search?text=${encodeURIComponent(q)}`, { credentials: 'omit' })
   if (!res.ok) throw new Error(tx("Яндекс Музыка: {0}", res.status))
   const doc = new DOMParser().parseFromString(await res.text(), 'text/html')

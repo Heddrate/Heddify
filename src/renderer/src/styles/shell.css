@@ -678,3 +678,201 @@ button:focus:not(:focus-visible),
   font-weight: 600;
   letter-spacing: -0.015em;
 }
+
+/* the words sit in the poster's right column: the active line is centred in that column, not in the
+   window, and they come in together at once instead of line by line */
+.full-right {
+  container-type: size;
+}
+
+.full-player .full-lyrics:not(.plain) {
+  padding: 42cqh 0;
+}
+
+.full-player .full-line {
+  animation-duration: 0.25s;
+  animation-delay: 0s;
+}
+
+.full-lyrics.wait {
+  height: 100%;
+}
+
+/* the words above, the next track under them: the next cover flies from that row onto the poster */
+.full-right {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.full-words {
+  flex: 1;
+  min-height: 0;
+  container-type: size;
+}
+
+.full-words > .full-lyrics {
+  height: 100%;
+}
+
+.full-next.one {
+  flex: none;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+/* in flight above everything else on the poster; the row it left stays empty */
+.full-cover.flying {
+  animation: none;
+}
+
+.full-left > .flying,
+.full-left > :has(.flying) {
+  z-index: 3;
+}
+
+.full-next-row.taken {
+  visibility: hidden;
+}
+
+/* ---------- the website's first screen: the name big, what is here, the way to the app ---------- */
+
+.site-hero {
+  grid-template-columns: minmax(0, 1fr);
+  background: color-mix(in srgb, var(--panel-2) 40%, #070707);
+}
+
+.site-hero .hero-title {
+  font-size: clamp(44px, 8cqw, 96px);
+}
+
+.site-hero .hero-sub {
+  max-width: 62ch;
+  line-height: 1.5;
+}
+
+/* the download link in the top bar: one line, no wider than it needs */
+.get-app {
+  gap: 8px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.get-app.compact {
+  height: 34px;
+  padding: 0 14px;
+}
+
+/* the banner's buttons go to a second line rather than out of it */
+.hero-actions {
+  flex-wrap: wrap;
+}
+
+/* ---------- tablets: the website between a phone and the app's narrowest window (980 px) ----------
+   the library column steps aside for the page, as it already does next to the queue */
+@media (max-width: 960px) {
+  .app:not(.with-queue) {
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+  }
+
+  .app > .sidebar {
+    display: none;
+  }
+
+  .app > .main {
+    grid-column: 2;
+  }
+}
+
+/* ---------- phones: the website on a narrow screen (the app's window is never this narrow) ----------
+   One column: the page, the player under it, the sections as a tab bar at the bottom. The library
+   column steps aside (its lists are on the pages too), the queue opens over everything. */
+
+@media (max-width: 760px) {
+  /* as strong as the tablet rule above, so the phone's single column wins */
+  .app:not(.with-queue),
+  .app.with-queue {
+    height: 100dvh;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 56px minmax(0, 1fr) auto auto;
+    padding: 0;
+  }
+
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .tb-left,
+  .app > .sidebar {
+    display: none;
+  }
+
+  .tb-right {
+    width: auto;
+  }
+
+  .app > .main,
+  .app.with-queue > .main {
+    grid-column: 1;
+    grid-row: 2;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .app > .main > .view {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* the player: what plays, then the controls and the progress across the whole width */
+  .app > .playerbar {
+    grid-column: 1;
+    grid-row: 3;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 10px 14px 6px;
+    border-radius: 0;
+  }
+
+  .pb-right {
+    display: none;
+  }
+
+  /* the sections: a tab bar at the very bottom */
+  .app > .rail {
+    grid-column: 1;
+    grid-row: 4;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 0;
+    padding: 2px 4px calc(2px + env(safe-area-inset-bottom));
+    border-radius: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .rail-logo {
+    display: none;
+  }
+
+  .rail-btn {
+    flex: 1;
+    width: auto;
+    height: 52px;
+  }
+
+  .app > .queue {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .hero {
+    min-height: 0;
+    margin-top: 12px;
+    padding: 24px 20px;
+  }
+}
