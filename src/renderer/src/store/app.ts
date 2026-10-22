@@ -5,6 +5,7 @@ import { toast } from './ui'
 import { player, restoreSession, slim } from './player'
 import { tx } from '@/lib/i18n'
 import { clearListCache } from '@/lib/listCache'
+import { withFallback } from '@/lib/deadEnds'
 
 /** 'guest': using the app without SoundCloud (Yandex / Audius only). */
 type AuthState = 'checking' | 'out' | 'in' | 'offline' | 'guest'
@@ -244,24 +245,25 @@ async function loadLikes(): Promise<void> {
   }
 }
 
+async function followingsByPages(meId: number): Promise<number[]> {
+  let page = await api.followings(meId)
+  const ids = page.collection.map((u) => u.id)
+  while (page.next_href && ids.length < 5000) {
+    page = await api.page(page.next_href)
+    ids.push(...(page.collection as User[]).map((u) => u.id))
+  }
+  return ids
+}
+
 async function loadFollows(): Promise<void> {
+  const me = get().me
+  if (!me) return
   try {
-    set({ follows: withPending(await api.followingIds(), 'follow'), followsKnown: true })
-  } catch {
     // /me/followings/ids is 404 for some accounts: walk the followings list instead
-    const me = get().me
-    if (!me) return
-    try {
-      let page = await api.followings(me.id)
-      const ids = page.collection.map((u) => u.id)
-      while (page.next_href && ids.length < 5000) {
-        page = await api.page(page.next_href)
-        ids.push(...(page.collection as User[]).map((u) => u.id))
-      }
-      set({ follows: withPending(ids, 'follow'), followsKnown: true })
-    } catch {
-      set({ followsKnown: false })
-    }
+    const ids = await withFallback(`${me.id}:followings/ids`, api.followingIds, () => followingsByPages(me.id))
+    set({ follows: withPending(ids, 'follow'), followsKnown: true })
+  } catch {
+    set({ followsKnown: false })
   }
 }
 

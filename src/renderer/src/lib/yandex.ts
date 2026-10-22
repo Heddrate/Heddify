@@ -403,6 +403,8 @@ let startedAt = 0
 let endSignalled = false
 /** Bumped on every play request; an older request stops as soon as it notices. */
 let playToken = 0
+/** The track the page is opening now: asked for again before it starts, it isn't opened twice. */
+let opening: { id: number; token: number; done: Promise<void> } | null = null
 
 /* ---------- the page's sound: bass glow and smooth transitions ---------- */
 
@@ -514,54 +516,70 @@ async function tick(): Promise<void> {
   }
 }
 
-const driver: ExternalDriver = {
-  async play(track, startAt) {
-    const token = ++playToken
-    const wv = await page()
-    const id = track.ya?.trackId
-    if (!id) throw new Error(tx('у трека нет ссылки на Яндекс Музыку'))
-    expected = track
-    matched = false
-    endSignalled = false
-    startedAt = Date.now()
-    stopMirror()
-    const url = track.permalink_url ?? `${YA}/track/${id}`
-    trace(`play ${id}: open ${url}`)
-    await navigateTo(wv, url)
-    if (token !== playToken) return // another track was requested meanwhile
-    allowPlay(30_000)
+/** Opens the track's page and presses play until it is really this track that plays. */
+async function openAndPlay(track: Track, startAt: number, token: number): Promise<void> {
+  const wv = await page()
+  const id = track.ya?.trackId
+  if (!id) throw new Error(tx('у трека нет ссылки на Яндекс Музыку'))
+  expected = track
+  matched = false
+  endSignalled = false
+  startedAt = Date.now()
+  stopMirror()
+  const url = track.permalink_url ?? `${YA}/track/${id}`
+  trace(`play ${id}: open ${url}`)
+  await navigateTo(wv, url)
+  if (token !== playToken) return // another track was requested meanwhile
+  allowPlay(30_000)
 
-    // Press play, then make sure it is really this track that plays; the page may
-    // still be hydrating and swallow the first click.
-    for (let attempt = 1; attempt <= 4; attempt++) {
-      let clicked = false
-      for (let i = 0; i < 30 && !clicked; i++) {
-        clicked = (await press<boolean>(clickPlay(id, track.title?.replace(/\s*\(.*\)$/, '')))) === true
-        if (token !== playToken) return
-        if (!clicked) await sleep(500)
-      }
-      if (!clicked) break
-      for (let i = 0; i < 10; i++) {
-        await sleep(500)
-        if (token !== playToken) return
-        const st = await run<PageState>(READ_STATE)
-        if (st && !st.paused && sameTitle(st.title, track.title)) {
-          trace(`play ${id}: playing after ${attempt} click(s)`)
-          listenFor(`play ${id}`)
-          matched = true
-          externalEvents.started(track)
-          void run(`window.__scVolume && window.__scVolume(${pageVolume})`)
-          externalEvents.state({ playing: true, loading: false })
-          if (startAt > 0) setTimeout(() => void run(seekTo(startAt)), 1500)
-          startMirror()
-          return
-        }
-      }
-      trace(`play ${id}: click ${attempt} did not start it, retrying`)
+  // Press play, then make sure it is really this track that plays; the page may
+  // still be hydrating and swallow the first click.
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    let clicked = false
+    for (let i = 0; i < 30 && !clicked; i++) {
+      clicked = (await press<boolean>(clickPlay(id, track.title?.replace(/\s*\(.*\)$/, '')))) === true
+      if (token !== playToken) return
+      if (!clicked) await sleep(500)
     }
-    if (token !== playToken) return
-    throw new Error(tx('Яндекс Музыка не дала запустить трек'))
-  },  pause() {
+    if (!clicked) break
+    for (let i = 0; i < 10; i++) {
+      await sleep(500)
+      if (token !== playToken) return
+      const st = await run<PageState>(READ_STATE)
+      if (st && !st.paused && sameTitle(st.title, track.title)) {
+        trace(`play ${id}: playing after ${attempt} click(s)`)
+        listenFor(`play ${id}`)
+        matched = true
+        externalEvents.started(track)
+        void run(`window.__scVolume && window.__scVolume(${pageVolume})`)
+        externalEvents.state({ playing: true, loading: false })
+        if (startAt > 0) setTimeout(() => void run(seekTo(startAt)), 1500)
+        startMirror()
+        return
+      }
+    }
+    trace(`play ${id}: click ${attempt} did not start it, retrying`)
+  }
+  if (token !== playToken) return
+  throw new Error(tx('Яндекс Музыка не дала запустить трек'))
+}
+
+const driver: ExternalDriver = {
+  play(track, startAt) {
+    const id = track.ya?.trackId
+    if (id && opening?.id === id && opening.token === playToken) return opening.done
+    const token = ++playToken
+    const done = openAndPlay(track, startAt, token)
+    if (id) {
+      opening = { id, token, done }
+      const clear = (): void => {
+        if (opening?.done === done) opening = null
+      }
+      done.then(clear, clear)
+    }
+    return done
+  },
+  pause() {
     void press(setPlaying(false))
     externalEvents.state({ playing: false })
   },

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { api, tracksOf } from '@/lib/api'
 import { trackArt } from '@/lib/artwork'
 import { moveItem } from '@/lib/listOps'
+import { shareInFlight } from '@/lib/inflight'
 import type { PlaySource, Route, Track, User } from '@/lib/types'
 import { engine } from '@/player/engine'
 import { toast } from './ui'
@@ -241,6 +242,8 @@ const isDrm = (t: Track, message: string): boolean => !t.origin && message.inclu
  * null: none found). The queue and the screen keep the SoundCloud track, only the sound is Yandex's.
  */
 const standIns = new Map<number, Track | null>()
+/** Stand-in searches still running: a second play of the same track waits for the same search. */
+const standInSearches = new Map<number, Promise<Track | null>>()
 
 /** A user's next / previous press: the track shows at once, but it only loads once the presses settle. */
 const NAV_SETTLE_MS = 180
@@ -287,14 +290,20 @@ async function playTrack(track: Track, startAt = 0, autoplay = true): Promise<vo
     if (stream) set({ preview: stream.snipped })
   } catch (e) {
     const message = e instanceof Error ? e.message : tx("ошибка")
-    if (isDrm(track, message) && external && !standIns.has(track.id)) {
-      set({ loading: true })
-      const twin = await external.twin(track).catch(() => null)
+    // no stand-in known yet (or one was found while this load ran)
+    const known = standIns.get(track.id)
+    if (isDrm(track, message) && external && (known || !standIns.has(track.id))) {
+      // still "playing": a play button would invite a second start while Yandex is searched
+      set({ loading: true, playing: autoplay })
+      const ext = external
+      const twin = known ?? (await shareInFlight(standInSearches, track.id, () => ext.twin(track).catch(() => null)))
       standIns.set(track.id, twin)
+      // this very track was asked for again meanwhile: the newer request carries on
+      if (seq !== navSeq && get().current === track) return
       // the user may have moved on while Yandex was searched
       const still = get().current === track
       if (twin) return still ? playExternal(track, twin, startAt, autoplay) : undefined
-      if (still) set({ loading: false })
+      if (still) set({ loading: false, playing: false })
     }
     onFail(track, message)
   }
@@ -632,6 +641,8 @@ export const player = {
       return
     }
     if (!engine.hasSource()) {
+      // a Yandex stand-in is being searched for: it starts by itself once found
+      if (standInSearches.has(s.current.id)) return
       void playTrack(s.current, s.position)
       return
     }

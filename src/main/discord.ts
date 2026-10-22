@@ -6,6 +6,7 @@
 import net from 'node:net'
 import { randomUUID } from 'node:crypto'
 import type { DiscordStatus, Presence } from '../shared/ipc'
+import { presenceUrl } from './presenceUrl'
 
 /** Application registered by the user in the Discord Developer Portal. */
 export const DEFAULT_DISCORD_APP_ID = '1557715252651495475'
@@ -230,11 +231,12 @@ function activity(p: Presence): Record<string, unknown> {
   }
   const assets: Record<string, string> = {}
   // no cover: our own placeholder (same look as in the app), not Discord's "?"
-  const art = p.artwork?.startsWith('https://') && p.artwork.length <= 256 ? p.artwork : p.radio ? PLACEHOLDER.radio : PLACEHOLDER.track
-  assets.large_image = art
+  assets.large_image = presenceUrl(p.artwork, 256) ?? (p.radio ? PLACEHOLDER.radio : PLACEHOLDER.track)
   if (p.album) assets.large_text = clip(p.album)
   if (Object.keys(assets).length) a.assets = assets
-  if (p.url?.startsWith('https://')) a.buttons = [{ label: clip(p.buttonLabel ?? 'SoundCloud', 32), url: p.url }]
+  // a link Discord can't take would drop the whole status: then it goes without the button
+  const url = presenceUrl(p.url)
+  if (url) a.buttons = [{ label: clip(p.buttonLabel ?? 'SoundCloud', 32), url }]
   return a
 }
 

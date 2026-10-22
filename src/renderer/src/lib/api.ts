@@ -1,5 +1,6 @@
 import type { ApiMethod } from '../../../shared/ipc'
 import { tx } from './i18n'
+import { withFallback } from './deadEnds'
 import type {
   AnyPlaylist,
   Collection,
@@ -124,15 +125,19 @@ export const api = {
   followingIds: () => request<unknown>('GET', '/me/followings/ids', { limit: 5000 }).then(idsOf),
 
   libraryPlaylists: (userId: number) =>
-    get<Collection<{ playlist?: Playlist; system_playlist?: SystemPlaylist; type?: string }>>(
-      `/users/${userId}/playlists_liked_and_owned`,
-      { limit: 200, linked_partitioning: 1 },
-      20_000
-    ).catch(() =>
-      get<Collection<{ playlist?: Playlist; system_playlist?: SystemPlaylist; type?: string }>>('/me/library/all', {
-        limit: 200,
-        linked_partitioning: 1
-      })
+    withFallback(
+      `${userId}:playlists_liked_and_owned`,
+      () =>
+        get<Collection<{ playlist?: Playlist; system_playlist?: SystemPlaylist; type?: string }>>(
+          `/users/${userId}/playlists_liked_and_owned`,
+          { limit: 200, linked_partitioning: 1 },
+          20_000
+        ),
+      () =>
+        get<Collection<{ playlist?: Playlist; system_playlist?: SystemPlaylist; type?: string }>>('/me/library/all', {
+          limit: 200,
+          linked_partitioning: 1
+        })
     ),
 
   followings: (userId: number) => get<Collection<User>>(`/users/${userId}/followings`, { limit: PAGE, linked_partitioning: 1 }),
