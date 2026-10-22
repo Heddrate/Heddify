@@ -1,4 +1,5 @@
 import '@fontsource-variable/inter'
+import '@fontsource-variable/unbounded'
 import './styles/themes.css'
 import './styles/base.css'
 import './styles/layout.css'
@@ -11,6 +12,7 @@ import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import './lib/presence'
 import { initTheme } from './lib/theme'
+import { loadWallpaper } from './lib/wallpaper'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 // Opening the renderer in a plain browser during development: use fake data.
@@ -21,6 +23,7 @@ if (import.meta.env.DEV && !window.sc) {
 }
 
 initTheme()
+void loadWallpaper()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

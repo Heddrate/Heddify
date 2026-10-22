@@ -1,8 +1,10 @@
 /*
- * The shell: panels on a calm background. The rail, the library column, the page, the queue
- * and the player are panels of the theme's own colour with even gaps. With the blurred cover on
- * (Settings → Appearance, `.cover-on`) the panels let the cover of what plays show through;
- * off, they are solid on --bg. Loads last.
+ * The shell, "clean studio": the rail, the library column, the page, the queue and the player
+ * are one console of the theme's own colour, split by hairlines — no gaps, no stack of cards.
+ * Type carries the design: the display face (Unbounded) for titles, Inter for everything else;
+ * the accent only where it matters (play, progress, what plays now).
+ * Behind the console (Settings → Appearance → Background): the plain background, the blurred
+ * cover of what plays (`.cover-on`) or the user's own picture (`.wall-on`). Loads last.
  */
 
 :root {
@@ -23,15 +25,52 @@
   background: var(--bg);
 }
 
-/* every column is the same kind of panel */
+/* one console: every column is the same surface, joined edge to edge, split by a hairline */
+.app {
+  column-gap: 0;
+  row-gap: 0;
+  padding: 0 12px 12px;
+}
+
 .rail,
 .sidebar,
 .queue,
 .main.panel,
 .playerbar {
   background: var(--shell-fill);
-  border: 1px solid var(--shell-edge);
-  border-radius: var(--shell-r);
+  border: 0;
+  border-radius: 0;
+}
+
+.sidebar,
+.main.panel,
+.queue {
+  border-left: 1px solid var(--line);
+}
+
+.playerbar {
+  border-top: 1px solid var(--line);
+}
+
+/* only the console's own corners are round */
+.rail {
+  border-top-left-radius: var(--shell-r);
+}
+
+.app:not(.with-queue) > .main.panel,
+.app.with-queue > .queue {
+  border-top-right-radius: var(--shell-r);
+}
+
+.playerbar {
+  border-bottom-left-radius: var(--shell-r);
+  border-bottom-right-radius: var(--shell-r);
+}
+
+/* over a picture or a cover the console stays one piece: its hairlines are lighter */
+.app.wall-on,
+.app.cover-on {
+  --line: color-mix(in srgb, var(--text) 10%, transparent);
 }
 
 /* ---------- the blurred cover behind the app ---------- */
@@ -53,6 +92,42 @@
 /* nothing plays: the plain background */
 .app > .cover-bg.empty::after {
   display: none;
+}
+
+/* ---------- the user's own picture behind the app (Settings → Appearance → Background) ---------- */
+
+.app > .wallpaper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--bg);
+}
+
+/* oversized by the blur, so its soft edge never shows */
+.wallpaper-img {
+  position: absolute;
+  inset: calc(var(--wp-blur) * -2);
+  width: calc(100% + var(--wp-blur) * 4);
+  height: calc(100% + var(--wp-blur) * 4);
+  max-width: none;
+  object-fit: cover;
+  filter: blur(var(--wp-blur)) saturate(var(--wp-sat));
+  animation: cover-bg-in 0.6s ease both;
+}
+
+/* the veil: the theme's own background over the picture, as strong as the user set it */
+.wallpaper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  opacity: var(--wp-dim);
+}
+
+.app.wall-on {
+  --shell-fill: color-mix(in srgb, var(--panel) var(--wp-solid), transparent);
 }
 
 .playerbar {
@@ -149,68 +224,74 @@
     var(--head-color);
 }
 
-/* ---------- home: the banner on top ---------- */
+/* ---------- home: the banner on top — the title in big type, the cover beside it ---------- */
 
 .hero {
+  --hero-color: #2a2a2a;
   position: relative;
-  height: 300px;
-  margin: 8px 0 30px;
-  border-radius: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 32px;
+  min-height: 300px;
+  margin: 8px 0 34px;
+  padding: 32px 32px 32px 40px;
+  border-radius: 14px;
   overflow: hidden;
-  background: var(--panel-2);
-  box-shadow: 0 6px 22px -12px rgba(0, 0, 0, 0.5);
+  /* always dark, in the cover's colour: the type stays white in every theme */
+  background: color-mix(in srgb, var(--hero-color) 62%, #070707);
   color: #fff;
 }
 
-.hero-art {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scale(1.02);
+.hero-shade {
+  display: none;
 }
 
-.hero-shade {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.4) 52%, rgba(0, 0, 0, 0.12) 100%);
+.hero-art {
+  grid-column: 2;
+  grid-row: 1;
+  width: clamp(160px, 22cqw, 236px);
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.7);
 }
 
 .hero-body {
+  grid-column: 1;
+  grid-row: 1;
   position: relative;
-  height: 100%;
-  max-width: 62%;
-  padding: 36px 40px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
 }
 
 .hero-kicker {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.8;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.72;
 }
 
 .hero-title {
-  margin: 8px 0 6px;
-  font-size: 52px;
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  margin: 10px 0 8px;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 4.4cqw, 56px);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-wrap: balance;
 }
 
 .hero-sub {
-  margin: 0 0 20px;
+  margin: 0 0 22px;
   font-size: 16px;
-  opacity: 0.8;
+  opacity: 0.78;
 }
 
 .hero-actions {
@@ -222,9 +303,9 @@
   gap: 8px;
 }
 
-@media (max-width: 1000px) {
-  .hero-title {
-    font-size: 36px;
+@container (max-width: 640px) {
+  .hero-art {
+    display: none;
   }
 }
 
@@ -255,8 +336,9 @@
 }
 
 .shelf-head .h2 {
-  font-size: 22px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
@@ -386,4 +468,213 @@
 button:focus:not(:focus-visible),
 [role='button']:focus:not(:focus-visible) {
   outline: none;
+}
+
+/* ---------- type: the display face for titles, plain numbers that line up ---------- */
+
+:root {
+  --font-display: 'Unbounded Variable', 'Inter Variable', 'Segoe UI', system-ui, sans-serif;
+}
+
+.ph-title,
+.view-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+/* the display face is wide: the same page width holds a size less */
+.ph-title.size-xl {
+  font-size: clamp(30px, 6.4cqw, 80px);
+}
+
+.ph-title.size-lg {
+  font-size: clamp(26px, 5.2cqw, 60px);
+}
+
+.ph-title.size-md {
+  font-size: clamp(22px, 3.9cqw, 44px);
+}
+
+.ph-title.size-sm {
+  font-size: clamp(20px, 2.9cqw, 28px);
+}
+
+.tr-dur,
+.tr-index,
+.pb-time,
+.look-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* labels read as words, not shouted */
+.sb-section,
+.full-next-label {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* what plays now is marked by the accent in one place: a bar at the row's edge */
+.tr.current {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* ---------- the full-window player: a poster in the cover's colour ---------- */
+
+/* flat colour from the cover, no picture behind it: the cover itself is the picture */
+.full-player > .cover-bg {
+  display: none;
+}
+
+.full-player {
+  background: color-mix(in srgb, var(--full-color) 58%, #060606);
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'cover meta'
+    'cover right'
+    'progress progress'
+    'controls controls';
+  align-items: stretch;
+  column-gap: clamp(32px, 4.5vw, 72px);
+  row-gap: 18px;
+  padding: 76px clamp(28px, 5vw, 80px) 30px;
+}
+
+/* the left column's parts take their own places in the poster's grid */
+.full-left {
+  display: contents;
+}
+
+.full-cover {
+  grid-area: cover;
+  align-self: center;
+  width: min(calc(100vh - 290px), 42vw, 660px);
+}
+
+.full-cover .art {
+  border-radius: 6px;
+  box-shadow: 0 30px 80px -24px rgba(0, 0, 0, 0.75);
+}
+
+.full-meta {
+  grid-area: meta;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.full-player .full-title.ellipsis {
+  font-family: var(--font-display);
+  font-size: clamp(34px, 4.6vw, 84px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  white-space: normal;
+  text-overflow: clip;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-wrap: balance;
+}
+
+.full-artist {
+  margin-top: 10px;
+  font-size: 20px;
+}
+
+.full-right {
+  grid-area: right;
+  min-height: 0;
+  align-self: stretch;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  padding-top: 18px;
+}
+
+/* the progress runs the whole width of the poster */
+.full-player .pb-progress {
+  grid-area: progress;
+}
+
+.full-player .pb-controls {
+  grid-area: controls;
+  justify-self: center;
+  width: auto;
+}
+
+.full-volume {
+  grid-area: controls;
+  justify-self: end;
+  align-self: center;
+}
+
+/* what comes next is a sequence: numbered */
+.full-next {
+  counter-reset: next;
+}
+
+.full-next-row {
+  counter-increment: next;
+}
+
+.full-next-row::before {
+  content: counter(next, decimal-leading-zero);
+  width: 22px;
+  flex: none;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* narrow or low window: cover, title and controls in one column */
+@media (max-width: 1100px) {
+  .full-player {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto;
+    grid-template-areas:
+      'cover'
+      'meta'
+      'progress'
+      'controls';
+    align-content: center;
+    padding: 56px 28px 28px;
+  }
+
+  .full-cover {
+    justify-self: center;
+    width: min(100%, calc(100vh - 420px), 560px);
+  }
+
+  .full-player .full-title.ellipsis {
+    font-size: clamp(28px, 6vw, 48px);
+    -webkit-line-clamp: 2;
+  }
+
+  .full-right {
+    display: none;
+  }
+}
+
+/* the poster's parts stay above the bass wash (they used to sit in a positioned column) */
+.full-left > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- settings: sections split by a hairline, not boxed ---------- */
+
+.settings-section {
+  margin-top: 6px;
+  padding: 22px 0 6px;
+  border-radius: 0;
+  background: transparent;
+  border-top: 1px solid var(--line);
+}
+
+.settings-section > .h3 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }

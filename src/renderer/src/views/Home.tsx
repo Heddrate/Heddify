@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 import { Card, PlaylistCard, Shelf } from '@/components/Card'
 import { ErrorState, LoadMore, Loading } from '@/components/States'
 import { TrackList } from '@/components/TrackList'
@@ -6,7 +6,7 @@ import { LibCard } from '@/components/LibCard'
 import { openArtist, playOrToggle, sameRoute, trackMenu } from '@/lib/actions'
 import { Icon } from '@/components/Icon'
 import { api, isPlaylist, tracksOf } from '@/lib/api'
-import { trackArt } from '@/lib/artwork'
+import { trackArt, useArtColor } from '@/lib/artwork'
 import { useAsync, usePaged } from '@/lib/hooks'
 import { uniqBy, roundRobin } from '@/lib/listOps'
 import { type ContinueItem, continueKey } from '@/lib/continueList'
@@ -29,10 +29,12 @@ const uniq = (tracks: Track[]): Track[] => uniqBy(tracks, (t) => t.id)
 
 /** The banner on top of Home: the last track played (or the newest in the feed), playable at once. */
 function Hero({ track }: { track: Track }): React.JSX.Element {
-  // the banner is wider than any cover: the full-size art, not the 500 px one, or it blurs
+  // the cover sits in the banner big: the full-size art, not the 500 px one, or it blurs
   const art = trackArt(track, 'original')
+  // the banner takes the cover's own colour
+  const color = useArtColor(trackArt(track, 't500x500'))
   return (
-    <section className="hero">
+    <section className="hero" style={color ? ({ '--hero-color': color } as CSSProperties) : undefined}>
       {art && <img className="hero-art" src={art} alt="" />}
       <div className="hero-shade" aria-hidden />
       <div className="hero-body">

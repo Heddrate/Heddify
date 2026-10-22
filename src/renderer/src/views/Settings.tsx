@@ -1,16 +1,19 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { CacheStats, DiscordStatus } from '../../../shared/ipc'
 import { Artwork } from '@/components/Artwork'
 import { Slider } from '@/components/Slider'
-import { Logo } from '@/components/Icon'
+import { Icon, Logo } from '@/components/Icon'
 import { userArt } from '@/lib/artwork'
 import { cx } from '@/lib/hooks'
-import { ACCENTS, PALETTES, setAccent, setCoverBg, setCustomColors, setTheme, THEMES, usesPalette, useTheme, type AnyTheme } from '@/lib/theme'
+import { ACCENTS, anchorsOf, isUserTheme, PALETTES, setAccent, setBg, setCustomColors, setLook, setTheme, THEMES, usesPalette, useTheme } from '@/lib/theme'
+import { cleanName, LOOK_LIMITS, type BgLook, type BgMode, type UserTheme } from '@/lib/themeFile'
+import { applyUserTheme, deleteUserTheme, exportUserTheme, importThemeFile, saveCurrentTheme, themeIdOf } from '@/lib/userThemes'
+import { getImage, prepareImage, setWallpaper, themeImageKey, useWallpaper } from '@/lib/wallpaper'
 import { derivePalette } from '@/lib/palette'
 import { pickAvatar, removeAvatar, setProfileName, useProfile } from '@/lib/profile'
 import { ProfileAvatar } from '@/components/ProfileAvatar'
 import { loginWithToken, logout, navigate, openUrl, signInSoundcloud, useApp } from '@/store/app'
-import { askText, toast } from '@/store/ui'
+import { askConfirm, askText, openMenu, toast } from '@/store/ui'
 import { loginYandex, logoutYandex, useYa } from '@/lib/yandexApi'
 import { loginVk, logoutVk, useVk } from '@/lib/vkLibrary'
 import { countLabel } from '@/lib/format'
@@ -48,10 +51,6 @@ export function Settings(): React.JSX.Element {
   const ownAvatar = useProfile((s) => s.avatar)
   const ownName = useProfile((s) => s.name)
   const autoplay = usePlayer((s) => s.autoplay)
-  const theme = useTheme((s) => s.theme)
-  const accent = useTheme((s) => s.accent)
-  const custom = useTheme((s) => s.custom)
-  const coverBg = useTheme((s) => s.coverBg)
   const [discordOn, setDiscordOn] = useState(true)
   const [toTray, setToTray] = useState(false)
   const [leveling, setLeveling] = useState(false)
@@ -213,87 +212,7 @@ export function Settings(): React.JSX.Element {
           />
         </Section>
 
-        <Section title={tx("Оформление")}>
-          <Row
-            label="Язык · Language"
-            control={
-              <div className="chips">
-                {(
-                  [
-                    ['ru', 'Русский'],
-                    ['en', 'English']
-                  ] as [Lang, string][]
-                ).map(([id, label]) => (
-                  <button key={id} className={cx('chip', lang === id && 'on')} onClick={() => setLang(id)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            }
-          />
-          <div className="theme-grid" role="radiogroup" aria-label={tx("Тема")}>
-            {THEMES.map((t) => (
-              <ThemeCard
-                key={t.id}
-                id={t.id}
-                label={t.label}
-                colors={t.preview}
-                accentColor={accent === 'mono' ? t.preview[3] : '#ff5500'}
-                active={theme === t.id}
-              />
-            ))}
-            {PALETTES.map((p) => {
-              const v = derivePalette(p.colors)
-              return (
-                <ThemeCard key={p.id} id={p.id} label={p.label} colors={[v.bg, v.panel, v.raised, v.text]} accentColor={v.accent} active={theme === p.id} />
-              )
-            })}
-            <ThemeCard
-              id="custom"
-              label="Своя"
-              colors={(() => {
-                const v = derivePalette(custom)
-                return [v.bg, v.panel, v.raised, v.text]
-              })()}
-              accentColor={custom.accent}
-              active={theme === 'custom'}
-            />
-          </div>
-          {theme === 'custom' && (
-            <Row
-              label={tx("Свои цвета")}
-              control={
-                <div className="chips">
-                  {(['bg', 'text', 'accent'] as const).map((k) => (
-                    <label key={k} className="color-pick">
-                      <span>{tx(CUSTOM_COLOR_LABEL[k])}</span>
-                      <input type="color" value={custom[k]} onChange={(e) => setCustomColors({ [k]: e.target.value })} />
-                    </label>
-                  ))}
-                </div>
-              }
-            />
-          )}
-          <Row
-            label={tx('Размытая обложка на фоне')}
-            hint={tx('За панелями видна обложка того, что играет')}
-            control={<Switch on={coverBg} onToggle={() => setCoverBg(!coverBg)} label={tx('Размытая обложка на фоне')} />}
-          />
-          {!usesPalette(theme) && (
-            <Row
-              label={tx("Акцент")}
-              control={
-                <div className="chips">
-                  {ACCENTS.map((a) => (
-                    <button key={a.id} className={cx('chip', accent === a.id && 'on')} onClick={() => setAccent(a.id)}>
-                      {tx(a.label)}
-                    </button>
-                  ))}
-                </div>
-              }
-            />
-          )}
-        </Section>
+        <LookSection />
 
         </div>
         <div className="settings-col">
@@ -401,6 +320,23 @@ export function Settings(): React.JSX.Element {
               </span>
             }
             control={null}
+          />
+          <Row
+            label="Язык · Language"
+            control={
+              <div className="chips">
+                {(
+                  [
+                    ['ru', 'Русский'],
+                    ['en', 'English']
+                  ] as [Lang, string][]
+                ).map(([id, label]) => (
+                  <button key={id} className={cx('chip', lang === id && 'on')} onClick={() => setLang(id)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            }
           />
           <UpdateRow />
           <Row
@@ -517,37 +453,336 @@ function CacheSection(): React.JSX.Element {
 /** Labels of the three custom colours (translated where shown). */
 const CUSTOM_COLOR_LABEL = { bg: "Фон", text: "Текст", accent: "Акцент" } as const
 
-/** One theme in the grid: a stylesheet theme or a palette. */
+/** The whole "Оформление" section: themes (built in and the user's own), the background, the accent. */
+function LookSection(): React.JSX.Element {
+  const theme = useTheme((s) => s.theme)
+  const accent = useTheme((s) => s.accent)
+  const custom = useTheme((s) => s.custom)
+  const bg = useTheme((s) => s.bg)
+  const look = useTheme((s) => s.look)
+  const mine = useTheme((s) => s.userThemes)
+  const wallpaper = useWallpaper((s) => s.url)
+  const picture = useRef<HTMLInputElement>(null)
+  const themeFile = useRef<HTMLInputElement>(null)
+
+  const pickPicture = async (file: File | undefined): Promise<void> => {
+    if (!file) return
+    try {
+      await setWallpaper(await prepareImage(file))
+      setBg('image')
+    } catch {
+      toast(tx('Не получилось открыть картинку'))
+    }
+  }
+
+  const saveTheme = async (): Promise<void> => {
+    const name = await askText(tx('Сохранить как тему'), tx('Моя тема {0}', mine.length + 1), tx('Сохранить'), {
+      text: tx('Сохранятся цвета и фон вместе с картинкой')
+    })
+    if (name?.trim()) await saveCurrentTheme(cleanName(name, tx('Тема')))
+  }
+
+  const customColors = anchorsOf(theme, custom) ?? custom
+
+  return (
+    <Section title={tx('Оформление')}>
+      <div className="theme-grid" role="radiogroup" aria-label={tx('Тема')}>
+        {THEMES.map((t) => (
+          <ThemeCard
+            key={t.id}
+            label={tx(t.label)}
+            colors={t.preview}
+            accentColor={accent === 'mono' ? t.preview[3] : '#ff5500'}
+            active={theme === t.id}
+            onPick={() => setTheme(t.id)}
+          />
+        ))}
+        {PALETTES.map((p) => {
+          const v = derivePalette(p.colors)
+          return (
+            <ThemeCard
+              key={p.id}
+              label={tx(p.label)}
+              colors={[v.bg, v.panel, v.raised, v.text]}
+              accentColor={v.accent}
+              active={theme === p.id}
+              onPick={() => setTheme(p.id)}
+            />
+          )
+        })}
+        <ThemeCard
+          label={tx('Своя')}
+          colors={(() => {
+            const v = derivePalette(custom)
+            return [v.bg, v.panel, v.raised, v.text]
+          })()}
+          accentColor={custom.accent}
+          active={theme === 'custom'}
+          onPick={() => setTheme('custom')}
+        />
+        {mine.map((t) => (
+          <UserThemeCard key={t.id} theme={t} active={theme === themeIdOf(t)} />
+        ))}
+      </div>
+      <div className="settings-actions">
+        <button className="btn btn-outline" onClick={() => void saveTheme()}>
+          <Icon name="add" size={18} />
+          {tx('Сохранить как тему')}
+        </button>
+        <button className="btn btn-outline" onClick={() => themeFile.current?.click()}>
+          <Icon name="folder" size={18} />
+          {tx('Загрузить тему…')}
+        </button>
+        <input
+          ref={themeFile}
+          type="file"
+          accept=".heddify-theme,.json,application/json"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            e.target.value = ''
+            if (file) void importThemeFile(file)
+          }}
+        />
+      </div>
+      {(theme === 'custom' || isUserTheme(theme)) && (
+        <Row
+          label={tx("Свои цвета")}
+          hint={isUserTheme(theme) ? tx('Новый цвет сделает из темы «Свою»') : undefined}
+          control={
+            <div className="chips">
+              {(['bg', 'text', 'accent'] as const).map((k) => (
+                <label key={k} className="color-pick">
+                  <span>{tx(CUSTOM_COLOR_LABEL[k])}</span>
+                  <input type="color" value={customColors[k]} onChange={(e) => setCustomColors({ [k]: e.target.value })} />
+                </label>
+              ))}
+            </div>
+          }
+        />
+      )}
+      <Row
+        label={tx('Фон')}
+        hint={tx('Что видно за панелями')}
+        control={
+          <div className="chips" role="radiogroup" aria-label={tx('Фон')}>
+            {(
+              [
+                ['plain', 'Без фона'],
+                ['cover', 'Обложка трека'],
+                ['image', 'Своя картинка']
+              ] as [BgMode, string][]
+            ).map(([id, label]) => (
+              <button key={id} role="radio" aria-checked={bg === id} className={cx('chip', bg === id && 'on')} onClick={() => setBg(id)}>
+                {tx(label)}
+              </button>
+            ))}
+          </div>
+        }
+      />
+      {bg === 'image' && (
+        <>
+          <Row
+            label={
+              <span className="settings-account">
+                {wallpaper ? (
+                  <img className="wall-thumb" src={wallpaper} alt="" width={64} height={40} />
+                ) : (
+                  <span className="wall-thumb empty" aria-hidden>
+                    <Icon name="add" size={18} />
+                  </span>
+                )}
+                <span className="settings-account-text">
+                  <strong>{tx('Картинка')}</strong>
+                  <span className="settings-hint block">{wallpaper ? tx('Хранится в приложении') : tx('PNG, JPG, WebP или GIF')}</span>
+                </span>
+              </span>
+            }
+            control={
+              <div className="settings-inline">
+                <button className="btn btn-outline" onClick={() => picture.current?.click()}>
+                  {wallpaper ? tx('Другая…') : tx('Выбрать…')}
+                </button>
+                {wallpaper && (
+                  <button className="btn btn-outline" onClick={() => void setWallpaper(null)}>
+                    {tx('Убрать')}
+                  </button>
+                )}
+              </div>
+            }
+          />
+          <input
+            ref={picture}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              void pickPicture(file)
+            }}
+          />
+          {wallpaper &&
+            LOOK_ROWS.map((r) => (
+              <Row
+                key={r.key}
+                label={tx(r.label)}
+                control={
+                  <div className="look-slider">
+                    <Slider
+                      value={look[r.key]}
+                      max={LOOK_LIMITS[r.key].max}
+                      step={r.step}
+                      label={tx(r.label)}
+                      onChange={(v) => setLook({ [r.key]: v }, false)}
+                      onCommit={(v) => setLook({ [r.key]: v })}
+                    />
+                    <span className="look-value">{r.show(look[r.key])}</span>
+                  </div>
+                }
+              />
+            ))}
+        </>
+      )}
+      {!usesPalette(theme) && (
+        <Row
+          label={tx("Акцент")}
+          control={
+            <div className="chips">
+              {ACCENTS.map((a) => (
+                <button key={a.id} className={cx('chip', accent === a.id && 'on')} onClick={() => setAccent(a.id)}>
+                  {tx(a.label)}
+                </button>
+              ))}
+            </div>
+          }
+        />
+      )}
+    </Section>
+  )
+}
+
+const pct = (v: number): string => `${Math.round(v * 100)}%`
+
+/** The picture's settings, in the order they are shown. */
+const LOOK_ROWS: { key: keyof BgLook; label: string; step: number; show: (v: number) => string }[] = [
+  { key: 'blur', label: 'Размытие', step: 1, show: (v) => `${Math.round(v)} px` },
+  { key: 'dim', label: 'Затемнение', step: 0.05, show: pct },
+  { key: 'saturate', label: 'Насыщенность', step: 0.05, show: pct },
+  { key: 'clear', label: 'Прозрачность панелей', step: 0.05, show: pct }
+]
+
+/** One theme in the grid. */
 function ThemeCard({
-  id,
   label,
   colors,
   accentColor,
-  active
+  active,
+  image,
+  onPick,
+  onMenu
 }: {
-  id: AnyTheme
   label: string
   colors: [string, string, string, string]
   accentColor: string
   active: boolean
+  image?: string | null
+  onPick: () => void
+  onMenu?: (at: { x: number; y: number }) => void
 }): React.JSX.Element {
   return (
-    <button role="radio" aria-checked={active} className={cx('theme-card', active && 'on')} onClick={() => setTheme(id)}>
-      <ThemePreview colors={colors} accentColor={accentColor} />
-      <span className="theme-name">{tx(label)}</span>
-    </button>
+    <div className={cx('theme-card', active && 'on')}>
+      <button
+        role="radio"
+        aria-checked={active}
+        className="theme-pick"
+        onClick={onPick}
+        onContextMenu={
+          onMenu
+            ? (e) => {
+                e.preventDefault()
+                onMenu({ x: e.clientX, y: e.clientY })
+              }
+            : undefined
+        }
+      >
+        <ThemePreview colors={colors} accentColor={accentColor} image={image} />
+        <span className="theme-name ellipsis">{label}</span>
+      </button>
+      {onMenu && (
+        <button
+          className="icon-btn theme-more"
+          aria-label={tx('Ещё: {0}', label)}
+          title={tx('Ещё')}
+          onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect()
+            onMenu({ x: r.left, y: r.bottom + 4 })
+          }}
+        >
+          <Icon name="more" size={18} />
+        </button>
+      )}
+    </div>
   )
 }
 
-/** Miniature of the app (sidebar, list, player bar) drawn in a theme's colours. */
-function ThemePreview({ colors, accentColor }: { colors: [string, string, string, string]; accentColor: string }): React.JSX.Element {
+/** A theme the user saved or loaded: its picture shows in the miniature; the menu shares or deletes it. */
+function UserThemeCard({ theme, active }: { theme: UserTheme; active: boolean }): React.JSX.Element {
+  const [image, setImage] = useState<string | null>(null)
+  useEffect(() => {
+    if (!theme.image) return
+    let url: string | null = null
+    let gone = false
+    void getImage(themeImageKey(theme.id)).then((blob) => {
+      if (!blob || gone) return
+      url = URL.createObjectURL(blob)
+      setImage(url)
+    })
+    return () => {
+      gone = true
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [theme.id, theme.image])
+  const v = derivePalette(theme.colors)
+  return (
+    <ThemeCard
+      label={theme.name}
+      colors={[v.bg, v.panel, v.raised, v.text]}
+      accentColor={v.accent}
+      active={active}
+      image={theme.bg === 'image' ? image : null}
+      onPick={() => void applyUserTheme(theme)}
+      onMenu={(at) =>
+        openMenu(at, [
+          { label: tx('Сохранить в файл'), icon: 'download', onSelect: () => void exportUserTheme(theme) },
+          { separator: true },
+          {
+            label: tx('Удалить тему'),
+            icon: 'trash',
+            danger: true,
+            onSelect: () =>
+              void askConfirm(tx('Удалить тему «{0}»?', theme.name), tx('Её цвета и картинка пропадут из приложения'), tx('Удалить'), true).then(
+                (yes) => yes && void deleteUserTheme(theme)
+              )
+          }
+        ])
+      }
+    />
+  )
+}
+
+/** Miniature of the app (sidebar, list, player bar) drawn in a theme's colours, over its picture if it has one. */
+function ThemePreview({ colors, accentColor, image }: { colors: [string, string, string, string]; accentColor: string; image?: string | null }): React.JSX.Element {
   const [bg, panel, raised, text] = colors
   const acc = accentColor
+  // over a picture the panels let it through, as in the app
+  const over = image ? 0.72 : 1
   return (
     <svg viewBox="0 0 160 100" className="theme-preview" aria-hidden>
       <rect width="160" height="100" fill={bg} />
-      <rect x="4" y="4" width="40" height="78" rx="3" fill={panel} />
-      <rect x="48" y="4" width="108" height="78" rx="3" fill={panel} />
+      {image && <image href={image} width="160" height="100" preserveAspectRatio="xMidYMid slice" />}
+      <rect x="4" y="4" width="40" height="78" rx="3" fill={panel} fillOpacity={over} />
+      <rect x="48" y="4" width="108" height="78" rx="3" fill={panel} fillOpacity={over} />
       {[0, 1, 2].map((i) => (
         <g key={i}>
           <rect x="9" y={10 + i * 14} width="9" height="9" rx="1.5" fill={i === 0 ? acc : raised} />

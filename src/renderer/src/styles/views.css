@@ -386,20 +386,94 @@
 }
 
 .theme-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px;
+  position: relative;
+  min-width: 0;
   border-radius: var(--r);
   border: 2px solid transparent;
-  text-align: left;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease;
 }
 
+.theme-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  border-radius: inherit;
+  text-align: left;
+}
+
 .theme-card:hover {
-  background: var(--raised);
+  background: var(--hover);
+}
+
+/* a saved theme's menu: shown on hover, always reachable from the keyboard */
+.theme-more {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--menu);
+  color: var(--text);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.theme-card:hover .theme-more,
+.theme-more:focus-visible {
+  opacity: 1;
+}
+
+/* saving / loading themes, under the grid */
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-actions .btn {
+  gap: 8px;
+}
+
+/* the picture behind the interface, small */
+.wall-thumb {
+  width: 64px;
+  height: 40px;
+  flex: none;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+  outline: 1px solid var(--line-2);
+}
+
+.wall-thumb.empty {
+  display: grid;
+  place-items: center;
+  background: var(--hover);
+  color: var(--text-2);
+}
+
+.look-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 280px;
+}
+
+.look-slider > :first-child {
+  flex: 1;
+}
+
+.look-value {
+  min-width: 52px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
 }
 
 .theme-card.on {

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { lang, onLangChange } from '@/lib/i18n'
 import { Logo } from '@/components/Icon'
 import { ContextMenu, Dialog, Toasts } from '@/components/Overlays'
@@ -13,7 +13,8 @@ import { Onboarding } from '@/components/Onboarding'
 import { FullPlayer } from '@/components/FullPlayer'
 import { Sidebar } from '@/components/Sidebar'
 import { Rail } from '@/components/Rail'
-import { CoverBackdrop } from '@/components/Backdrop'
+import { CoverBackdrop, Wallpaper } from '@/components/Backdrop'
+import { useWallpaper } from '@/lib/wallpaper'
 import { trackArt } from '@/lib/artwork'
 import { useTheme } from '@/lib/theme'
 import { FOCUS_SEARCH, TopBar } from '@/components/TopBar'
@@ -169,10 +170,22 @@ function View({ route }: { route: Route }): React.JSX.Element | null {
 function Shell(): React.JSX.Element {
   const route = useApp((s) => s.route)
   const panel = useApp((s) => s.panel)
-  // the blurred cover of what plays behind the panels (Settings → Appearance), or the plain background
-  const coverBg = useTheme((s) => s.coverBg)
+  // behind the panels (Settings → Appearance): the plain background, the blurred cover of what plays, or the user's picture
+  const bg = useTheme((s) => s.bg)
+  const look = useTheme((s) => s.look)
+  const wallpaper = useWallpaper((s) => s.url)
+  const coverBg = bg === 'cover'
+  const wall = bg === 'image' ? wallpaper : null
   const bgTrack = usePlayer((s) => (coverBg ? s.current : null))
   const bgArt = bgTrack ? trackArt(bgTrack, 't500x500') : null
+  const wallVars = wall
+    ? ({
+        '--wp-blur': `${look.blur}px`,
+        '--wp-dim': look.dim,
+        '--wp-sat': look.saturate,
+        '--wp-solid': `${Math.round((1 - look.clear) * 100)}%`
+      } as CSSProperties)
+    : undefined
   const main = useRef<HTMLElement>(null)
   const key = pageKey(route)
 
@@ -183,8 +196,9 @@ function Shell(): React.JSX.Element {
   useHotkeys()
 
   return (
-    <div className={cx('app', panel && 'with-queue', coverBg && 'cover-on')}>
+    <div className={cx('app', panel && 'with-queue', coverBg && 'cover-on', wall && 'wall-on')} style={wallVars}>
       {coverBg && <CoverBackdrop art={bgArt} />}
+      {wall && <Wallpaper url={wall} />}
       <TopBar />
       <Rail />
       <Sidebar />

@@ -23,3 +23,12 @@ export function CoverBackdrop({ art }: { art: string | null }): React.JSX.Elemen
     </div>
   )
 }
+
+/** The user's own picture behind the interface; its blur, veil and colour come from CSS variables (see App). */
+export function Wallpaper({ url }: { url: string }): React.JSX.Element {
+  return (
+    <div className="wallpaper" aria-hidden>
+      <img key={url} className="wallpaper-img" src={url} alt="" />
+    </div>
+  )
+}
